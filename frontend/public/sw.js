@@ -12,7 +12,8 @@ self.addEventListener("push", function (event) {
       renotify: true,
       requireInteraction: true,
       timestamp: Date.now(),
-      image: data.data.senderPic || "/chatZone.png", // Large image for better pop
+      image: data.data.senderPic || "/chatZone.png",
+      silent: false, // Ensure it makes sound if OS allows
     };
 
     event.waitUntil(self.registration.showNotification(data.title, options));
