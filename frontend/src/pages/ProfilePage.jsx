@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { Camera, Image as ImageIcon, Type, X, Check } from "lucide-react";
+import { Camera, ArrowLeft, User, Pencil, Award, AtSign, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -160,17 +160,18 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  // States for interactive editing
+  // States matching design
   const [selectedImg, setSelectedImg] = useState(authUser?.profilePic || "");
   const [selectedAvatarId, setSelectedAvatarId] = useState("");
-  const [fullName, setFullName] = useState(authUser?.fullName || "Masudur Rahaman");
-  const [phoneNumber, setPhoneNumber] = useState(authUser?.phoneNumber || "");
-  const [showNameEdit, setShowNameEdit] = useState(false);
+  const [fullName, setFullName] = useState(authUser?.fullName || "masudur rahaman");
+  const [aboutText, setAboutText] = useState("Available");
+  const [usernameText, setUsernameText] = useState(authUser?.username || "masudur.rahaman");
+  const [showAvatarSelector, setShowAvatarSelector] = useState(false);
 
-  // Extract lowercase initials (e.g. "mr" for Masudur Rahaman)
+  // Extract lowercase initials (e.g. "mr" for masudur rahaman)
   const getInitials = (name) => {
     if (!name) return "mr";
-    const parts = name.split(" ");
+    const parts = name.trim().split(" ");
     if (parts.length > 1) {
       return (parts[0][0] + parts[1][0]).toLowerCase();
     }
@@ -200,7 +201,7 @@ const ProfilePage = () => {
       const base64Image = reader.result;
       setSelectedImg(base64Image);
       setSelectedAvatarId(""); // clear avatar selection
-      toast.success("Image selected! Click save to apply. 📸");
+      toast.success("Photo loaded! Click Save to apply. 📸");
     };
   };
 
@@ -211,7 +212,7 @@ const ProfilePage = () => {
     setSelectedAvatarId(avatar.id);
   };
 
-  // Handle ultimate form Save
+  // Handle Save
   const handleSave = async () => {
     if (!fullName.trim()) {
       toast.error("Please enter a valid name");
@@ -220,8 +221,7 @@ const ProfilePage = () => {
     try {
       await updateProfile({
         profilePic: selectedImg,
-        fullName: fullName,
-        phoneNumber: phoneNumber
+        fullName: fullName.trim()
       });
       toast.success("Profile saved successfully! 🌟");
       navigate("/"); // return to home dashboard
@@ -233,21 +233,32 @@ const ProfilePage = () => {
   return (
     <div className="h-screen w-full flex flex-col bg-base-100 select-none overflow-hidden text-base-content">
       
-      {/* 1. Sleek Signal Header */}
-      <header className="p-4 border-b border-base-300 flex items-center bg-base-100/90 backdrop-blur sticky top-0 z-10">
-        <Link 
-          to="/" 
-          className="p-1 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
-          title="Cancel"
+      {/* 1. Sleek Profile Header */}
+      <header className="p-4 border-b border-base-300 flex items-center justify-between bg-base-100/95 sticky top-0 z-10">
+        <div className="flex items-center gap-3.5">
+          <Link 
+            to="/" 
+            className="p-1.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
+            title="Back"
+          >
+            <ArrowLeft size={24} />
+          </Link>
+          <h1 className="font-bold text-xl text-base-content">Profile</h1>
+        </div>
+        
+        <button
+          onClick={handleSave}
+          disabled={isUpdatingProfile}
+          className="btn btn-sm btn-primary rounded-full px-5 font-bold text-xs"
         >
-          <X size={26} />
-        </Link>
+          {isUpdatingProfile ? "Saving..." : "Save"}
+        </button>
       </header>
 
-      {/* Main Form scrollable panel */}
-      <div className="flex-1 overflow-y-auto px-5 py-6 pb-24 max-w-lg w-full mx-auto space-y-8 flex flex-col items-center custom-scrollbar">
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto px-6 py-8 pb-24 max-w-md w-full mx-auto space-y-7 custom-scrollbar flex flex-col">
         
-        {/* Hidden File Input for photo uploads */}
+        {/* Hidden File Input */}
         <input 
           type="file"
           ref={fileInputRef}
@@ -257,139 +268,141 @@ const ProfilePage = () => {
           onChange={handleImageUpload}
         />
 
-        {/* 2. Massive Avatar Circle */}
-        <div className="relative group flex justify-center">
+        {/* 2. Medium Avatar Circle */}
+        <div className="flex flex-col items-center justify-center space-y-3.5">
           {selectedImg ? (
             <img 
               src={selectedImg} 
               alt="Profile avatar" 
-              className="w-40 h-40 rounded-full object-cover shadow-lg border-4 border-base-100"
+              className="w-28 h-28 rounded-full object-cover shadow-sm ring-1 ring-base-200"
             />
           ) : (
-            <div className="w-40 h-40 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-primary flex items-center justify-center font-bold text-5xl shadow-lg border-4 border-base-100 capitalize">
+            <div className="w-28 h-28 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold text-3xl shadow-xs ring-1 ring-purple-200/20 capitalize">
               {getInitials(fullName)}
             </div>
           )}
+
+          {/* Edit photo button */}
+          <button 
+            onClick={() => setShowAvatarSelector(!showAvatarSelector)}
+            className="px-4 py-1.5 bg-base-200 hover:bg-base-300 text-base-content font-bold text-xs rounded-full transition-all"
+          >
+            Edit photo
+          </button>
         </div>
 
-        {/* 3. Action Triad (Camera, Photo, Text) */}
-        <div className="flex items-center justify-center gap-6 py-2">
-          
-          {/* Camera Button */}
-          <div className="flex flex-col items-center gap-1.5">
-            <button 
-              onClick={handlePhotoClick}
-              className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/40 text-primary flex items-center justify-center border border-indigo-100 dark:border-indigo-900/30 transition-all shadow-xs"
-              title="Camera upload"
-            >
-              <Camera size={22} className="stroke-[1.8]" />
-            </button>
-            <span className="text-xs font-semibold text-base-content/60">Camera</span>
-          </div>
-
-          {/* Photo Button */}
-          <div className="flex flex-col items-center gap-1.5">
-            <button 
-              onClick={handlePhotoClick}
-              className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/40 text-primary flex items-center justify-center border border-indigo-100 dark:border-indigo-900/30 transition-all shadow-xs"
-              title="Photo gallery"
-            >
-              <ImageIcon size={22} className="stroke-[1.8]" />
-            </button>
-            <span className="text-xs font-semibold text-base-content/60">Photo</span>
-          </div>
-
-          {/* Text/Name Button */}
-          <div className="flex flex-col items-center gap-1.5">
-            <button 
-              onClick={() => setShowNameEdit(!showNameEdit)}
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all shadow-xs ${
-                showNameEdit 
-                  ? "bg-primary text-primary-content border-primary" 
-                  : "bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/40 text-primary border-indigo-100 dark:border-indigo-900/30"
-              }`}
-              title="Edit Profile Name"
-            >
-              <Type size={22} className="stroke-[1.8]" />
-            </button>
-            <span className="text-xs font-semibold text-base-content/60">Text</span>
-          </div>
-
-        </div>
-
-        {/* Name and Phone Number input expansion box */}
-        {showNameEdit && (
-          <div className="w-full bg-base-200 border border-base-300 p-4 rounded-2xl space-y-4 animate-fade-in text-left">
-            <div className="space-y-2">
-              <label className="text-xxs font-extrabold text-base-content/50 uppercase tracking-wider block">Modify Screen Name</label>
-              <input 
-                type="text"
-                className="w-full px-4 py-2.5 rounded-xl bg-base-100 border border-base-300 font-semibold text-sm outline-none focus:border-primary transition-all"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter full name"
-              />
+        {/* 3. Sliding Vector Avatar Grid Drawer */}
+        {showAvatarSelector && (
+          <div className="w-full bg-base-200/50 dark:bg-base-950/20 border border-base-300/40 p-4 rounded-3xl animate-fade-in space-y-4 text-left">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-base-content/50 px-1">Choose a vector avatar</h4>
+            <div className="grid grid-cols-4 gap-4 justify-items-center">
+              {SIGNAL_AVATARS.map((avatar) => (
+                <button
+                  key={avatar.id}
+                  onClick={() => handleAvatarSelect(avatar)}
+                  className={`w-14 h-14 rounded-full overflow-hidden border-3 transition-all relative ${
+                    selectedAvatarId === avatar.id 
+                      ? "border-primary scale-105 shadow-md" 
+                      : "border-transparent hover:scale-102"
+                  }`}
+                  title={avatar.name}
+                >
+                  <div 
+                    className="w-full h-full"
+                    dangerouslySetInnerHTML={{ __html: avatar.svg }}
+                  />
+                  {selectedAvatarId === avatar.id && (
+                    <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                      <div className="bg-primary text-primary-content rounded-full p-0.5">
+                        <Check size={10} className="stroke-[4]" />
+                      </div>
+                    </div>
+                  )}
+                </button>
+              ))}
             </div>
-
-            <div className="space-y-2">
-              <label className="text-xxs font-extrabold text-base-content/50 uppercase tracking-wider block">Modify Phone Number</label>
-              <input 
-                type="text"
-                className="w-full px-4 py-2.5 rounded-xl bg-base-100 border border-base-300 font-semibold text-sm outline-none focus:border-primary transition-all"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="e.g. +91 62949 83054"
-              />
+            
+            <div className="flex justify-center pt-2">
+              <button 
+                onClick={handlePhotoClick}
+                className="btn btn-sm btn-outline btn-primary rounded-full px-5 text-xs flex items-center gap-1.5"
+              >
+                <Camera size={14} /> Upload from device
+              </button>
             </div>
           </div>
         )}
 
-        {/* Divider line */}
-        <div className="w-full border-b border-base-300 my-2" />
-
-        {/* 4. Avatars Grid */}
-        <div className="w-full text-left space-y-4">
-          <div className="grid grid-cols-4 gap-4 px-1 justify-items-center">
-            {SIGNAL_AVATARS.map((avatar) => (
-              <button
-                key={avatar.id}
-                onClick={() => handleAvatarSelect(avatar)}
-                className={`w-16 h-16 rounded-full overflow-hidden border-3 transition-all relative ${
-                  selectedAvatarId === avatar.id 
-                    ? "border-primary scale-105 shadow-md" 
-                    : "border-transparent hover:scale-102"
-                }`}
-                title={avatar.name}
-              >
-                <div 
-                  className="w-full h-full"
-                  dangerouslySetInnerHTML={{ __html: avatar.svg }}
-                />
-                
-                {/* Visual Check Indicator */}
-                {selectedAvatarId === avatar.id && (
-                  <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-                    <div className="bg-primary text-primary-content rounded-full p-0.5">
-                      <Check size={10} className="stroke-[4]" />
-                    </div>
-                  </div>
-                )}
-              </button>
-            ))}
+        {/* 4. Elegant List-Item Rows */}
+        <div className="space-y-1 text-left">
+          
+          {/* Row 1: Full Name */}
+          <div className="flex items-center gap-5 py-3 border-b border-base-200">
+            <User size={22} className="text-base-content/50" />
+            <div className="flex-1">
+              <input 
+                type="text" 
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full bg-transparent border-none outline-none focus:outline-none text-[15px] font-semibold text-base-content"
+                placeholder="Name"
+              />
+            </div>
           </div>
+
+          {/* Row 2: About / Custom Status */}
+          <div className="flex items-center gap-5 py-3 border-b border-base-200">
+            <Pencil size={22} className="text-base-content/50" />
+            <div className="flex-1">
+              <input 
+                type="text" 
+                value={aboutText}
+                onChange={(e) => setAboutText(e.target.value)}
+                className="w-full bg-transparent border-none outline-none focus:outline-none text-[15px] font-semibold text-base-content"
+                placeholder="About"
+              />
+            </div>
+          </div>
+
+          {/* Row 3: Badges */}
+          <div className="flex items-center gap-5 py-3 border-b border-base-200 cursor-pointer hover:bg-base-200/30 px-1 -mx-1 rounded-xl transition-colors" onClick={() => toast.success("You hold the Founder badge! 🏅")}>
+            <Award size={22} className="text-base-content/50" />
+            <span className="flex-1 text-[15px] font-semibold text-base-content">
+              Badges
+            </span>
+          </div>
+
         </div>
 
-      </div>
+        {/* Row 3 Notice text */}
+        <p className="text-xs font-semibold text-base-content/40 leading-relaxed text-left">
+          Your profile and changes to it will be visible to people you message, contacts, and groups.
+        </p>
 
-      {/* 5. Bottom floating Save pill button */}
-      <div className="absolute bottom-6 right-6 z-20">
-        <button
-          onClick={handleSave}
-          disabled={isUpdatingProfile}
-          className="btn btn-primary rounded-full px-8 py-3.5 shadow-lg font-bold text-sm tracking-wide normal-case hover:brightness-105 h-auto min-h-0 flex items-center gap-1.5"
-        >
-          {isUpdatingProfile ? "Saving..." : "Save"}
-        </button>
+        {/* Clean Divider Line */}
+        <div className="w-full border-t border-base-200 my-1" />
+
+        {/* 5. Username Row */}
+        <div className="space-y-3.5 text-left">
+          <div className="flex items-center gap-5 py-3 border-b border-base-200">
+            <AtSign size={22} className="text-base-content/50" />
+            <div className="flex-1">
+              <input 
+                type="text" 
+                value={usernameText}
+                onChange={(e) => setUsernameText(e.target.value)}
+                className="w-full bg-transparent border-none outline-none focus:outline-none text-[15px] font-semibold text-base-content"
+                placeholder="Username"
+              />
+            </div>
+          </div>
+
+          {/* Username description */}
+          <p className="text-xs font-semibold text-base-content/40 leading-relaxed">
+            People can now message you using your optional username so you don't have to give out your phone number.
+          </p>
+        </div>
+
       </div>
 
     </div>
