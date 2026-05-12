@@ -1075,7 +1075,7 @@ const Sidebar = () => {
       </div>
 
       {/* 4. Bottom Navigation Bar */}
-      <nav className="flex absolute bottom-0 inset-x-0 bg-base-100/90 border-t border-base-300 p-2.5 justify-around items-center backdrop-blur-md z-10 animate-fade-in">
+      <nav className="hidden md:flex absolute bottom-0 inset-x-0 bg-base-100/90 border-t border-base-300 p-2.5 justify-around items-center backdrop-blur-md z-10 animate-fade-in">
         {/* Chats Tab button */}
         <button 
           onClick={() => { setActiveTab("chats"); setSearchQuery(""); }}

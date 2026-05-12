@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
-import { MessageSquare, Phone, Image as ImageIcon } from "lucide-react";
+import { MessageSquare, Phone, Image as ImageIcon, Users } from "lucide-react";
 
 const HomePage = () => {
   const { selectedUser, setSelectedUser, activeTab, setActiveTab, subscribeToMessages, unsubscribeFromMessages } = useChatstore();
@@ -90,6 +90,28 @@ const HomePage = () => {
                 activeTab === "calls" ? "text-primary" : "text-base-content/60"
               }`}>
                 Calls
+              </span>
+            </button>
+
+            {/* Friends Tab Button */}
+            <button 
+              onClick={() => { 
+                setActiveTab("friends"); 
+                setSelectedUser(null); // clears selected user to pop back to sidebar friends list
+              }}
+              className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+            >
+              <div className={`px-5 py-1 rounded-full transition-all ${
+                activeTab === "friends" 
+                  ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
+                  : "text-base-content/60 group-hover:text-base-content"
+              }`}>
+                <Users size={20} className={activeTab === "friends" ? "text-primary" : "text-base-content/60"} />
+              </div>
+              <span className={`text-[10px] font-bold tracking-wide transition-all ${
+                activeTab === "friends" ? "text-primary" : "text-base-content/60"
+              }`}>
+                Friends
               </span>
             </button>
 
