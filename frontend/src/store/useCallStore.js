@@ -10,8 +10,8 @@ const ICE_SERVERS = {
   ],
 };
 
-const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3?v=2"); // Receiver's ringtone
-const CALLING_SOUND = new Audio("https://www.soundjay.com/phone/phone-calling-1.mp3?v=3"); // Caller's ringback tone (dial tone)
+const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1357/1357-preview.mp3?v=4"); // Classic 'Cring Cring' bell ring
+const CALLING_SOUND = new Audio("https://www.soundjay.com/phone/phone-calling-1.mp3?v=4"); // Standard dial tone
 RINGING_SOUND.loop = true;
 CALLING_SOUND.loop = true;
 
