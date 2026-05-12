@@ -728,68 +728,6 @@ const Sidebar = () => {
                 </div>
               </div>
             )}
-
-            {/* Custom Friend Long-press Options Menu Popover Overlay */}
-            {activeFriendMenuId && longPressedFriend && (
-              <div 
-                className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[1px]" 
-                onClick={() => { setActiveFriendMenuId(null); setLongPressedFriend(null); }}
-                onContextMenu={(e) => { e.preventDefault(); setActiveFriendMenuId(null); setLongPressedFriend(null); }}
-              >
-                <div 
-                  style={{ 
-                    top: Math.min(friendMenuPosition.y, window.innerHeight - 150), 
-                    left: Math.min(friendMenuPosition.x, window.innerWidth - 240) 
-                  }}
-                  className="absolute bg-base-100 border border-base-300 shadow-2xl rounded-[24px] p-2 w-56 flex flex-col space-y-0.5 z-50 animate-fade-in"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* 1. Chat */}
-                  <button 
-                    onClick={() => {
-                      setSelectedUser(longPressedFriend);
-                      setActiveTab("chats");
-                      if (!activeConversations.includes(longPressedFriend._id)) {
-                        const updated = [...activeConversations, longPressedFriend._id];
-                        setActiveConversations(updated);
-                        localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
-                      }
-                      setActiveFriendMenuId(null);
-                      setLongPressedFriend(null);
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-base-200 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
-                  >
-                    <MessageSquare size={18} className="text-base-content/60" />
-                    <span>Chat with Friend</span>
-                  </button>
-
-                  {/* 2. Remove Friend */}
-                  <button 
-                    onClick={async () => {
-                      const userToUnfriend = longPressedFriend;
-                      setActiveFriendMenuId(null);
-                      setLongPressedFriend(null);
-                      if (window.confirm(`Are you sure you want to remove ${userToUnfriend.fullName} from your friends?`)) {
-                        const success = await removeContact(userToUnfriend._id);
-                        if (success) {
-                          const record = {
-                            user: userToUnfriend,
-                            removedAt: new Date().toISOString()
-                          };
-                          const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== userToUnfriend._id)].slice(0, 20);
-                          setRecentlyUnfriended(updated);
-                          localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
-                        }
-                      }
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl text-left text-sm font-semibold transition-colors text-rose-500"
-                  >
-                    <UserMinus size={18} className="text-rose-500" />
-                    <span>Remove Friend</span>
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -1070,9 +1008,11 @@ const Sidebar = () => {
           </div>
         )}
 
-        {/* ==================== TABS: FRIENDS ==================== */}
         {activeTab === "friends" && (
-          <div className="space-y-4 animate-fade-in pb-12">
+          <div 
+            onClick={() => setActiveFriendMenuId(null)}
+            className="space-y-4 animate-fade-in pb-12"
+          >
             {/* Header / Add Friend area */}
             <div className="p-1.5 bg-base-200/50 rounded-2xl border border-base-300/30 space-y-3">
               <div className="flex gap-2 items-center px-1">
@@ -1187,6 +1127,31 @@ const Sidebar = () => {
                           >
                             <MessageSquare size={16} className="fill-primary/20" />
                           </button>
+
+                          {/* Show unfriend button ONLY when long-pressed (activeFriendMenuId === user._id) */}
+                          {activeFriendMenuId === user._id && (
+                            <button 
+                              onClick={async () => {
+                                if (window.confirm(`Are you sure you want to remove ${user.fullName} from your friends?`)) {
+                                  const success = await removeContact(user._id);
+                                  if (success) {
+                                    const record = {
+                                      user: user,
+                                      removedAt: new Date().toISOString()
+                                    };
+                                    const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== user._id)].slice(0, 20);
+                                    setRecentlyUnfriended(updated);
+                                    localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
+                                    setActiveFriendMenuId(null);
+                                  }
+                                }
+                              }}
+                              className="w-9 h-9 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 flex items-center justify-center transition-all animate-fade-in"
+                              title="Remove friend"
+                            >
+                              <UserMinus size={16} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
