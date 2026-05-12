@@ -94,7 +94,7 @@ export const logout =(req,res)=>{
 
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic, fullName, phoneNumber } = req.body;
+    const { profilePic, fullName, phoneNumber, username, about } = req.body;
     const userId = req.user._id;
 
     const updateData = {};
@@ -115,6 +115,14 @@ export const updateProfile = async (req, res) => {
 
     if (phoneNumber !== undefined) {
       updateData.phoneNumber = phoneNumber;
+    }
+
+    if (username !== undefined) {
+      updateData.username = username;
+    }
+
+    if (about !== undefined) {
+      updateData.about = about;
     }
 
     if (Object.keys(updateData).length === 0) {

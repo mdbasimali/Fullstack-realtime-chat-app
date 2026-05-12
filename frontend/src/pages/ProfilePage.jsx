@@ -163,9 +163,9 @@ const ProfilePage = () => {
   // States matching design
   const [selectedImg, setSelectedImg] = useState(authUser?.profilePic || "");
   const [selectedAvatarId, setSelectedAvatarId] = useState("");
-  const [fullName, setFullName] = useState(authUser?.fullName || "masudur rahaman");
-  const [aboutText, setAboutText] = useState("Available");
-  const [usernameText, setUsernameText] = useState(authUser?.username || "masudur.rahaman");
+  const [fullName, setFullName] = useState(authUser?.fullName || "");
+  const [aboutText, setAboutText] = useState(authUser?.about || "Available");
+  const [usernameText, setUsernameText] = useState(authUser?.username || "");
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
 
   // Extract lowercase initials (e.g. "mr" for masudur rahaman)
@@ -221,7 +221,9 @@ const ProfilePage = () => {
     try {
       await updateProfile({
         profilePic: selectedImg,
-        fullName: fullName.trim()
+        fullName: fullName.trim(),
+        username: usernameText.trim(),
+        about: aboutText.trim()
       });
       toast.success("Profile saved successfully! 🌟");
       navigate("/"); // return to home dashboard
