@@ -50,11 +50,24 @@ async function sendPushNotification(userId, data) {
 
 //used to store  online users
 const userSocketMap={};//{userId:socketId}
+const pendingCalls = new Map(); // {userId: {from, offer, type, timestamp}}
 
 io.on("connection", (socket) =>{
    console.log("A user connected", socket.id);
    const userId = socket.handshake.query.userId;
-   if(userId)userSocketMap[userId]=socket.id
+   if(userId) {
+       userSocketMap[userId]=socket.id;
+       
+       // Check for pending calls for this user
+       if (pendingCalls.has(userId)) {
+           const call = pendingCalls.get(userId);
+           // Only re-emit if call is less than 45 seconds old
+           if (Date.now() - call.timestamp < 45000) {
+               socket.emit("call:incoming", { from: call.from, offer: call.offer, type: call.type });
+           }
+           pendingCalls.delete(userId);
+       }
+   }
 
   //io.emit() is used to send events to all the connected clients
    io.emit("getOnlineUsers",Object.keys(userSocketMap));
@@ -86,6 +99,9 @@ io.on("connection", (socket) =>{
 
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("call:incoming", { from: userId, offer, type });
+    } else {
+      // Store call as pending if user is offline
+      pendingCalls.set(to, { from: userId, offer, type, timestamp: Date.now() });
     }
   });
 
@@ -107,6 +123,7 @@ io.on("connection", (socket) =>{
 
   // Either party ends the call
   socket.on("call:ended", ({ to }) => {
+    pendingCalls.delete(to); // Clear pending call if it was ended
     const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("call:ended", { from: userId });

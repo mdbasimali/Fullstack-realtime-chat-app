@@ -56,19 +56,14 @@ const App = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get("call") === "true" && params.get("from")) {
-      const from = params.get("from");
-      const type = params.get("type") || "video";
-      
-      // Give a small delay to ensure everything is loaded
-      setTimeout(() => {
-        handleIncomingCall({ from, type, offer: null }); // Offer might be null, but we can still show the UI
-      }, 500);
+    if (params.get("call") === "true") {
+      // The socket connection will automatically trigger the 'call:incoming' 
+      // event via the backend's new pendingCalls re-sync logic.
       
       // Clean up URL
       window.history.replaceState({}, document.title, "/");
     }
-  }, [location, handleIncomingCall]);
+  }, [location]);
 
   console.log({authUser});
 
