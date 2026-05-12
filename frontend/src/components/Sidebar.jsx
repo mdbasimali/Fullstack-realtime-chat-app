@@ -40,12 +40,17 @@ const Sidebar = () => {
   const [storyText, setStoryText] = useState("");
   const [showStoryCreator, setShowStoryCreator] = useState(false);
 
-  // Call Logs (Mock + Active Session Calls)
-  const [callLogs, setCallLogs] = useState([
-    { id: "1", name: "Sarah Connor", type: "video", time: "2 hours ago", status: "missed" },
-    { id: "2", name: "Alex Mercer", type: "audio", time: "Yesterday, 4:32 PM", status: "outgoing" },
-    { id: "3", name: "Jane Smith", type: "video", time: "May 11, 10:14 AM", status: "incoming" }
-  ]);
+  // Call Logs (Mock + Active Session Calls) - starts empty for a fresh user
+  const [callLogs, setCallLogs] = useState(() => {
+    const saved = localStorage.getItem(`call_logs_${authUser?._id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Friends Stories State - starts empty for a fresh user
+  const [friendsStories, setFriendsStories] = useState(() => {
+    const saved = localStorage.getItem(`friends_stories_${authUser?._id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
 
   useEffect(() => {
     getUsers();
@@ -123,37 +128,6 @@ const Sidebar = () => {
     activeConversations.includes(user._id) && 
     user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Generate dynamic mock stories for friends
-  const friendsStories = [
-    {
-      id: "s1",
-      name: "Jane Smith",
-      avatar: "",
-      color: "from-pink-500 via-purple-500 to-indigo-500",
-      storyType: "image",
-      content: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=60",
-      caption: "Beautiful sunset at the beach! 🌅✨"
-    },
-    {
-      id: "s2",
-      name: "Alex Mercer",
-      avatar: "",
-      color: "from-green-400 to-blue-600",
-      storyType: "text",
-      content: "Coding late nights is a different vibe! 💻🚀☕ #buildinpublic",
-      bgColor: "bg-gradient-to-tr from-indigo-900 via-purple-900 to-pink-800"
-    },
-    {
-      id: "s3",
-      name: "Sarah Connor",
-      avatar: "",
-      color: "from-amber-400 to-red-600",
-      storyType: "image",
-      content: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800&auto=format&fit=crop&q=60",
-      caption: "In love with nature 🌿💚"
-    }
-  ];
 
   const createStory = (e) => {
     e.preventDefault();
@@ -475,53 +449,75 @@ const Sidebar = () => {
           <div className="space-y-4 animate-fade-in">
             <div className="flex justify-between items-center px-1">
               <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Recent Calls</span>
-              <button 
-                onClick={() => {
-                  setCallLogs([
-                    { id: Date.now().toString(), name: users[0]?.fullName || "Sarah Connor", type: "audio", time: "Just now", status: "outgoing" },
-                    ...callLogs
-                  ]);
-                  toast.success("Call log refreshed");
-                }}
-                className="text-xs text-primary font-medium hover:underline"
-              >
-                Clear All
-              </button>
+              {callLogs.length > 0 ? (
+                <button 
+                  onClick={() => {
+                    setCallLogs([]);
+                    localStorage.setItem(`call_logs_${authUser?._id}`, JSON.stringify([]));
+                    toast.success("Call log cleared");
+                  }}
+                  className="text-xs text-error/70 hover:text-error font-medium hover:underline"
+                >
+                  Clear All
+                </button>
+              ) : (
+                <button 
+                  onClick={() => {
+                    const demoLogs = [
+                      { id: "1", name: users[0]?.fullName || "Sarah Connor", type: "video", time: "2 hours ago", status: "missed" },
+                      { id: "2", name: users[1]?.fullName || "Alex Mercer", type: "audio", time: "Yesterday, 4:32 PM", status: "outgoing" },
+                      { id: "3", name: users[2]?.fullName || "Jane Smith", type: "video", time: "May 11, 10:14 AM", status: "incoming" }
+                    ];
+                    setCallLogs(demoLogs);
+                    localStorage.setItem(`call_logs_${authUser?._id}`, JSON.stringify(demoLogs));
+                    toast.success("Demo call logs loaded! 📞");
+                  }}
+                  className="text-xs text-primary font-medium hover:underline"
+                >
+                  Load Demo Logs
+                </button>
+              )}
             </div>
 
             {/* List Call History */}
-            <div className="space-y-1">
-              {callLogs.map((log) => (
-                <div key={log.id} className="p-3.5 flex items-center justify-between rounded-2xl hover:bg-base-200 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-full bg-base-200 text-base-content/70">
-                      {log.status === "missed" && <PhoneMissed className="text-error" size={18} />}
-                      {log.status === "incoming" && <PhoneIncoming className="text-green-500" size={18} />}
-                      {log.status === "outgoing" && <PhoneCall className="text-primary" size={18} />}
+            {callLogs.length === 0 ? (
+              <div className="py-8 text-center text-xs text-base-content/50 font-medium">
+                No recent calls. Click "Load Demo Logs" to populate mock calls for testing.
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {callLogs.map((log) => (
+                  <div key={log.id} className="p-3.5 flex items-center justify-between rounded-2xl hover:bg-base-200 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-full bg-base-200 text-base-content/70">
+                        {log.status === "missed" && <PhoneMissed className="text-error" size={18} />}
+                        {log.status === "incoming" && <PhoneIncoming className="text-green-500" size={18} />}
+                        {log.status === "outgoing" && <PhoneCall className="text-primary" size={18} />}
+                      </div>
+                      <div className="text-left">
+                        <h4 className="font-semibold text-sm text-base-content">{log.name}</h4>
+                        <p className="text-xs text-base-content/60 mt-0.5 flex items-center gap-1">
+                          {log.type === "video" ? "Video" : "Voice"} • {log.time}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <h4 className="font-semibold text-sm text-base-content">{log.name}</h4>
-                      <p className="text-xs text-base-content/60 mt-0.5 flex items-center gap-1">
-                        {log.type === "video" ? "Video" : "Voice"} • {log.time}
-                      </p>
+                    <div className="flex gap-1">
+                      <button 
+                        onClick={() => {
+                          const targetUser = users.find(u => u.fullName === log.name);
+                          if (targetUser) initiateCall(targetUser, log.type);
+                          else toast.error("User offline/not found to call");
+                        }}
+                        className="p-2.5 rounded-full hover:bg-primary/10 hover:text-primary text-base-content/70 transition-all"
+                        title={`Call ${log.name}`}
+                      >
+                        {log.type === "video" ? <Video size={18} /> : <Phone size={18} />}
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <button 
-                      onClick={() => {
-                        const targetUser = users.find(u => u.fullName === log.name);
-                        if (targetUser) initiateCall(targetUser, log.type);
-                        else toast.error("User offline/not found to call");
-                      }}
-                      className="p-2.5 rounded-full hover:bg-primary/10 hover:text-primary text-base-content/70 transition-all"
-                      title={`Call ${log.name}`}
-                    >
-                      {log.type === "video" ? <Video size={18} /> : <Phone size={18} />}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Call Action Help */}
             <div className="p-4 bg-base-200/50 rounded-2xl border border-base-300 text-center space-y-2">
@@ -616,34 +612,94 @@ const Sidebar = () => {
 
             {/* Friends Stories List */}
             <div className="space-y-3">
-              <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-1">Recent updates</span>
-              
-              <div className="space-y-1">
-                {friendsStories.map((story) => (
-                  <div 
-                    key={story.id} 
-                    onClick={() => setViewingStory(story)}
-                    className="p-3 flex items-center justify-between rounded-2xl hover:bg-base-200 cursor-pointer transition-colors"
+              <div className="flex justify-between items-center px-1">
+                <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Recent updates</span>
+                {friendsStories.length > 0 ? (
+                  <button 
+                    onClick={() => {
+                      setFriendsStories([]);
+                      localStorage.setItem(`friends_stories_${authUser?._id}`, JSON.stringify([]));
+                      toast.success("Stories cleared");
+                    }}
+                    className="text-xs text-error/70 hover:text-error font-medium hover:underline"
                   >
-                    <div className="flex items-center gap-3.5">
-                      {/* Avatar with colorful ring representing dynamic stories */}
-                      <div className="p-0.5 rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500 ring-2 ring-transparent">
-                        <div className="p-0.5 bg-base-100 rounded-full">
-                          <div className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
-                            {getInitials(story.name)}
+                    Clear All
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      const demoStories = [
+                        {
+                          id: "s1",
+                          name: "Jane Smith",
+                          avatar: "",
+                          color: "from-pink-500 via-purple-500 to-indigo-500",
+                          storyType: "image",
+                          content: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=60",
+                          caption: "Beautiful sunset at the beach! 🌅✨"
+                        },
+                        {
+                          id: "s2",
+                          name: "Alex Mercer",
+                          avatar: "",
+                          color: "from-green-400 to-blue-600",
+                          storyType: "text",
+                          content: "Coding late nights is a different vibe! 💻🚀☕ #buildinpublic",
+                          bgColor: "bg-gradient-to-tr from-indigo-900 via-purple-900 to-pink-800"
+                        },
+                        {
+                          id: "s3",
+                          name: "Sarah Connor",
+                          avatar: "",
+                          color: "from-amber-400 to-red-600",
+                          storyType: "image",
+                          content: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800&auto=format&fit=crop&q=60",
+                          caption: "In love with nature 🌿💚"
+                        }
+                      ];
+                      setFriendsStories(demoStories);
+                      localStorage.setItem(`friends_stories_${authUser?._id}`, JSON.stringify(demoStories));
+                      toast.success("Demo stories loaded! 🌌");
+                    }}
+                    className="text-xs text-primary font-medium hover:underline"
+                  >
+                    Load Demo Stories
+                  </button>
+                )}
+              </div>
+              
+              {friendsStories.length === 0 ? (
+                <div className="py-8 text-center text-xs text-base-content/50 font-medium">
+                  No recent updates. Click \"Load Demo Stories\" to populate mock stories.
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {friendsStories.map((story) => (
+                    <div 
+                      key={story.id} 
+                      onClick={() => setViewingStory(story)}
+                      className="p-3 flex items-center justify-between rounded-2xl hover:bg-base-200 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        {/* Avatar with colorful ring representing dynamic stories */}
+                        <div className="p-0.5 rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500 ring-2 ring-transparent">
+                          <div className="p-0.5 bg-base-100 rounded-full">
+                            <div className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
+                              {getInitials(story.name)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-left">
-                        <h4 className="font-semibold text-sm">{story.name}</h4>
-                        <p className="text-xs text-base-content/60 mt-0.5">
-                          {story.storyType === "text" ? "Shared a text update" : "Shared a photo"} • Tap to view
-                        </p>
+                        <div className="text-left">
+                          <h4 className="font-semibold text-sm">{story.name}</h4>
+                          <p className="text-xs text-base-content/60 mt-0.5">
+                            {story.storyType === "text" ? "Shared a text update" : "Shared a photo"} • Tap to view
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Custom My Stories History List */}
