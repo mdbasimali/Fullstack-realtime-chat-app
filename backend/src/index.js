@@ -30,7 +30,7 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 app.use(cookieParser());
 app.use(cors({
-     origin: ["http://localhost:5173", "https://fullstack-realtime-chat-app-sooty.vercel.app"],
+     origin: ["http://localhost:5173", "http://localhost:5174", "https://fullstack-realtime-chat-app-sooty.vercel.app"],
      credentials: true,
 }));
 
