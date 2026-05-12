@@ -10,7 +10,7 @@ const ICE_SERVERS = {
   ],
 };
 
-const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3"); // Using a clean, reliable ringtone
+const RINGING_SOUND = new Audio("https://www.soundjay.com/phone/phone-ringing-01.mp3"); // Realistic phone ringing sound
 const CALLING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1358/1358-preview.mp3");
 RINGING_SOUND.loop = true;
 CALLING_SOUND.loop = true;
