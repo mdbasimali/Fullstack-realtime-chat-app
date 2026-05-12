@@ -1,4 +1,4 @@
-import { Video, Phone, MoreVertical, ArrowLeft, User } from "lucide-react";
+import { Video, Phone, MoreVertical, ArrowLeft, User, Trash2 } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatstore } from "../store/useChatStore";
 import { useCallStore } from "../store/useCallStore";
@@ -65,13 +65,29 @@ const ChatHeader = () => {
         >
           <Phone size={20} />
         </button>
-        <button 
-          onClick={() => setSelectedUser(null)}
-          className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
-          title="More options"
-        >
-          <MoreVertical size={20} />
-        </button>
+
+        {/* Dropdown Options */}
+        <div className="dropdown dropdown-end">
+          <label tabIndex={0} className="btn btn-ghost btn-circle p-0 size-10 hover:bg-base-200 text-base-content/85 cursor-pointer flex items-center justify-center">
+            <MoreVertical size={20} />
+          </label>
+          <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 w-52 z-30 mt-1">
+            <li>
+              <button 
+                onClick={async () => {
+                  const confirmDelete = window.confirm("Are you sure you want to permanently delete this conversation and all its messages?");
+                  if (confirmDelete) {
+                    await useChatstore.getState().deleteConversation(selectedUser._id);
+                  }
+                }}
+                className="text-error hover:bg-error/10 active:bg-error/20 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
+              >
+                <Trash2 size={16} />
+                Delete Chat
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );

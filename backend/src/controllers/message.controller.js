@@ -126,7 +126,27 @@ export const sendMessage = async(req,res)=>{
 
     res.status(201).json(newMessage)
    }catch(error){
-       console.lod("Error in sedMessages controllers: ",error.message);
+       console.log("Error in sendMessages controllers: ",error.message);
        res.status(500).json({error: "Internal server error"});
    }
+};
+
+export const deleteConversation = async (req, res) => {
+  try {
+    const myId = req.user._id;
+    const otherId = req.params.id;
+
+    // Delete all messages exchanged between these two users
+    await Message.deleteMany({
+      $or: [
+        { senderId: myId, receiverId: otherId },
+        { senderId: otherId, receiverId: myId }
+      ]
+    });
+
+    res.status(200).json({ success: true, message: "Conversation deleted successfully" });
+  } catch (error) {
+    console.log("Error in deleteConversation controller: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };

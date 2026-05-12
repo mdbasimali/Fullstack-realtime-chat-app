@@ -111,5 +111,36 @@ export const useChatstore = create((set,get) => ({
   },
 
 
+  deleteConversation: async (userId) => {
+    try {
+      const authUser = useAuthStore.getState().authUser;
+      if (!authUser) return;
+
+      // Call backend route to delete conversation from database
+      await axiosInstance.delete(`/messages/conversation/${userId}`);
+
+      // Clear local state if we are currently looking at this user's chat window
+      const { selectedUser, activeConversations, getUsers } = get();
+      if (selectedUser && selectedUser._id === userId) {
+        set({ selectedUser: null, messages: [] });
+      }
+
+      // Filter out from activeConversations store state and localStorage
+      const updated = activeConversations.filter(id => id !== userId);
+      const activeKey = `active_conversations_${authUser._id}`;
+      localStorage.setItem(activeKey, JSON.stringify(updated));
+      set({ activeConversations: updated });
+
+      // Refresh sidebar list
+      getUsers();
+
+      toast.success("Conversation deleted successfully");
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      toast.error("Failed to delete conversation");
+    }
+  },
+
+
   setSelectedUser: (selectedUser) => set({ selectedUser }),
 }));

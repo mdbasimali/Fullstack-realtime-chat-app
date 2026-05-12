@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, activeConversations, setActiveConversations, initializeActiveConversations } = useChatstore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
   const { initiateCall } = useCallStore();
 
@@ -106,16 +106,13 @@ const Sidebar = () => {
     toast.success("Notification profile: Standard 🔔");
   };
 
-  // Remove a conversation from the active chats list
-  const deleteConversation = (e, userId) => {
+  // Remove and permanently delete a conversation from database and sidebar
+  const deleteConversation = async (e, userId) => {
     e.stopPropagation();
-    const updated = activeConversations.filter(id => id !== userId);
-    setActiveConversations(updated);
-    localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
-    if (selectedUser?._id === userId) {
-      setSelectedUser(null);
-    }
-    toast.success("Chat archived");
+    const confirmDelete = window.confirm("Are you sure you want to permanently delete this conversation and all its messages?");
+    if (!confirmDelete) return;
+
+    await deleteStoreConversation(userId);
   };
 
   // Filter users for contact list drawer
