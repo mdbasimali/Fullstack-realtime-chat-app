@@ -18,6 +18,7 @@ const CallModal = () => {
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -28,6 +29,9 @@ const CallModal = () => {
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
+    }
+    if (remoteAudioRef.current && remoteStream) {
+      remoteAudioRef.current.srcObject = remoteStream;
     }
   }, [remoteStream, isInCall]);
 
@@ -144,6 +148,8 @@ const CallModal = () => {
                         <img src={remoteUser?.profilePic || "/avatar.png"} className="w-full h-full object-cover" />
                     </div>
                  </div>
+                 {/* Hidden audio element to play remote stream */}
+                 <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
             </div>
         )}
 
