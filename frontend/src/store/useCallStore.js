@@ -10,8 +10,8 @@ const ICE_SERVERS = {
   ],
 };
 
-const RINGING_SOUND = new Audio("https://www.soundjay.com/phone/phone-ringing-01.mp3"); // What the receiver hears
-const CALLING_SOUND = new Audio("https://www.soundjay.com/phone/phone-calling-1.mp3"); // What the caller hears (dial tone)
+const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3?v=2"); // Classic incoming telephone ring
+const CALLING_SOUND = new Audio("https://www.soundjay.com/phone/phone-calling-1.mp3?v=2"); // Standard dial tone
 RINGING_SOUND.loop = true;
 CALLING_SOUND.loop = true;
 
