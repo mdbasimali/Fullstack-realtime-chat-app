@@ -14,6 +14,10 @@ const CallModal = () => {
     rejectCall,
     endCall,
     callStatus,
+    isMuted,
+    isVideoOff,
+    toggleMic,
+    toggleVideo,
   } = useCallStore();
 
   const localVideoRef = useRef(null);
@@ -155,12 +159,18 @@ const CallModal = () => {
 
         {/* Bottom Controls Bar */}
         <div className="mt-auto z-50 flex items-center gap-4 md:gap-10 px-8 py-6 bg-[#202c33]/90 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl animate-in slide-in-from-bottom-10 duration-700">
-           <button className="btn btn-circle btn-ghost text-white/70 hover:text-white hover:bg-white/10">
-                <MicOff size={24} />
+           <button 
+            onClick={toggleMic}
+            className={`btn btn-circle ${isMuted ? 'btn-error' : 'btn-ghost text-white/70'} hover:text-white hover:bg-white/10 transition-all`}
+           >
+                {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
            </button>
            
-           <button className="btn btn-circle btn-ghost text-white/70 hover:text-white hover:bg-white/10">
-                <VideoOff size={24} />
+           <button 
+            onClick={toggleVideo}
+            className={`btn btn-circle ${isVideoOff ? 'btn-error' : 'btn-ghost text-white/70'} hover:text-white hover:bg-white/10 transition-all`}
+           >
+                {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
            </button>
 
            <button

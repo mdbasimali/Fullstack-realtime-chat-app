@@ -45,6 +45,28 @@ export const useCallStore = create((set, get) => ({
   remoteStream: null,
   pc: null,
   callStatus: "idle", // 'idle', 'calling', 'ringing', 'ongoing'
+  isMuted: false,
+  isVideoOff: false,
+
+  toggleMic: () => {
+    const { localStream, isMuted } = get();
+    if (localStream) {
+      localStream.getAudioTracks().forEach((track) => {
+        track.enabled = isMuted;
+      });
+      set({ isMuted: !isMuted });
+    }
+  },
+
+  toggleVideo: () => {
+    const { localStream, isVideoOff } = get();
+    if (localStream) {
+      localStream.getVideoTracks().forEach((track) => {
+        track.enabled = isVideoOff;
+      });
+      set({ isVideoOff: !isVideoOff });
+    }
+  },
 
   initiateCall: async (receiver, type) => {
     const socket = useAuthStore.getState().socket;
@@ -224,6 +246,8 @@ export const useCallStore = create((set, get) => ({
       pc: null,
       callStatus: "idle",
       pendingOffer: null,
+      isMuted: false,
+      isVideoOff: false,
     });
   },
 
