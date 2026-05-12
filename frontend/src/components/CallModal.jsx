@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useCallStore } from "../store/useCallStore";
 import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, X, Maximize2, Minimize2 } from "lucide-react";
 
@@ -23,6 +23,25 @@ const CallModal = () => {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const remoteAudioRef = useRef(null);
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    let interval;
+    if (callStatus === "ongoing") {
+      interval = setInterval(() => {
+        setDuration((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setDuration(0);
+    }
+    return () => clearInterval(interval);
+  }, [callStatus]);
+
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -104,7 +123,7 @@ const CallModal = () => {
             <h2 className="text-3xl font-semibold mb-1">{remoteUser?.fullName}</h2>
             <div className="flex items-center justify-center gap-2">
                 <span className="text-primary text-sm font-bold tracking-widest uppercase animate-pulse">
-                    {callStatus}
+                    {callStatus === "ongoing" ? formatDuration(duration) : callStatus}
                 </span>
             </div>
         </div>
