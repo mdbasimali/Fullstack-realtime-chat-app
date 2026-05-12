@@ -7,7 +7,7 @@ import {
   Search, MoreVertical, Camera, Pencil, Users, Mail, X, 
   MessageSquare, Phone, Plus, Check, User, Settings, 
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
-  Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus
+  Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -74,6 +74,14 @@ const Sidebar = () => {
     const saved = localStorage.getItem(`call_logs_${authUser._id}`);
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Recently Unfriended History State
+  const [recentlyUnfriended, setRecentlyUnfriended] = useState(() => {
+    if (!authUser?._id) return [];
+    const saved = localStorage.getItem(`recently_unfriended_${authUser._id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showRecentlyUnfriendedModal, setShowRecentlyUnfriendedModal] = useState(false);
 
   useEffect(() => {
     getUsers();
@@ -328,6 +336,16 @@ const Sidebar = () => {
               <Search size={21} />
             </button>
           </div>
+          
+          {activeTab === "friends" && (
+            <button 
+              onClick={() => setShowRecentlyUnfriendedModal(true)}
+              className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors animate-fade-in"
+              title="Recently Unfriended"
+            >
+              <UserX size={21} />
+            </button>
+          )}
           
           <div className="relative">
             <button 
@@ -1066,9 +1084,18 @@ const Sidebar = () => {
 
                           {/* Delete/Remove Friend Button */}
                           <button 
-                            onClick={() => {
+                            onClick={async () => {
                               if (window.confirm(`Are you sure you want to remove ${user.fullName} from your friends?`)) {
-                                removeContact(user._id);
+                                const success = await removeContact(user._id);
+                                if (success) {
+                                  const record = {
+                                    user: user,
+                                    removedAt: new Date().toISOString()
+                                  };
+                                  const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== user._id)].slice(0, 20);
+                                  setRecentlyUnfriended(updated);
+                                  localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
+                                }
                               }
                             }}
                             className="w-9 h-9 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 flex items-center justify-center transition-all"
@@ -1280,6 +1307,102 @@ const Sidebar = () => {
             stories={viewingStory.stories}
             onClose={() => setViewingStory(null)}
         />
+      )}
+
+      {/* 7. Recently Unfriended History Overlay Modal */}
+      {showRecentlyUnfriendedModal && (
+        <div className="absolute inset-0 bg-base-100 z-50 flex flex-col animate-slide-up">
+          <header className="p-4 border-b border-base-300 flex items-center gap-4 bg-base-100">
+            <button 
+              onClick={() => setShowRecentlyUnfriendedModal(false)}
+              className="p-1.5 rounded-full hover:bg-base-200 text-base-content/80 transition-colors animate-fade-in"
+            >
+              <ArrowLeft size={21} />
+            </button>
+            <div className="text-left">
+              <h2 className="text-lg font-bold">Recently Unfriended</h2>
+              <p className="text-xs text-base-content/50">Colleagues you've recently removed</p>
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            {recentlyUnfriended.length === 0 ? (
+              <div className="text-center py-20 px-4 space-y-3">
+                <div className="w-16 h-16 rounded-full bg-base-200 flex items-center justify-center mx-auto text-base-content/40">
+                  <UserX size={28} />
+                </div>
+                <h3 className="font-semibold text-base-content text-sm">History is clear</h3>
+                <p className="text-xs text-base-content/50 max-w-[200px] mx-auto">You haven't removed any colleagues recently.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 animate-fade-in">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">History Log</span>
+                  <button 
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to clear your unfriend history?")) {
+                        setRecentlyUnfriended([]);
+                        localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify([]));
+                      }
+                    }}
+                    className="text-xs font-semibold text-rose-500 hover:underline"
+                  >
+                    Clear all
+                  </button>
+                </div>
+
+                <div className="space-y-2.5">
+                  {recentlyUnfriended.map((record) => (
+                    <div 
+                      key={record.user._id}
+                      className="p-3.5 flex items-center justify-between rounded-2xl bg-base-200/45 border border-base-300/10 hover:border-base-300/35 hover:bg-base-200 transition-all duration-200 shadow-sm"
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        {/* Avatar */}
+                        <div className="relative flex-shrink-0">
+                          {record.user.profilePic ? (
+                            <img
+                              src={record.user.profilePic}
+                              alt={record.user.fullName}
+                              className="w-11 h-11 object-cover rounded-full border border-base-300"
+                            />
+                          ) : (
+                            <div className="w-11 h-11 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
+                              {getInitials(record.user.fullName)}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="text-left min-w-0">
+                          <h4 className="font-bold text-sm text-base-content truncate">{record.user.fullName}</h4>
+                          <p className="text-[10px] text-base-content/40 truncate mt-0.5">
+                            Removed {new Date(record.removedAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Add Back / Re-friend Button */}
+                      <button 
+                        onClick={async () => {
+                          const success = await addContact(record.user.email || record.user.username);
+                          if (success) {
+                            const updated = recentlyUnfriended.filter(r => r.user._id !== record.user._id);
+                            setRecentlyUnfriended(updated);
+                            localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
+                          }
+                        }}
+                        className="btn btn-xs btn-primary rounded-lg px-2.5 py-1 font-semibold h-auto min-h-0 normal-case"
+                        title="Add friend back"
+                      >
+                        Add Back
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
     </div>
