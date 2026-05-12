@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact } = useChatstore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, activeConversations, setActiveConversations, initializeActiveConversations } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
   const { initiateCall } = useCallStore();
 
@@ -26,11 +26,7 @@ const Sidebar = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Track active conversations in localStorage so they persist across sessions
-  const [activeConversations, setActiveConversations] = useState(() => {
-    const saved = localStorage.getItem(`active_conversations_${authUser?._id}`);
-    return saved ? JSON.parse(saved) : [];
-  });
+
 
   // Stories State
   const [myStories, setMyStories] = useState(() => {
@@ -55,7 +51,10 @@ const Sidebar = () => {
 
   useEffect(() => {
     getUsers();
-  }, [getUsers]);
+    if (authUser?._id) {
+      initializeActiveConversations(authUser._id);
+    }
+  }, [getUsers, authUser?._id, initializeActiveConversations]);
 
   // Keep track of active conversation if user selects someone
   useEffect(() => {

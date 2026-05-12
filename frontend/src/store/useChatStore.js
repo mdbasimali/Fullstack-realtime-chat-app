@@ -12,6 +12,14 @@ export const useChatstore = create((set,get) => ({
   activeTab: "chats",
   setActiveTab: (activeTab) => set({ activeTab }),
 
+  activeConversations: [],
+  setActiveConversations: (activeConversations) => set({ activeConversations }),
+  initializeActiveConversations: (userId) => {
+    if (!userId) return;
+    const saved = localStorage.getItem(`active_conversations_${userId}`);
+    set({ activeConversations: saved ? JSON.parse(saved) : [] });
+  },
+
   getUsers: async () => {
     set({ isUsersLoading: true });
     try {
@@ -78,10 +86,11 @@ export const useChatstore = create((set,get) => ({
 
       // Automatically register the sender as an active conversation
       const activeKey = `active_conversations_${authUser._id}`;
-      const currentActive = JSON.parse(localStorage.getItem(activeKey) || "[]");
-      if (!currentActive.includes(newMessage.senderId)) {
-        const updated = [...currentActive, newMessage.senderId];
+      const { activeConversations, getUsers } = get();
+      if (!activeConversations.includes(newMessage.senderId)) {
+        const updated = [...activeConversations, newMessage.senderId];
         localStorage.setItem(activeKey, JSON.stringify(updated));
+        set({ activeConversations: updated });
         getUsers();
       } else {
         getUsers();
