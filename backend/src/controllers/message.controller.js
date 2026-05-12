@@ -106,6 +106,32 @@ export const addContact = async (req, res) => {
   }
 };
 
+export const removeContact = async (req, res) => {
+  try {
+    const { contactId } = req.body;
+    const loggedInUserId = req.user._id;
+
+    if (!contactId) {
+      return res.status(400).json({ message: "Contact ID is required" });
+    }
+
+    const loggedInUser = await User.findById(loggedInUserId);
+    if (!loggedInUser || !loggedInUser.contacts) {
+      return res.status(404).json({ message: "User or contacts not found" });
+    }
+
+    loggedInUser.contacts = loggedInUser.contacts.filter(
+      (id) => id.toString() !== contactId.toString()
+    );
+    await loggedInUser.save();
+
+    res.status(200).json({ message: "Contact removed successfully" });
+  } catch (error) {
+    console.error("Error in removeContact: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 export const getMessages = async(req,res) =>{
     try{
       const { id:userToChatId }=req.params

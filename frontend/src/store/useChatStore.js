@@ -43,6 +43,18 @@ export const useChatstore = create((set,get) => ({
       return false;
     }
   },
+
+  removeContact: async (contactId) => {
+    try {
+      const res = await axiosInstance.post("/messages/remove-contact", { contactId });
+      toast.success(res.data.message || "Contact removed!");
+      get().getUsers();
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to remove contact");
+      return false;
+    }
+  },
   
   getMessages: async (userId) => {
     set({ isMessagesLoading: true });

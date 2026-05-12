@@ -7,7 +7,7 @@ import {
   Search, MoreVertical, Camera, Pencil, Users, Mail, X, 
   MessageSquare, Phone, Plus, Check, User, Settings, 
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
-  Pin, VolumeX, CheckCircle, FolderPlus, Archive
+  Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -41,7 +41,7 @@ const formatLastMessageTime = (dateString) => {
 };
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation } = useChatstore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
   const { initiateCall } = useCallStore();
 
@@ -1044,9 +1044,38 @@ const Sidebar = () => {
                           </div>
                         </div>
 
-                        {/* Quick Message / Chat Button */}
-                        <div className="w-9 h-9 rounded-full bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all">
-                          <MessageSquare size={16} className="fill-primary/20" />
+                        {/* Quick Actions */}
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          {/* Quick Message / Chat Button */}
+                          <button 
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setActiveTab("chats");
+                              // Add to active chat list in localStorage if not already present
+                              if (!activeConversations.includes(user._id)) {
+                                const updated = [...activeConversations, user._id];
+                                setActiveConversations(updated);
+                                localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
+                              }
+                            }}
+                            className="w-9 h-9 rounded-full bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all"
+                            title="Chat with friend"
+                          >
+                            <MessageSquare size={16} className="fill-primary/20" />
+                          </button>
+
+                          {/* Delete/Remove Friend Button */}
+                          <button 
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to remove ${user.fullName} from your friends?`)) {
+                                removeContact(user._id);
+                              }
+                            }}
+                            className="w-9 h-9 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 flex items-center justify-center transition-all"
+                            title="Remove friend"
+                          >
+                            <UserMinus size={16} />
+                          </button>
                         </div>
                       </div>
                     );
