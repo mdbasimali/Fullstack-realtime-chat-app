@@ -10,8 +10,8 @@ const ICE_SERVERS = {
   ],
 };
 
-const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3");
-const CALLING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3");
+const RINGING_SOUND = new Audio("https://raw.githubusercontent.com/shubham-kumar-2000/Whatsapp-Clone-React-Native/master/src/assets/sounds/whatsapp_ringtone.mp3");
+const CALLING_SOUND = new Audio("https://www.soundjay.com/phone/phone-calling-1.mp3");
 RINGING_SOUND.loop = true;
 CALLING_SOUND.loop = true;
 
