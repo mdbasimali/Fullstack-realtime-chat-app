@@ -725,6 +725,35 @@ const Sidebar = () => {
                     <Trash2 size={18} />
                     <span>Delete</span>
                   </button>
+
+                  {/* 8. Unfriend */}
+                  <button 
+                    onClick={async () => {
+                      const targetUser = users.find(u => u._id === activeMenuUserId);
+                      setActiveMenuUserId(null);
+                      if (!targetUser) {
+                        toast.error("User details not found");
+                        return;
+                      }
+
+                      if (window.confirm(`Are you sure you want to remove ${targetUser.fullName} from your friends?`)) {
+                        const success = await removeContact(targetUser._id);
+                        if (success) {
+                          const record = {
+                            user: targetUser,
+                            removedAt: new Date().toISOString()
+                          };
+                          const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== targetUser._id)].slice(0, 20);
+                          setRecentlyUnfriended(updated);
+                          localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
+                        }
+                      }
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-500 rounded-xl text-left text-sm font-bold transition-colors"
+                  >
+                    <UserMinus size={18} className="text-rose-500" />
+                    <span>Unfriend</span>
+                  </button>
                 </div>
               </div>
             )}
