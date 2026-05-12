@@ -604,7 +604,7 @@ const Sidebar = () => {
           <div className="space-y-4 animate-fade-in">
             <div className="flex justify-between items-center px-1">
               <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Recent Calls</span>
-              {callLogs.length > 0 ? (
+              {callLogs.length > 0 && (
                 <button 
                   onClick={() => {
                     setCallLogs([]);
@@ -615,29 +615,13 @@ const Sidebar = () => {
                 >
                   Clear All
                 </button>
-              ) : (
-                <button 
-                  onClick={() => {
-                    const demoLogs = [
-                      { id: "1", name: users[0]?.fullName || "Sarah Connor", type: "video", time: "2 hours ago", status: "missed" },
-                      { id: "2", name: users[1]?.fullName || "Alex Mercer", type: "audio", time: "Yesterday, 4:32 PM", status: "outgoing" },
-                      { id: "3", name: users[2]?.fullName || "Jane Smith", type: "video", time: "May 11, 10:14 AM", status: "incoming" }
-                    ];
-                    setCallLogs(demoLogs);
-                    localStorage.setItem(`call_logs_${authUser?._id}`, JSON.stringify(demoLogs));
-                    toast.success("Demo call logs loaded! 📞");
-                  }}
-                  className="text-xs text-primary font-medium hover:underline"
-                >
-                  Load Demo Logs
-                </button>
               )}
             </div>
 
             {/* List Call History */}
             {callLogs.length === 0 ? (
               <div className="py-8 text-center text-xs text-base-content/50 font-medium">
-                No recent calls. Click "Load Demo Logs" to populate mock calls for testing.
+                No recent calls. Call history will appear here once you make or receive calls.
               </div>
             ) : (
               <div className="space-y-1">
