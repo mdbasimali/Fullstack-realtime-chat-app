@@ -28,7 +28,7 @@ const CallModal = () => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
-  }, [localStream, isInCall]);
+  }, [localStream, isInCall, callType, callStatus]);
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
@@ -37,7 +37,7 @@ const CallModal = () => {
     if (remoteAudioRef.current && remoteStream) {
       remoteAudioRef.current.srcObject = remoteStream;
     }
-  }, [remoteStream, isInCall]);
+  }, [remoteStream, isInCall, callType, callStatus]);
 
   if (!isInCall && !isIncomingCall) return null;
 
