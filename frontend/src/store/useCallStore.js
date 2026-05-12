@@ -10,19 +10,31 @@ const ICE_SERVERS = {
   ],
 };
 
-const RINGING_SOUND = new Audio("https://raw.githubusercontent.com/shubham-kumar-2000/Whatsapp-Clone-React-Native/master/src/assets/sounds/whatsapp_ringtone.mp3");
-const CALLING_SOUND = new Audio("https://www.soundjay.com/phone/phone-calling-1.mp3");
+const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3"); // Using a clean, reliable ringtone
+const CALLING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1358/1358-preview.mp3");
 RINGING_SOUND.loop = true;
 CALLING_SOUND.loop = true;
 
 const playSound = (type) => {
     try {
+        stopAllSounds(); // Stop any existing sound before playing new one
         if (type === "ringing") {
             RINGING_SOUND.currentTime = 0;
-            RINGING_SOUND.play().catch(e => console.log("Audio play failed:", e));
+            const playPromise = RINGING_SOUND.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Autoplay blocked. Sound will play on next interaction.", error);
+                    // Fallback: Play on next click if blocked
+                    const playOnInteraction = () => {
+                        RINGING_SOUND.play();
+                        window.removeEventListener('click', playOnInteraction);
+                    };
+                    window.addEventListener('click', playOnInteraction);
+                });
+            }
         } else if (type === "calling") {
             CALLING_SOUND.currentTime = 0;
-            CALLING_SOUND.play().catch(e => console.log("Audio play failed:", e));
+            CALLING_SOUND.play().catch(e => console.log("Calling sound blocked:", e));
         }
     } catch (error) {
         console.error("Error playing sound:", error);
