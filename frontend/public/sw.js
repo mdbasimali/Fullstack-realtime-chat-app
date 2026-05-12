@@ -34,12 +34,16 @@ self.addEventListener("notificationclick", function (event) {
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then(function (clientList) {
-        // If a window is already open, focus it and navigate
+        // If a window is already open, focus it
         for (let i = 0; i < clientList.length; i++) {
           let client = clientList[i];
-          if (client.url.includes("/") && "focus" in client) {
+          if ("focus" in client) {
             client.focus();
-            return client.navigate("/?call=true&from=" + data.from + "&type=" + data.callType);
+            // Only navigate if we're not already on a page that can handle the call
+            if (!client.url.includes("call=true")) {
+                return client.navigate("/?call=true&from=" + data.from + "&type=" + data.callType);
+            }
+            return;
           }
         }
         // If no window is open, open a new one

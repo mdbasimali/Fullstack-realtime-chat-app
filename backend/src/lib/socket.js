@@ -97,16 +97,17 @@ io.on("connection", (socket) =>{
         ]
     });
 
+    // Always store call as pending for re-sync (in case user reloads or clicks notification)
+    pendingCalls.set(to, { from: userId, offer, type, timestamp: Date.now() });
+
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("call:incoming", { from: userId, offer, type });
-    } else {
-      // Store call as pending if user is offline
-      pendingCalls.set(to, { from: userId, offer, type, timestamp: Date.now() });
     }
   });
 
   // Callee sends answer back to caller
   socket.on("call:accepted", ({ to, answer }) => {
+    pendingCalls.delete(userId); // Clear pending call for callee
     const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("call:accepted", { from: userId, answer });
@@ -115,6 +116,7 @@ io.on("connection", (socket) =>{
 
   // Callee rejects the call
   socket.on("call:rejected", ({ to }) => {
+    pendingCalls.delete(userId); // Clear pending call for callee
     const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("call:rejected", { from: userId });
