@@ -10,6 +10,32 @@ const ICE_SERVERS = {
   ],
 };
 
+const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3");
+const CALLING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3");
+RINGING_SOUND.loop = true;
+CALLING_SOUND.loop = true;
+
+const playSound = (type) => {
+    try {
+        if (type === "ringing") {
+            RINGING_SOUND.currentTime = 0;
+            RINGING_SOUND.play().catch(e => console.log("Audio play failed:", e));
+        } else if (type === "calling") {
+            CALLING_SOUND.currentTime = 0;
+            CALLING_SOUND.play().catch(e => console.log("Audio play failed:", e));
+        }
+    } catch (error) {
+        console.error("Error playing sound:", error);
+    }
+};
+
+const stopAllSounds = () => {
+    RINGING_SOUND.pause();
+    RINGING_SOUND.currentTime = 0;
+    CALLING_SOUND.pause();
+    CALLING_SOUND.currentTime = 0;
+};
+
 export const useCallStore = create((set, get) => ({
   isInCall: false,
   isIncomingCall: false,
@@ -48,6 +74,8 @@ export const useCallStore = create((set, get) => ({
 
       socket.emit("call:user", { to: receiver._id, offer, type });
 
+      playSound("calling");
+
       set({
         isInCall: true,
         callType: type,
@@ -67,6 +95,8 @@ export const useCallStore = create((set, get) => ({
     const { useChatstore } = await import("./useChatStore");
     const users = useChatstore.getState().users;
     const sender = users.find(u => u._id === from);
+
+    playSound("ringing");
 
     set({
       isIncomingCall: true,
@@ -107,6 +137,8 @@ export const useCallStore = create((set, get) => ({
 
       socket.emit("call:accepted", { to: remoteUser._id, answer });
 
+      stopAllSounds();
+
       set({
         isInCall: true,
         isIncomingCall: false,
@@ -123,6 +155,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   rejectCall: () => {
+    stopAllSounds();
     const { remoteUser } = get();
     const socket = useAuthStore.getState().socket;
     if (socket && remoteUser) {
@@ -132,6 +165,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   handleCallAccepted: async ({ answer }) => {
+    stopAllSounds();
     const { pc } = get();
     if (pc) {
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
@@ -151,6 +185,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   endCall: () => {
+    stopAllSounds();
     const { remoteUser, pc, localStream } = get();
     const socket = useAuthStore.getState().socket;
     if (socket && remoteUser) {
@@ -164,6 +199,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   handleCallEnded: () => {
+    stopAllSounds();
     const { pc, localStream } = get();
     if (pc) pc.close();
     if (localStream) localStream.getTracks().forEach((track) => track.stop());
@@ -172,6 +208,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   handleCallRejected: () => {
+    stopAllSounds();
     toast.error("Call rejected");
     get().endCall();
   },
