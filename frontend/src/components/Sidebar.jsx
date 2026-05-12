@@ -318,7 +318,7 @@ const Sidebar = () => {
                 {/* "Get started" Quick Action Cards - Anchored to the bottom */}
                 <div className="w-full text-left mt-auto animate-fade-in">
                   <h3 className="text-sm font-semibold text-base-content/80 mb-3 px-1">Get started</h3>
-                  <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+                  <div className="flex gap-4 overflow-x-auto custom-scrollbar pb-2 snap-x snap-mandatory">
                     
                     {/* New Group Card - Pastel Orange */}
                     {!dismissedCards.includes("group") && (
