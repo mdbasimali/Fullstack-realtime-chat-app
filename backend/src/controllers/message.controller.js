@@ -16,9 +16,11 @@ export const getUsersForSidebar = async(req,res)=>{
 
        const loggedInUser = await User.findById(loggedInUserId);
        const contactIds = loggedInUser.contacts || [];
+       const blockedIds = loggedInUser.blockedUsers || [];
 
        // Merge contacts and interacted user IDs
-       const allTargetUserIds = [...new Set([...contactIds.map(id => id.toString()), ...interactedUserIds.map(id => id.toString())])];
+       const allTargetUserIds = [...new Set([...contactIds.map(id => id.toString()), ...interactedUserIds.map(id => id.toString())])]
+         .filter(id => !blockedIds.map(bid => bid.toString()).includes(id));
 
        const filteredUsers = await User.find({
          _id: { $in: allTargetUserIds, $ne: loggedInUserId }
@@ -128,6 +130,43 @@ export const removeContact = async (req, res) => {
     res.status(200).json({ message: "Contact removed successfully" });
   } catch (error) {
     console.error("Error in removeContact: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const blockContact = async (req, res) => {
+  try {
+    const { contactId } = req.body;
+    const loggedInUserId = req.user._id;
+
+    if (!contactId) {
+      return res.status(400).json({ message: "Contact ID is required" });
+    }
+
+    const loggedInUser = await User.findById(loggedInUserId);
+    if (!loggedInUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!loggedInUser.blockedUsers) {
+      loggedInUser.blockedUsers = [];
+    }
+
+    if (!loggedInUser.blockedUsers.includes(contactId)) {
+      loggedInUser.blockedUsers.push(contactId);
+    }
+
+    if (loggedInUser.contacts) {
+      loggedInUser.contacts = loggedInUser.contacts.filter(
+        (id) => id.toString() !== contactId.toString()
+      );
+    }
+
+    await loggedInUser.save();
+
+    res.status(200).json({ message: "Contact blocked successfully" });
+  } catch (error) {
+    console.error("Error in blockContact: ", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };

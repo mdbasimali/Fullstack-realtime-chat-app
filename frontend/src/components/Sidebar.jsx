@@ -7,7 +7,7 @@ import {
   Search, MoreVertical, Camera, Pencil, Users, Mail, X, 
   MessageSquare, Phone, Plus, Check, User, Settings, 
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
-  Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX
+  Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -41,7 +41,7 @@ const formatLastMessageTime = (dateString) => {
 };
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation } = useChatstore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
   const { initiateCall } = useCallStore();
 
@@ -83,11 +83,43 @@ const Sidebar = () => {
   });
   const [showRecentlyUnfriendedModal, setShowRecentlyUnfriendedModal] = useState(false);
 
-  // Friend Card Long-press and Context Menu State and Event Triggers
-  const [activeFriendMenuId, setActiveFriendMenuId] = useState(null);
+  // Long press / Context Menu states for Friends Tab
+  const [activeMenuFriendId, setActiveMenuFriendId] = useState(null);
+  const [activeMenuFriendUser, setActiveMenuFriendUser] = useState(null);
   const [friendMenuPosition, setFriendMenuPosition] = useState({ x: 0, y: 0 });
-  const [longPressedFriend, setLongPressedFriend] = useState(null);
   const friendLongPressTimer = useRef(null);
+
+  const startFriendLongPress = (e, targetUser) => {
+    if (friendLongPressTimer.current) clearTimeout(friendLongPressTimer.current);
+
+    let clientX = 0;
+    let clientY = 0;
+    if (e.touches && e.touches[0]) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    friendLongPressTimer.current = setTimeout(() => {
+      e.preventDefault();
+      setFriendMenuPosition({ x: clientX, y: clientY });
+      setActiveMenuFriendId(targetUser._id);
+      setActiveMenuFriendUser(targetUser);
+    }, 500);
+  };
+
+  const endFriendLongPress = () => {
+    if (friendLongPressTimer.current) clearTimeout(friendLongPressTimer.current);
+  };
+
+  const handleFriendContextMenu = (e, targetUser) => {
+    e.preventDefault();
+    setFriendMenuPosition({ x: e.clientX, y: e.clientY });
+    setActiveMenuFriendId(targetUser._id);
+    setActiveMenuFriendUser(targetUser);
+  };
 
   useEffect(() => {
     getUsers();
@@ -194,38 +226,6 @@ const Sidebar = () => {
     e.preventDefault();
     setMenuPosition({ x: e.clientX, y: e.clientY });
     setActiveMenuUserId(userId);
-  };
-
-  const startFriendLongPress = (e, user) => {
-    if (friendLongPressTimer.current) clearTimeout(friendLongPressTimer.current);
-
-    let clientX = 0;
-    let clientY = 0;
-    if (e.touches && e.touches[0]) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-
-    friendLongPressTimer.current = setTimeout(() => {
-      e.preventDefault();
-      setFriendMenuPosition({ x: clientX, y: clientY });
-      setActiveFriendMenuId(user._id);
-      setLongPressedFriend(user);
-    }, 600); // 600ms long-press
-  };
-
-  const endFriendLongPress = () => {
-    if (friendLongPressTimer.current) clearTimeout(friendLongPressTimer.current);
-  };
-
-  const handleFriendContextMenu = (e, user) => {
-    e.preventDefault();
-    setFriendMenuPosition({ x: e.clientX, y: e.clientY });
-    setActiveFriendMenuId(user._id);
-    setLongPressedFriend(user);
   };
 
   // Remove and permanently delete a conversation from database and sidebar
@@ -725,35 +725,6 @@ const Sidebar = () => {
                     <Trash2 size={18} />
                     <span>Delete</span>
                   </button>
-
-                  {/* 8. Unfriend */}
-                  <button 
-                    onClick={async () => {
-                      const targetUser = users.find(u => u._id === activeMenuUserId);
-                      setActiveMenuUserId(null);
-                      if (!targetUser) {
-                        toast.error("User details not found");
-                        return;
-                      }
-
-                      if (window.confirm(`Are you sure you want to remove ${targetUser.fullName} from your friends?`)) {
-                        const success = await removeContact(targetUser._id);
-                        if (success) {
-                          const record = {
-                            user: targetUser,
-                            removedAt: new Date().toISOString()
-                          };
-                          const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== targetUser._id)].slice(0, 20);
-                          setRecentlyUnfriended(updated);
-                          localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
-                        }
-                      }
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-500 rounded-xl text-left text-sm font-bold transition-colors"
-                  >
-                    <UserMinus size={18} className="text-rose-500" />
-                    <span>Unfriend</span>
-                  </button>
                 </div>
               </div>
             )}
@@ -1037,11 +1008,9 @@ const Sidebar = () => {
           </div>
         )}
 
+        {/* ==================== TABS: FRIENDS ==================== */}
         {activeTab === "friends" && (
-          <div 
-            onClick={() => setActiveFriendMenuId(null)}
-            className="space-y-4 animate-fade-in pb-12"
-          >
+          <div className="space-y-4 animate-fade-in pb-12">
             {/* Header / Add Friend area */}
             <div className="p-1.5 bg-base-200/50 rounded-2xl border border-base-300/30 space-y-3">
               <div className="flex gap-2 items-center px-1">
@@ -1095,7 +1064,7 @@ const Sidebar = () => {
                       <div 
                         key={user._id}
                         onClick={() => {
-                          if (activeFriendMenuId) return;
+                          if (activeMenuFriendId) return;
                           setSelectedUser(user);
                           setActiveTab("chats");
                           // Add to active chat list in localStorage if not already present
@@ -1157,34 +1126,95 @@ const Sidebar = () => {
                             <MessageSquare size={16} className="fill-primary/20" />
                           </button>
 
-                          {/* Show unfriend button ONLY when long-pressed (activeFriendMenuId === user._id) */}
-                          {activeFriendMenuId === user._id && (
-                            <button 
-                              onClick={async () => {
-                                if (window.confirm(`Are you sure you want to remove ${user.fullName} from your friends?`)) {
-                                  const success = await removeContact(user._id);
-                                  if (success) {
-                                    const record = {
-                                      user: user,
-                                      removedAt: new Date().toISOString()
-                                    };
-                                    const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== user._id)].slice(0, 20);
-                                    setRecentlyUnfriended(updated);
-                                    localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
-                                    setActiveFriendMenuId(null);
-                                  }
+                          {/* Delete/Remove Friend Button */}
+                          <button 
+                            onClick={async () => {
+                              if (window.confirm(`Are you sure you want to remove ${user.fullName} from your friends?`)) {
+                                const success = await removeContact(user._id);
+                                if (success) {
+                                  const record = {
+                                    user: user,
+                                    removedAt: new Date().toISOString()
+                                  };
+                                  const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== user._id)].slice(0, 20);
+                                  setRecentlyUnfriended(updated);
+                                  localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
                                 }
-                              }}
-                              className="w-9 h-9 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 flex items-center justify-center transition-all animate-fade-in"
-                              title="Remove friend"
-                            >
-                              <UserMinus size={16} />
-                            </button>
-                          )}
+                              }
+                            }}
+                            className="w-9 h-9 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 flex items-center justify-center transition-all"
+                            title="Remove friend"
+                          >
+                            <UserMinus size={16} />
+                          </button>
                         </div>
                       </div>
                     );
                   })}
+              </div>
+            )}
+
+            {/* Custom Tap-and-Hold / Long-press Friends Options Menu Popover Overlay */}
+            {activeMenuFriendId && activeMenuFriendUser && (
+              <div 
+                className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[1px]" 
+                onClick={() => { setActiveMenuFriendId(null); setActiveMenuFriendUser(null); }}
+                onContextMenu={(e) => { e.preventDefault(); setActiveMenuFriendId(null); setActiveMenuFriendUser(null); }}
+              >
+                <div 
+                  style={{ 
+                    top: Math.min(friendMenuPosition.y, window.innerHeight - 180), 
+                    left: Math.min(friendMenuPosition.x, window.innerWidth - 240) 
+                  }}
+                  className="absolute bg-base-100 border border-base-300 shadow-2xl rounded-[24px] p-2 w-56 flex flex-col space-y-0.5 z-50 animate-fade-in"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="px-4 py-2 text-left border-b border-base-300/40 mb-1">
+                    <span className="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Friend Options</span>
+                    <h5 className="font-bold text-xs text-base-content truncate mt-0.5">{activeMenuFriendUser.fullName}</h5>
+                  </div>
+
+                  {/* 1. Unfriend */}
+                  <button 
+                    onClick={async () => {
+                      const user = activeMenuFriendUser;
+                      if (window.confirm(`Are you sure you want to remove ${user.fullName} from your friends?`)) {
+                        const success = await removeContact(user._id);
+                        if (success) {
+                          const record = {
+                            user: user,
+                            removedAt: new Date().toISOString()
+                          };
+                          const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== user._id)].slice(0, 20);
+                          setRecentlyUnfriended(updated);
+                          localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
+                        }
+                      }
+                      setActiveMenuFriendId(null);
+                      setActiveMenuFriendUser(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
+                  >
+                    <UserMinus size={18} className="text-rose-500" />
+                    <span>Unfriend</span>
+                  </button>
+
+                  {/* 2. Block */}
+                  <button 
+                    onClick={async () => {
+                      const user = activeMenuFriendUser;
+                      if (window.confirm(`Are you sure you want to block ${user.fullName}? They will be removed from your friends and won't be able to chat with you.`)) {
+                        await blockContact(user._id);
+                      }
+                      setActiveMenuFriendId(null);
+                      setActiveMenuFriendUser(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-950/40 rounded-xl text-left text-sm font-semibold transition-colors text-rose-600"
+                  >
+                    <Ban size={18} className="text-rose-600" />
+                    <span>Block</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

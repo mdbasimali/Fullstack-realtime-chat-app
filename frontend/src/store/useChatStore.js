@@ -55,6 +55,18 @@ export const useChatstore = create((set,get) => ({
       return false;
     }
   },
+
+  blockContact: async (contactId) => {
+    try {
+      const res = await axiosInstance.post("/messages/block-contact", { contactId });
+      toast.success(res.data.message || "Contact blocked successfully!");
+      get().getUsers();
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to block contact");
+      return false;
+    }
+  },
   
   getMessages: async (userId) => {
     set({ isMessagesLoading: true });
