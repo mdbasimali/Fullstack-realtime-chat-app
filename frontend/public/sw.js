@@ -6,14 +6,17 @@ self.addEventListener("push", function (event) {
       icon: data.data.senderPic || "/chatZone.png",
       badge: "/chatZone.png",
       data: data.data,
-      actions: data.actions || [],
-      vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500],
+      actions: [
+        { action: "answer", title: "✅ Answer" },
+        { action: "decline", title: "❌ Decline" }
+      ],
+      vibrate: [500, 200, 500, 200, 500, 200, 500, 200, 500], // Aggressive vibration
       tag: "incoming-call",
       renotify: true,
       requireInteraction: true,
       timestamp: Date.now(),
       image: data.data.senderPic || "/chatZone.png",
-      silent: false, // Ensure it makes sound if OS allows
+      silent: false,
     };
 
     event.waitUntil(self.registration.showNotification(data.title, options));
