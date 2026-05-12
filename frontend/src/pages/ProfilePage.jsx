@@ -164,6 +164,7 @@ const ProfilePage = () => {
   const [selectedImg, setSelectedImg] = useState(authUser?.profilePic || "");
   const [selectedAvatarId, setSelectedAvatarId] = useState("");
   const [fullName, setFullName] = useState(authUser?.fullName || "Masudur Rahaman");
+  const [phoneNumber, setPhoneNumber] = useState(authUser?.phoneNumber || "");
   const [showNameEdit, setShowNameEdit] = useState(false);
 
   // Extract lowercase initials (e.g. "mr" for Masudur Rahaman)
@@ -219,7 +220,8 @@ const ProfilePage = () => {
     try {
       await updateProfile({
         profilePic: selectedImg,
-        fullName: fullName
+        fullName: fullName,
+        phoneNumber: phoneNumber
       });
       toast.success("Profile saved successfully! 🌟");
       navigate("/"); // return to home dashboard
@@ -315,17 +317,30 @@ const ProfilePage = () => {
 
         </div>
 
-        {/* Name input expansion box */}
+        {/* Name and Phone Number input expansion box */}
         {showNameEdit && (
-          <div className="w-full bg-base-200 border border-base-300 p-4 rounded-2xl space-y-2 animate-fade-in text-left">
-            <label className="text-xxs font-extrabold text-base-content/50 uppercase tracking-wider block">Modify Screen Name</label>
-            <input 
-              type="text"
-              className="w-full px-4 py-2.5 rounded-xl bg-base-100 border border-base-300 font-semibold text-sm outline-none focus:border-primary transition-all"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Enter full name"
-            />
+          <div className="w-full bg-base-200 border border-base-300 p-4 rounded-2xl space-y-4 animate-fade-in text-left">
+            <div className="space-y-2">
+              <label className="text-xxs font-extrabold text-base-content/50 uppercase tracking-wider block">Modify Screen Name</label>
+              <input 
+                type="text"
+                className="w-full px-4 py-2.5 rounded-xl bg-base-100 border border-base-300 font-semibold text-sm outline-none focus:border-primary transition-all"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter full name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xxs font-extrabold text-base-content/50 uppercase tracking-wider block">Modify Phone Number</label>
+              <input 
+                type="text"
+                className="w-full px-4 py-2.5 rounded-xl bg-base-100 border border-base-300 font-semibold text-sm outline-none focus:border-primary transition-all"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="e.g. +91 62949 83054"
+              />
+            </div>
           </div>
         )}
 

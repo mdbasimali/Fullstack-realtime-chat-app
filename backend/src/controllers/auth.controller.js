@@ -94,19 +94,38 @@ export const logout =(req,res)=>{
 
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic } = req.body;
+    const { profilePic, fullName, phoneNumber } = req.body;
     const userId = req.user._id;
 
-    if (!profilePic) {
-      return res.status(400).json({ message: "Profile pic is required" });
+    const updateData = {};
+
+    if (profilePic) {
+      // If it's already uploaded on Cloudinary, do not re-upload
+      if (profilePic.startsWith("http")) {
+        updateData.profilePic = profilePic;
+      } else {
+        const uploadResponse = await cloudinary.uploader.upload(profilePic);
+        updateData.profilePic = uploadResponse.secure_url;
+      }
     }
 
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
+    if (fullName && fullName.trim()) {
+      updateData.fullName = fullName;
+    }
+
+    if (phoneNumber !== undefined) {
+      updateData.phoneNumber = phoneNumber;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "No update parameters provided" });
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { profilePic: uploadResponse.secure_url },
+      updateData,
       { new: true }
-    );
+    ).select("-password");
 
     res.status(200).json(updatedUser);
   } catch (error) {

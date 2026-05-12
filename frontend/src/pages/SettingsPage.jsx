@@ -100,9 +100,11 @@ const SettingsPage = () => {
             <h2 className="text-lg font-bold tracking-tight text-base-content">
               {(authUser?.fullName || "Masudur Rahaman").toLowerCase()}
             </h2>
-            <p className="text-sm text-base-content/60 mt-0.5 font-medium">
-              +91 62949 83054
-            </p>
+            {authUser?.phoneNumber && (
+              <p className="text-sm text-base-content/60 mt-0.5 font-medium">
+                {authUser.phoneNumber}
+              </p>
+            )}
           </div>
         </div>
 
