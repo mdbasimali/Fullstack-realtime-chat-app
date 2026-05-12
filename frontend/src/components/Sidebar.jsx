@@ -975,9 +975,9 @@ const Sidebar = () => {
 
             {/* Premium "Add Contact" Area */}
             <div className="flex gap-2 items-center px-1">
-              <input 
+               <input 
                 type="text" 
-                placeholder="Add by email or phone number..."
+                placeholder="Add by email, phone, or @username..."
                 value={addContactInput}
                 onChange={(e) => setAddContactInput(e.target.value)}
                 className="flex-1 px-4 py-2 rounded-xl bg-base-100 border border-base-300 text-xs font-semibold focus:outline-none focus:border-primary transition-colors"
@@ -985,7 +985,7 @@ const Sidebar = () => {
               <button 
                 onClick={async () => {
                   if (!addContactInput.trim()) {
-                    toast.error("Please enter an email or phone number");
+                    toast.error("Please enter an email, phone, or username");
                     return;
                   }
                   const success = await addContact(addContactInput);

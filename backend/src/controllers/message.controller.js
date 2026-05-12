@@ -37,20 +37,23 @@ export const addContact = async (req, res) => {
     const loggedInUserId = req.user._id;
 
     if (!contactInput || !contactInput.trim()) {
-      return res.status(400).json({ message: "Email or Phone number is required" });
+      return res.status(400).json({ message: "Email, phone number, or username is required" });
     }
 
     const inputClean = contactInput.trim();
+    const usernameClean = inputClean.startsWith("@") ? inputClean.substring(1) : inputClean;
 
     const contactUser = await User.findOne({
       $or: [
         { email: inputClean },
-        { phoneNumber: inputClean }
+        { phoneNumber: inputClean },
+        { username: inputClean },
+        { username: usernameClean }
       ]
     }).select("-password");
 
     if (!contactUser) {
-      return res.status(404).json({ message: "User not found with this email or phone number" });
+      return res.status(404).json({ message: "User not found with this email, phone, or username" });
     }
 
     if (contactUser._id.toString() === loggedInUserId.toString()) {
