@@ -83,6 +83,12 @@ const Sidebar = () => {
   });
   const [showRecentlyUnfriendedModal, setShowRecentlyUnfriendedModal] = useState(false);
 
+  // Friend Card Long-press and Context Menu State and Event Triggers
+  const [activeFriendMenuId, setActiveFriendMenuId] = useState(null);
+  const [friendMenuPosition, setFriendMenuPosition] = useState({ x: 0, y: 0 });
+  const [longPressedFriend, setLongPressedFriend] = useState(null);
+  const friendLongPressTimer = useRef(null);
+
   useEffect(() => {
     getUsers();
     getStories();
@@ -188,6 +194,38 @@ const Sidebar = () => {
     e.preventDefault();
     setMenuPosition({ x: e.clientX, y: e.clientY });
     setActiveMenuUserId(userId);
+  };
+
+  const startFriendLongPress = (e, user) => {
+    if (friendLongPressTimer.current) clearTimeout(friendLongPressTimer.current);
+
+    let clientX = 0;
+    let clientY = 0;
+    if (e.touches && e.touches[0]) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    friendLongPressTimer.current = setTimeout(() => {
+      e.preventDefault();
+      setFriendMenuPosition({ x: clientX, y: clientY });
+      setActiveFriendMenuId(user._id);
+      setLongPressedFriend(user);
+    }, 600); // 600ms long-press
+  };
+
+  const endFriendLongPress = () => {
+    if (friendLongPressTimer.current) clearTimeout(friendLongPressTimer.current);
+  };
+
+  const handleFriendContextMenu = (e, user) => {
+    e.preventDefault();
+    setFriendMenuPosition({ x: e.clientX, y: e.clientY });
+    setActiveFriendMenuId(user._id);
+    setLongPressedFriend(user);
   };
 
   // Remove and permanently delete a conversation from database and sidebar
@@ -690,6 +728,68 @@ const Sidebar = () => {
                 </div>
               </div>
             )}
+
+            {/* Custom Friend Long-press Options Menu Popover Overlay */}
+            {activeFriendMenuId && longPressedFriend && (
+              <div 
+                className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[1px]" 
+                onClick={() => { setActiveFriendMenuId(null); setLongPressedFriend(null); }}
+                onContextMenu={(e) => { e.preventDefault(); setActiveFriendMenuId(null); setLongPressedFriend(null); }}
+              >
+                <div 
+                  style={{ 
+                    top: Math.min(friendMenuPosition.y, window.innerHeight - 150), 
+                    left: Math.min(friendMenuPosition.x, window.innerWidth - 240) 
+                  }}
+                  className="absolute bg-base-100 border border-base-300 shadow-2xl rounded-[24px] p-2 w-56 flex flex-col space-y-0.5 z-50 animate-fade-in"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* 1. Chat */}
+                  <button 
+                    onClick={() => {
+                      setSelectedUser(longPressedFriend);
+                      setActiveTab("chats");
+                      if (!activeConversations.includes(longPressedFriend._id)) {
+                        const updated = [...activeConversations, longPressedFriend._id];
+                        setActiveConversations(updated);
+                        localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
+                      }
+                      setActiveFriendMenuId(null);
+                      setLongPressedFriend(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-base-200 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
+                  >
+                    <MessageSquare size={18} className="text-base-content/60" />
+                    <span>Chat with Friend</span>
+                  </button>
+
+                  {/* 2. Remove Friend */}
+                  <button 
+                    onClick={async () => {
+                      const userToUnfriend = longPressedFriend;
+                      setActiveFriendMenuId(null);
+                      setLongPressedFriend(null);
+                      if (window.confirm(`Are you sure you want to remove ${userToUnfriend.fullName} from your friends?`)) {
+                        const success = await removeContact(userToUnfriend._id);
+                        if (success) {
+                          const record = {
+                            user: userToUnfriend,
+                            removedAt: new Date().toISOString()
+                          };
+                          const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== userToUnfriend._id)].slice(0, 20);
+                          setRecentlyUnfriended(updated);
+                          localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
+                        }
+                      }
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl text-left text-sm font-semibold transition-colors text-rose-500"
+                  >
+                    <UserMinus size={18} className="text-rose-500" />
+                    <span>Remove Friend</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1026,6 +1126,7 @@ const Sidebar = () => {
                       <div 
                         key={user._id}
                         onClick={() => {
+                          if (activeFriendMenuId) return;
                           setSelectedUser(user);
                           setActiveTab("chats");
                           // Add to active chat list in localStorage if not already present
@@ -1035,7 +1136,12 @@ const Sidebar = () => {
                             localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
                           }
                         }}
-                        className="p-3.5 flex items-center justify-between rounded-2xl bg-base-100 hover:bg-base-200 cursor-pointer border border-base-200/50 hover:border-base-300/20 transition-all duration-200 shadow-sm"
+                        onContextMenu={(e) => handleFriendContextMenu(e, user)}
+                        onTouchStart={(e) => startFriendLongPress(e, user)}
+                        onTouchEnd={endFriendLongPress}
+                        onMouseDown={(e) => startFriendLongPress(e, user)}
+                        onMouseUp={endFriendLongPress}
+                        className="p-3.5 flex items-center justify-between rounded-2xl bg-base-100 hover:bg-base-200 cursor-pointer border border-base-200/50 hover:border-base-300/20 transition-all duration-200 shadow-sm select-none"
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
                           {/* Avatar */}
@@ -1080,28 +1186,6 @@ const Sidebar = () => {
                             title="Chat with friend"
                           >
                             <MessageSquare size={16} className="fill-primary/20" />
-                          </button>
-
-                          {/* Delete/Remove Friend Button */}
-                          <button 
-                            onClick={async () => {
-                              if (window.confirm(`Are you sure you want to remove ${user.fullName} from your friends?`)) {
-                                const success = await removeContact(user._id);
-                                if (success) {
-                                  const record = {
-                                    user: user,
-                                    removedAt: new Date().toISOString()
-                                  };
-                                  const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== user._id)].slice(0, 20);
-                                  setRecentlyUnfriended(updated);
-                                  localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
-                                }
-                              }
-                            }}
-                            className="w-9 h-9 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 flex items-center justify-center transition-all"
-                            title="Remove friend"
-                          >
-                            <UserMinus size={16} />
                           </button>
                         </div>
                       </div>
