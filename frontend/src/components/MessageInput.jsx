@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { useChatstore } from "../store/useChatStore";
-import {  Image, Send, X } from "lucide-react";
+import { Image, Send, X, Smile, Mic, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 
 const MessageInput = () => {
@@ -11,7 +11,7 @@ const MessageInput = () => {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-     if (!file) return; 
+    if (!file) return; 
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
@@ -39,7 +39,7 @@ const MessageInput = () => {
         image: imagePreview,
       });
 
-      //clear from
+      //clear form
       setText("");
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -49,35 +49,48 @@ const MessageInput = () => {
   };
 
   return (
-    <div className="p-4 w-full">
+    <div className="p-4 w-full bg-base-100">
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
             <img
               src={imagePreview}
               alt="Preview"
-              className="w-20 h-20 object-cover rounded-lg border border-zinc-700"
+              className="w-20 h-20 object-cover rounded-2xl border border-base-300"
             />
             <button
               onClick={removeImage}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-base-300
-                 flex items-center justify-center"
+              className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-base-300
+                 flex items-center justify-center shadow-xs"
               type="button"
             >
-              <X className="size-3" />
+              <X className="size-3.5 text-base-content/70" />
             </button>
           </div>
         </div>
       )}
-      <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-        <div className="flex-1 flex gap-2">
+
+      <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+        {/* Beautiful Pill Input Container */}
+        <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-base-200/60 dark:bg-base-950/40 border border-base-300/40 rounded-full">
+          {/* Smiley Icon */}
+          <button
+            type="button"
+            className="text-base-content/50 hover:text-primary transition-colors cursor-pointer"
+            onClick={() => toast.success("Emoji selector coming soon! 😊")}
+          >
+            <Smile size={21} />
+          </button>
+
+          {/* Text Input */}
           <input
             type="text"
-            className="w-full input input-bordered rounded-lg input-sm sm:input-md"
-            placeholder="Type a message..."
+            className="flex-1 bg-transparent text-sm md:text-base border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content"
+            placeholder="Signal message"
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
+
           <input
             type="file"
             accept="image/*"
@@ -86,21 +99,37 @@ const MessageInput = () => {
             onChange={handleImageChange}
           />
 
+          {/* Camera/Attachment Icon */}
           <button
             type="button"
-            className={`hidden sm:flex btn btn-circle
-                ${imagePreview ? "text-emerald-500" : "text-zinc-400"}`}
+            className={`hover:text-primary transition-colors cursor-pointer ${
+              imagePreview ? "text-primary" : "text-base-content/50"
+            }`}
             onClick={() => fileInputRef.current?.click()}
           >
-            <Image size={20} />
+            <Image size={21} />
+          </button>
+
+          {/* Mic/Voice Icon */}
+          <button
+            type="button"
+            className="text-base-content/50 hover:text-primary transition-colors cursor-pointer"
+            onClick={() => toast.success("Voice recording feature coming soon! 🎙️")}
+          >
+            <Mic size={21} />
           </button>
         </div>
+
+        {/* Circular Action Button */}
         <button
           type="submit"
-          className="btn btn-sm btn-circle"
-          disabled={!text.trim() && !imagePreview}
+          className="btn btn-circle bg-primary hover:bg-primary/90 text-primary-content border-none flex items-center justify-center size-11 shrink-0"
         >
-          <Send size={22} />
+          {text.trim() || imagePreview ? (
+            <Send size={18} className="ml-0.5" />
+          ) : (
+            <Plus size={22} onClick={() => fileInputRef.current?.click()} />
+          )}
         </button>
       </form>
     </div>

@@ -1,4 +1,4 @@
-import { Video, Phone, X, ArrowLeft } from "lucide-react";
+import { Video, Phone, MoreVertical, ArrowLeft, User } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatstore } from "../store/useChatStore";
 import { useCallStore } from "../store/useCallStore";
@@ -9,69 +9,72 @@ const ChatHeader = () => {
   const { initiateCall } = useCallStore();
 
   return (
-    <div className="p-3.5 border-b border-base-300 bg-base-100">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* Back button - Visible only on mobile */}
-          <button
-            onClick={() => setSelectedUser(null)}
-            className="md:hidden p-1.5 rounded-full hover:bg-base-200 text-base-content/80 transition-colors mr-1"
-            title="Back to chats"
-          >
-            <ArrowLeft size={20} />
-          </button>
+    <div className="p-3.5 border-b border-base-300 bg-base-100 flex items-center justify-between sticky top-0 z-10">
+      <div className="flex items-center gap-3">
+        {/* Back button */}
+        <button
+          onClick={() => setSelectedUser(null)}
+          className="p-1.5 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
+          title="Back to chats"
+        >
+          <ArrowLeft size={21} />
+        </button>
 
-          {/* Avatar */}
-          <div className="avatar">
-            <div className="size-10 rounded-full relative">
-              <img
-                src={selectedUser.profilePic || "/avatar.png"}
-                alt={selectedUser.fullName}
-                className="rounded-full object-cover"
-              />
-            </div>
-          </div>
-
-          {/* User info */}
-          <div className="text-left">
-            <h3 className="font-semibold text-sm md:text-base leading-tight">{selectedUser.fullName}</h3>
-            <p className="text-xs text-base-content/60 mt-0.5">
-              {onlineUsers.includes(selectedUser._id) ? (
-                <span className="text-green-500 font-medium">Online</span>
-              ) : (
-                "Offline"
-              )}
-            </p>
+        {/* Avatar */}
+        <div className="avatar">
+          <div className="size-10 rounded-full relative">
+            <img
+              src={selectedUser.profilePic || "/avatar.png"}
+              alt={selectedUser.fullName}
+              className="rounded-full object-cover"
+            />
           </div>
         </div>
 
-        {/* right side (audio call + video call + Close on desktop) button */}
-        <div className="flex items-center gap-1 md:gap-2">
-          <button 
-            onClick={() => initiateCall(selectedUser, "audio")}
-            className="p-2.5 rounded-full hover:bg-primary/10 hover:text-primary text-base-content/70 transition-colors"
-            title="Audio Call"
-          >
-            <Phone size={19} />
-          </button>
-          <button 
-            onClick={() => initiateCall(selectedUser, "video")}
-            className="p-2.5 rounded-full hover:bg-primary/10 hover:text-primary text-base-content/70 transition-colors"
-            title="Video Call"
-          >
-            <Video size={19} />
-          </button>
-          <button 
-            onClick={() => setSelectedUser(null)}
-            className="hidden md:flex p-2.5 rounded-full hover:bg-error/10 hover:text-error text-base-content/70 transition-colors"
-            title="Close Chat"
-          >
-            <X size={19} />
-          </button>
+        {/* User info */}
+        <div className="text-left">
+          <h3 className="font-semibold text-sm md:text-base leading-tight flex items-center gap-1.5 text-base-content">
+            {selectedUser.fullName}
+            <span className="p-0.5 rounded-full border border-base-300 bg-base-200/50 inline-flex items-center justify-center text-base-content/60 cursor-pointer">
+              <User size={12} />
+            </span>
+          </h3>
+          <p className="text-[11px] text-base-content/60 font-semibold mt-0.5">
+            {onlineUsers.includes(selectedUser._id) ? (
+              <span className="text-emerald-500">Online</span>
+            ) : (
+              "Offline"
+            )}
+          </p>
         </div>
+      </div>
 
+      {/* Right Actions: Video Call, Phone Call, 3-Dot menu */}
+      <div className="flex items-center gap-1.5">
+        <button 
+          onClick={() => initiateCall(selectedUser, "video")}
+          className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
+          title="Video Call"
+        >
+          <Video size={20} />
+        </button>
+        <button 
+          onClick={() => initiateCall(selectedUser, "audio")}
+          className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
+          title="Voice Call"
+        >
+          <Phone size={20} />
+        </button>
+        <button 
+          onClick={() => setSelectedUser(null)}
+          className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
+          title="More options"
+        >
+          <MoreVertical size={20} />
+        </button>
       </div>
     </div>
   );
 };
+
 export default ChatHeader;
