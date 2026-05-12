@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab } = useChatstore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
   const { initiateCall } = useCallStore();
 
@@ -20,6 +20,7 @@ const Sidebar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showThreeDotMenu, setShowThreeDotMenu] = useState(false);
+  const [addContactInput, setAddContactInput] = useState("");
   const [dismissedCards, setDismissedCards] = useState(() => {
     const saved = localStorage.getItem(`dismissed_cards_${authUser?._id}`);
     return saved ? JSON.parse(saved) : [];
@@ -809,7 +810,7 @@ const Sidebar = () => {
           </header>
 
           {/* Search Contacts */}
-          <div className="p-3 bg-base-200/50 border-b border-base-300">
+          <div className="p-3 bg-base-200/50 border-b border-base-300 space-y-3">
             <div className="flex items-center gap-2 px-3 py-2 bg-base-100 border border-base-300 rounded-full">
               <Search size={18} className="text-base-content/40" />
               <input 
@@ -819,6 +820,32 @@ const Sidebar = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-transparent text-sm focus:outline-none"
               />
+            </div>
+
+            {/* Premium "Add Contact" Area */}
+            <div className="flex gap-2 items-center px-1">
+              <input 
+                type="text" 
+                placeholder="Add by email or phone number..."
+                value={addContactInput}
+                onChange={(e) => setAddContactInput(e.target.value)}
+                className="flex-1 px-4 py-2 rounded-xl bg-base-100 border border-base-300 text-xs font-semibold focus:outline-none focus:border-primary transition-colors"
+              />
+              <button 
+                onClick={async () => {
+                  if (!addContactInput.trim()) {
+                    toast.error("Please enter an email or phone number");
+                    return;
+                  }
+                  const success = await addContact(addContactInput);
+                  if (success) {
+                    setAddContactInput("");
+                  }
+                }}
+                className="btn btn-primary rounded-xl px-4 py-2 text-xs font-bold h-auto min-h-0 normal-case"
+              >
+                + Add
+              </button>
             </div>
           </div>
 

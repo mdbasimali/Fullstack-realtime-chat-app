@@ -6,13 +6,62 @@ import User from "../models/user.model.js";
 export const getUsersForSidebar = async(req,res)=>{
     try{
        const loggedInUserId = req.user._id;
-       const filteredUsers = await User.find({_id:{$ne:loggedInUserId}}).select("-password");
+       const loggedInUser = await User.findById(loggedInUserId).populate({
+         path: "contacts",
+         select: "-password"
+       });
 
-       res.status(200).json(filteredUsers)
+       res.status(200).json(loggedInUser.contacts || []);
     }catch(error){
        console.error("Error in getUsersForSidebar: ", error.message)
        res.status(500).json({error: "Internal server error"});
     }
+};
+
+export const addContact = async (req, res) => {
+  try {
+    const { contactInput } = req.body;
+    const loggedInUserId = req.user._id;
+
+    if (!contactInput || !contactInput.trim()) {
+      return res.status(400).json({ message: "Email or Phone number is required" });
+    }
+
+    const inputClean = contactInput.trim();
+
+    const contactUser = await User.findOne({
+      $or: [
+        { email: inputClean },
+        { phoneNumber: inputClean }
+      ]
+    }).select("-password");
+
+    if (!contactUser) {
+      return res.status(404).json({ message: "User not found with this email or phone number" });
+    }
+
+    if (contactUser._id.toString() === loggedInUserId.toString()) {
+      return res.status(400).json({ message: "You cannot add yourself as a contact" });
+    }
+
+    const loggedInUser = await User.findById(loggedInUserId);
+
+    if (!loggedInUser.contacts) {
+      loggedInUser.contacts = [];
+    }
+
+    if (loggedInUser.contacts.includes(contactUser._id)) {
+      return res.status(400).json({ message: "User is already in your contacts" });
+    }
+
+    loggedInUser.contacts.push(contactUser._id);
+    await loggedInUser.save();
+
+    res.status(200).json({ message: "Contact added successfully", contact: contactUser });
+  } catch (error) {
+    console.error("Error in addContact: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 export const getMessages = async(req,res) =>{
