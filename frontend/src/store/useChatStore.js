@@ -86,7 +86,7 @@ export const useChatstore = create((set,get) => ({
 
       // Automatically register the sender as an active conversation
       const activeKey = `active_conversations_${authUser._id}`;
-      const { activeConversations, getUsers } = get();
+      const { activeConversations } = get();
       if (!activeConversations.includes(newMessage.senderId)) {
         const updated = [...activeConversations, newMessage.senderId];
         localStorage.setItem(activeKey, JSON.stringify(updated));
