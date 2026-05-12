@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useChatstore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useCallStore } from "../store/useCallStore";
+import { useStoryStore } from "../store/useStoryStore";
 import { 
   Search, MoreVertical, Camera, Pencil, Users, Mail, X, 
   MessageSquare, Phone, Plus, Check, User, Settings, 
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import StoryViewer from "./StoryViewer";
 
 const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation } = useChatstore();
@@ -29,33 +31,23 @@ const Sidebar = () => {
 
 
 
-  // Stories State
-  const [myStories, setMyStories] = useState(() => {
-    const saved = localStorage.getItem(`my_stories_${authUser?._id}`);
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Story Store
+  const { stories, getStories, postStory, deleteStory, isStoriesLoading, isUploadingStory } = useStoryStore();
+
   const [viewingStory, setViewingStory] = useState(null);
   const [storyText, setStoryText] = useState("");
+  const [storyImage, setStoryImage] = useState(null);
   const [showStoryCreator, setShowStoryCreator] = useState(false);
-
-  // Call Logs (Mock + Active Session Calls) - starts empty for a fresh user
-  const [callLogs, setCallLogs] = useState(() => {
-    const saved = localStorage.getItem(`call_logs_${authUser?._id}`);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Friends Stories State - starts empty for a fresh user
-  const [friendsStories, setFriendsStories] = useState(() => {
-    const saved = localStorage.getItem(`friends_stories_${authUser?._id}`);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [storyType, setStoryType] = useState("text"); // "text" or "image"
+  const storyFileInputRef = useRef(null);
 
   useEffect(() => {
     getUsers();
+    getStories();
     if (authUser?._id) {
       initializeActiveConversations(authUser._id);
     }
-  }, [getUsers, authUser?._id, initializeActiveConversations]);
+  }, [getUsers, getStories, authUser?._id, initializeActiveConversations]);
 
   // Sync real-time call logs instantly when updated
   useEffect(() => {
@@ -176,28 +168,44 @@ const Sidebar = () => {
     user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const createStory = (e) => {
-    e.preventDefault();
-    if (!storyText.trim()) return;
-    const newStory = {
-      id: Date.now().toString(),
-      text: storyText,
-      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const handleStoryImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setStoryImage(reader.result);
+      setStoryType("image");
     };
-    const updated = [newStory, ...myStories];
-    setMyStories(updated);
-    localStorage.setItem(`my_stories_${authUser?._id}`, JSON.stringify(updated));
-    setStoryText("");
-    setShowStoryCreator(false);
-    toast.success("Story posted successfully!");
+    reader.readAsDataURL(file);
   };
 
-  const deleteMyStory = (storyId) => {
-    const updated = myStories.filter(s => s.id !== storyId);
-    setMyStories(updated);
-    localStorage.setItem(`my_stories_${authUser?._id}`, JSON.stringify(updated));
-    toast.success("Story deleted");
+  const createStory = async (e) => {
+    e.preventDefault();
+    if (storyType === "text" && !storyText.trim()) return;
+    if (storyType === "image" && !storyImage) return;
+
+    const success = await postStory({
+      content: storyType === "text" ? storyText : storyImage,
+      type: storyType,
+      caption: storyType === "image" ? storyText : ""
+    });
+
+    if (success) {
+      setStoryText("");
+      setStoryImage(null);
+      setStoryType("text");
+      setShowStoryCreator(false);
+    }
   };
+
+  // Find current user's stories from the grouped list
+  const myGroupedStories = stories.find(s => s.user._id === authUser._id);
+  const otherStories = stories.filter(s => s.user._id !== authUser._id);
 
   return (
     <div className="h-full w-full flex flex-col bg-base-100 select-none relative">
@@ -711,17 +719,23 @@ const Sidebar = () => {
                 <div className="text-left">
                   <h4 className="font-semibold text-sm">My Story</h4>
                   <p className="text-xs text-base-content/60">
-                    {myStories.length > 0 ? `${myStories.length} stories shared` : "Share a status update"}
+                    {myGroupedStories?.stories?.length > 0 
+                      ? `${myGroupedStories.stories.length} status updates` 
+                      : "Share a status update"}
                   </p>
                 </div>
               </div>
 
-              {myStories.length > 0 && (
+              {myGroupedStories?.stories?.length > 0 && (
                 <button 
-                  onClick={() => setViewingStory({ name: "My Story", content: myStories[0].text, storyType: "text", bgColor: "bg-gradient-to-tr from-primary via-purple-600 to-indigo-800" })}
+                  onClick={() => setViewingStory({ 
+                    name: authUser.fullName, 
+                    user: authUser,
+                    stories: myGroupedStories.stories 
+                  })}
                   className="btn btn-xs btn-outline btn-primary rounded-full px-3"
                 >
-                  View My Stories
+                  View Mine
                 </button>
               )}
             </div>
@@ -730,32 +744,72 @@ const Sidebar = () => {
             {showStoryCreator && (
               <form onSubmit={createStory} className="bg-base-200 p-4 rounded-2xl border border-base-300 space-y-3 animate-fade-in">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold text-base-content/70">Create a Text Story</span>
-                  <button type="button" onClick={() => setShowStoryCreator(false)} className="text-base-content/50 hover:text-error">
-                    <X size={16} />
-                  </button>
+                  <span className="text-xs font-semibold text-base-content/70">
+                    {storyType === "text" ? "Create Text Status" : "Create Image Status"}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      className="hidden"
+                      ref={storyFileInputRef}
+                      onChange={handleStoryImageChange}
+                      accept="image/*"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => storyFileInputRef.current?.click()}
+                      className={`p-1.5 rounded-full transition-colors ${storyType === 'image' ? 'bg-primary text-white' : 'hover:bg-base-300 text-base-content/50'}`}
+                      title="Add Image"
+                    >
+                      <Camera size={18} />
+                    </button>
+                    <button type="button" onClick={() => setShowStoryCreator(false)} className="text-base-content/50 hover:text-error">
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
+
+                {storyImage && (
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-base-300 mb-2">
+                    <img src={storyImage} className="w-full h-full object-cover" alt="Preview" />
+                    <button 
+                      type="button" 
+                      onClick={() => { setStoryImage(null); setStoryType("text"); }}
+                      className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+
                 <textarea
-                  placeholder="Share what's on your mind today... 💭🚀"
+                  placeholder={storyType === "text" ? "Type a status... 💭" : "Add a caption... ✍️"}
                   value={storyText}
                   onChange={(e) => setStoryText(e.target.value)}
                   className="textarea textarea-bordered w-full text-sm h-20 bg-base-100"
                   maxLength={160}
-                  required
+                  required={storyType === "text"}
                 />
+
                 <div className="flex justify-end gap-2">
                   <button 
                     type="button" 
-                    onClick={() => setShowStoryCreator(false)} 
+                    onClick={() => {
+                      setShowStoryCreator(false);
+                      setStoryImage(null);
+                      setStoryType("text");
+                      setStoryText("");
+                    }} 
                     className="btn btn-sm btn-ghost rounded-full"
                   >
                     Cancel
                   </button>
                   <button 
                     type="submit" 
+                    disabled={isUploadingStory}
                     className="btn btn-sm btn-primary rounded-full px-4"
                   >
-                    Post Story
+                    {isUploadingStory ? <span className="loading loading-spinner loading-xs"></span> : "Post"}
                   </button>
                 </div>
               </form>
@@ -765,85 +819,41 @@ const Sidebar = () => {
             <div className="space-y-3">
               <div className="flex justify-between items-center px-1">
                 <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Recent updates</span>
-                {friendsStories.length > 0 ? (
-                  <button 
-                    onClick={() => {
-                      setFriendsStories([]);
-                      localStorage.setItem(`friends_stories_${authUser?._id}`, JSON.stringify([]));
-                      toast.success("Stories cleared");
-                    }}
-                    className="text-xs text-error/70 hover:text-error font-medium hover:underline"
-                  >
-                    Clear All
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => {
-                      const demoStories = [
-                        {
-                          id: "s1",
-                          name: "Jane Smith",
-                          avatar: "",
-                          color: "from-pink-500 via-purple-500 to-indigo-500",
-                          storyType: "image",
-                          content: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=60",
-                          caption: "Beautiful sunset at the beach! 🌅✨"
-                        },
-                        {
-                          id: "s2",
-                          name: "Alex Mercer",
-                          avatar: "",
-                          color: "from-green-400 to-blue-600",
-                          storyType: "text",
-                          content: "Coding late nights is a different vibe! 💻🚀☕ #buildinpublic",
-                          bgColor: "bg-gradient-to-tr from-indigo-900 via-purple-900 to-pink-800"
-                        },
-                        {
-                          id: "s3",
-                          name: "Sarah Connor",
-                          avatar: "",
-                          color: "from-amber-400 to-red-600",
-                          storyType: "image",
-                          content: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800&auto=format&fit=crop&q=60",
-                          caption: "In love with nature 🌿💚"
-                        }
-                      ];
-                      setFriendsStories(demoStories);
-                      localStorage.setItem(`friends_stories_${authUser?._id}`, JSON.stringify(demoStories));
-                      toast.success("Demo stories loaded! 🌌");
-                    }}
-                    className="text-xs text-primary font-medium hover:underline"
-                  >
-                    Load Demo Stories
-                  </button>
-                )}
               </div>
               
-              {friendsStories.length === 0 ? (
+              {otherStories.length === 0 ? (
                 <div className="py-8 text-center text-xs text-base-content/50 font-medium">
-                  No recent updates. Click \"Load Demo Stories\" to populate mock stories.
+                  {isStoriesLoading ? "Loading updates..." : "No recent updates from contacts."}
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {friendsStories.map((story) => (
+                  {otherStories.map((group) => (
                     <div 
-                      key={story.id} 
-                      onClick={() => setViewingStory(story)}
+                      key={group.user._id} 
+                      onClick={() => setViewingStory({
+                        name: group.user.fullName,
+                        user: group.user,
+                        stories: group.stories
+                      })}
                       className="p-3 flex items-center justify-between rounded-2xl hover:bg-base-200 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-3.5">
                         {/* Avatar with colorful ring representing dynamic stories */}
-                        <div className="p-0.5 rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500 ring-2 ring-transparent">
+                        <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary to-secondary ring-2 ring-transparent">
                           <div className="p-0.5 bg-base-100 rounded-full">
-                            <div className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
-                              {getInitials(story.name)}
-                            </div>
+                            {group.user.profilePic ? (
+                                <img src={group.user.profilePic} className="w-11 h-11 rounded-full object-cover" />
+                            ) : (
+                                <div className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
+                                {getInitials(group.user.fullName)}
+                                </div>
+                            )}
                           </div>
                         </div>
                         <div className="text-left">
-                          <h4 className="font-semibold text-sm">{story.name}</h4>
+                          <h4 className="font-semibold text-sm">{group.user.fullName}</h4>
                           <p className="text-xs text-base-content/60 mt-0.5">
-                            {story.storyType === "text" ? "Shared a text update" : "Shared a photo"} • Tap to view
+                            {group.stories.length} updates • Tap to view
                           </p>
                         </div>
                       </div>
@@ -854,19 +864,26 @@ const Sidebar = () => {
             </div>
 
             {/* Custom My Stories History List */}
-            {myStories.length > 0 && (
+            {myGroupedStories?.stories?.length > 0 && (
               <div className="pt-2 space-y-2">
-                <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-1">Your Story History</span>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {myStories.map((story) => (
-                    <div key={story.id} className="p-3 bg-base-200/50 rounded-2xl flex items-center justify-between">
-                      <div className="text-left truncate max-w-[200px]">
-                        <p className="text-sm font-medium truncate">{story.text}</p>
-                        <p className="text-xxs text-base-content/50 mt-0.5">{story.createdAt}</p>
+                <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-1">Your Updates</span>
+                <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar">
+                  {myGroupedStories.stories.map((story) => (
+                    <div key={story._id} className="p-3 bg-base-200/50 rounded-2xl flex items-center justify-between group">
+                      <div className="flex items-center gap-3 truncate">
+                        {story.type === 'image' && (
+                            <img src={story.content} className="w-10 h-10 rounded-lg object-cover" />
+                        )}
+                        <div className="text-left truncate">
+                            <p className="text-sm font-medium truncate">{story.type === 'text' ? story.content : (story.caption || 'Image Status')}</p>
+                            <p className="text-[10px] text-base-content/50 mt-0.5">
+                                {new Date(story.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                        </div>
                       </div>
                       <button 
-                        onClick={() => deleteMyStory(story.id)}
-                        className="p-2 rounded-full hover:bg-base-300 text-error/70 hover:text-error transition-colors"
+                        onClick={(e) => { e.stopPropagation(); deleteStory(story._id); }}
+                        className="p-2 rounded-full opacity-0 group-hover:opacity-100 hover:bg-base-300 text-error/70 hover:text-error transition-all"
                         title="Delete story"
                       >
                         <Trash2 size={14} />
@@ -1058,57 +1075,11 @@ const Sidebar = () => {
 
       {/* 6. Story Viewer Overlay */}
       {viewingStory && (
-        <div className="absolute inset-0 bg-black z-[100] flex flex-col justify-between animate-fade-in text-white">
-          {/* Top Progress bar and Header info */}
-          <div className="p-4 space-y-4">
-            <div className="w-full bg-white/20 h-1 rounded-full overflow-hidden">
-              <div className="bg-white h-full animate-story-progress rounded-full" onAnimationEnd={() => setViewingStory(null)} />
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center font-bold text-sm text-white">
-                  {getInitials(viewingStory.name)}
-                </div>
-                <div className="text-left">
-                  <h4 className="font-bold text-sm">{viewingStory.name}</h4>
-                  <p className="text-xs text-white/60">Recent update</p>
-                </div>
-              </div>
-              <button onClick={() => setViewingStory(null)} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
-                <X size={18} />
-              </button>
-            </div>
-          </div>
-
-          {/* Core Content */}
-          <div className="flex-1 flex items-center justify-center p-6 text-center">
-            {viewingStory.storyType === "text" ? (
-              <div className={`w-full max-w-sm aspect-video ${viewingStory.bgColor || "bg-gradient-to-tr from-pink-500 via-purple-600 to-indigo-700"} rounded-3xl p-6 flex items-center justify-center shadow-2xl`}>
-                <p className="text-xl md:text-2xl font-bold tracking-wide select-text leading-relaxed">
-                  "{viewingStory.content}"
-                </p>
-              </div>
-            ) : (
-              <div className="relative max-h-[60vh] rounded-2xl overflow-hidden shadow-2xl">
-                <img 
-                  src={viewingStory.content} 
-                  alt="Story" 
-                  className="max-w-full max-h-[60vh] object-contain rounded-2xl"
-                />
-                {viewingStory.caption && (
-                  <div className="absolute bottom-0 inset-x-0 bg-black/65 backdrop-blur-xs p-3 text-sm font-medium">
-                    {viewingStory.caption}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Bottom Action Footer */}
-          <div className="p-4 text-center text-xs text-white/55 font-medium border-t border-white/10 bg-black/40">
-            Swipe down or tap close button to dismiss
-          </div>
-        </div>
+        <StoryViewer 
+            user={viewingStory.user}
+            stories={viewingStory.stories}
+            onClose={() => setViewingStory(null)}
+        />
       )}
 
     </div>

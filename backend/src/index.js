@@ -10,6 +10,7 @@ import { connectDB } from "./lib/db.js";
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
 import pushRoutes from "./routes/push.route.js";
+import storyRoutes from "./routes/story.route.js";
 import { app, server} from "./lib/socket.js";
 import webpush from "web-push";
 
@@ -45,6 +46,7 @@ app.use(cors({
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/push", pushRoutes);
+app.use("/api/stories", storyRoutes);
 
 if(process.env.NODE_ENV==="production"){
     app.use(express.static(path.join(__dirname, "../frontend/dist")));
