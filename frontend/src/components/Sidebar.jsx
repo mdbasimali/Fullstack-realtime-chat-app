@@ -68,6 +68,13 @@ const Sidebar = () => {
   const [storyType, setStoryType] = useState("text"); // "text" or "image"
   const storyFileInputRef = useRef(null);
 
+  // Call Logs State
+  const [callLogs, setCallLogs] = useState(() => {
+    if (!authUser?._id) return [];
+    const saved = localStorage.getItem(`call_logs_${authUser._id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
   useEffect(() => {
     getUsers();
     getStories();
