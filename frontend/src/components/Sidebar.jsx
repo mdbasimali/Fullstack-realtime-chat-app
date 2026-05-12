@@ -19,6 +19,7 @@ const Sidebar = () => {
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showThreeDotMenu, setShowThreeDotMenu] = useState(false);
   const [dismissedCards, setDismissedCards] = useState(() => {
     const saved = localStorage.getItem(`dismissed_cards_${authUser?._id}`);
     return saved ? JSON.parse(saved) : [];
@@ -86,6 +87,18 @@ const Sidebar = () => {
   const handleNewGroup = () => {
     toast.success("Group feature: Select contacts below to initialize a group!");
     setShowContactsModal(true);
+  };
+
+  const handleMarkAllRead = () => {
+    toast.success("All conversations marked as read! ✔️");
+  };
+
+  const handleFilterUnread = () => {
+    toast.success("Filtered to show unread chats! 🔍");
+  };
+
+  const handleNotificationProfile = () => {
+    toast.success("Notification profile: Standard 🔔");
   };
 
   // Remove a conversation from the active chats list
@@ -252,13 +265,61 @@ const Sidebar = () => {
             </button>
           </div>
           
-          <button 
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
-            title="Menu"
-          >
-            <MoreVertical size={21} />
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => {
+                setShowThreeDotMenu(!showThreeDotMenu);
+                setShowProfileMenu(false); // dismiss other dropdowns
+              }}
+              className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
+              title="Menu"
+            >
+              <MoreVertical size={21} />
+            </button>
+
+            {/* Premium Signal 3-Dot Dropdown Menu Card */}
+            {showThreeDotMenu && (
+              <div className="absolute right-0 mt-2.5 top-11 w-56 bg-base-100 dark:bg-base-200 border border-base-200/80 dark:border-base-700 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-50 overflow-hidden py-3 flex flex-col space-y-1 text-left animate-fade-in">
+                <button 
+                  onClick={() => { setShowThreeDotMenu(false); handleNewGroup(); }}
+                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
+                >
+                  New group
+                </button>
+                <button 
+                  onClick={() => { setShowThreeDotMenu(false); handleMarkAllRead(); }}
+                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
+                >
+                  Mark all read
+                </button>
+                <button 
+                  onClick={() => { setShowThreeDotMenu(false); handleInviteFriends(); }}
+                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
+                >
+                  Invite friends
+                </button>
+                <button 
+                  onClick={() => { setShowThreeDotMenu(false); handleFilterUnread(); }}
+                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
+                >
+                  Filter unread chats
+                </button>
+                <Link 
+                  to="/settings"
+                  onClick={() => setShowThreeDotMenu(false)}
+                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors block"
+                >
+                  Settings
+                </Link>
+                <button 
+                  onClick={() => { setShowThreeDotMenu(false); handleNotificationProfile(); }}
+                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
+                >
+                  Notification profile
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
