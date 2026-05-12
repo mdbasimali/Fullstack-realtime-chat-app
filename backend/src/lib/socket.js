@@ -23,8 +23,12 @@ export function getReceiverSocketId(userId){
 async function sendPushNotification(userId, data) {
     try {
         const user = await User.findById(userId);
-        if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) return;
+        if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) {
+            console.log(`No push subscriptions found for user ${userId}`);
+            return;
+        }
 
+        console.log(`Sending push notification to user ${userId} with ${user.pushSubscriptions.length} subscriptions`);
         const payload = JSON.stringify(data);
 
         const pushPromises = user.pushSubscriptions.map(sub => 

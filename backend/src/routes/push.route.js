@@ -18,8 +18,11 @@ router.post("/subscribe", protectRoute, async (req, res) => {
     // Check if subscription already exists
     const exists = user.pushSubscriptions.some(sub => sub.endpoint === subscription.endpoint);
     if (!exists) {
+      console.log(`New push subscription for user ${userId}`);
       user.pushSubscriptions.push(subscription);
       await user.save();
+    } else {
+      console.log(`Subscription already exists for user ${userId}`);
     }
 
     res.status(201).json({ message: "Subscription added successfully" });
