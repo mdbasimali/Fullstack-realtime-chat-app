@@ -302,18 +302,21 @@ const Sidebar = () => {
         
         {/* ==================== TABS: CHATS ==================== */}
         {activeTab === "chats" && (
-          <div className="space-y-4">
+          <div className={`${chatUsers.length === 0 ? "flex flex-col min-h-[66vh] justify-between space-y-6" : "space-y-4"}`}>
             
             {/* If no active conversations, show premium "No Chats Yet" empty state */}
             {chatUsers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center space-y-2 animate-fade-in">
-                <h2 className="text-xl font-semibold text-base-content">No chats yet.</h2>
-                <p className="text-sm text-base-content/60 max-w-[280px]">
-                  Get started by messaging a friend.
-                </p>
+              <>
+                {/* Centered Empty State Text */}
+                <div className="flex-1 flex flex-col items-center justify-center py-10 text-center space-y-2 animate-fade-in">
+                  <h2 className="text-xl font-semibold text-base-content">No chats yet.</h2>
+                  <p className="text-sm text-base-content/60 max-w-[280px]">
+                    Get started by messaging a friend.
+                  </p>
+                </div>
 
-                {/* "Get started" Quick Action Cards */}
-                <div className="w-full pt-10 text-left">
+                {/* "Get started" Quick Action Cards - Anchored to the bottom */}
+                <div className="w-full text-left mt-auto animate-fade-in">
                   <h3 className="text-sm font-semibold text-base-content/80 mb-3 px-1">Get started</h3>
                   <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
                     
@@ -372,7 +375,7 @@ const Sidebar = () => {
                     )}
                   </div>
                 </div>
-              </div>
+              </>
             ) : (
               /* Active Chat List styled beautifully like Signal */
               <div className="space-y-1">
