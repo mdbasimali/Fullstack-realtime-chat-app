@@ -5,7 +5,8 @@ import { useCallStore } from "../store/useCallStore";
 import { 
   Search, MoreVertical, Camera, Pencil, Users, Mail, X, 
   MessageSquare, Phone, Plus, Check, User, Settings, 
-  LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image
+  LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
+  Pin, VolumeX, CheckCircle, FolderPlus, Archive
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -104,6 +105,43 @@ const Sidebar = () => {
 
   const handleNotificationProfile = () => {
     toast.success("Notification profile: Standard 🔔");
+  };
+
+  // Long-press and Right-click contextual menu states and event triggers
+  const [activeMenuUserId, setActiveMenuUserId] = useState(null);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const longPressTimer = useRef(null);
+
+  const startLongPress = (e, userId) => {
+    // Avoid double triggering
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+
+    // Save event mouse/touch coordinates
+    let clientX = 0;
+    let clientY = 0;
+    if (e.touches && e.touches[0]) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    longPressTimer.current = setTimeout(() => {
+      e.preventDefault();
+      setMenuPosition({ x: clientX, y: clientY });
+      setActiveMenuUserId(userId);
+    }, 500); // 500ms long-press duration
+  };
+
+  const endLongPress = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  };
+
+  const handleContextMenu = (e, userId) => {
+    e.preventDefault();
+    setMenuPosition({ x: e.clientX, y: e.clientY });
+    setActiveMenuUserId(userId);
   };
 
   // Remove and permanently delete a conversation from database and sidebar
@@ -387,8 +425,17 @@ const Sidebar = () => {
                   return (
                     <div
                       key={user._id}
-                      onClick={() => setSelectedUser(user)}
-                      className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 ${
+                      onClick={() => {
+                        // Prevent click action from firing if active menu is currently open
+                        if (activeMenuUserId) return;
+                        setSelectedUser(user);
+                      }}
+                      onContextMenu={(e) => handleContextMenu(e, user._id)}
+                      onTouchStart={(e) => startLongPress(e, user._id)}
+                      onTouchEnd={endLongPress}
+                      onMouseDown={(e) => startLongPress(e, user._id)}
+                      onMouseUp={endLongPress}
+                      className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none ${
                         isSelected 
                           ? "bg-primary/10 border border-primary/20 shadow-sm" 
                           : "hover:bg-base-200 border border-transparent"
@@ -439,6 +486,114 @@ const Sidebar = () => {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Custom Signal Long-press Options Menu Popover Overlay */}
+            {activeMenuUserId && (
+              <div 
+                className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[1px]" 
+                onClick={() => setActiveMenuUserId(null)}
+                onContextMenu={(e) => { e.preventDefault(); setActiveMenuUserId(null); }}
+              >
+                <div 
+                  style={{ 
+                    top: Math.min(menuPosition.y, window.innerHeight - 340), 
+                    left: Math.min(menuPosition.x, window.innerWidth - 240) 
+                  }}
+                  className="absolute bg-base-100 border border-base-300 shadow-2xl rounded-[24px] p-2 w-56 flex flex-col space-y-0.5 z-50 animate-fade-in"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* 1. Unread */}
+                  <button 
+                    onClick={() => {
+                      toast.success("Chat marked as unread 💬");
+                      setActiveMenuUserId(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-base-200 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
+                  >
+                    <MessageSquare size={18} className="text-base-content/60" />
+                    <span>Unread</span>
+                  </button>
+
+                  {/* 2. Pin */}
+                  <button 
+                    onClick={() => {
+                      toast.success("Chat pinned 📌");
+                      setActiveMenuUserId(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-base-200 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
+                  >
+                    <Pin size={18} className="text-base-content/60 rotate-[45deg]" />
+                    <span>Pin</span>
+                  </button>
+
+                  {/* 3. Mute */}
+                  <button 
+                    onClick={() => {
+                      toast.success("Notifications muted 🔕");
+                      setActiveMenuUserId(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-base-200 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
+                  >
+                    <VolumeX size={18} className="text-base-content/60" />
+                    <span>Mute</span>
+                  </button>
+
+                  {/* 4. Select */}
+                  <button 
+                    onClick={() => {
+                      toast.success("Selected chat for multi-action ✅");
+                      setActiveMenuUserId(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-base-200 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
+                  >
+                    <CheckCircle size={18} className="text-base-content/60" />
+                    <span>Select</span>
+                  </button>
+
+                  {/* 5. Add to folder */}
+                  <button 
+                    onClick={() => {
+                      toast.success("Added to folder 📁");
+                      setActiveMenuUserId(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-base-200 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
+                  >
+                    <FolderPlus size={18} className="text-base-content/60" />
+                    <span>Add to folder</span>
+                  </button>
+
+                  {/* 6. Archive */}
+                  <button 
+                    onClick={async () => {
+                      const updated = activeConversations.filter(id => id !== activeMenuUserId);
+                      setActiveConversations(updated);
+                      localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
+                      toast.success("Chat archived 📥");
+                      setActiveMenuUserId(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-base-200 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
+                  >
+                    <Archive size={18} className="text-base-content/60" />
+                    <span>Archive</span>
+                  </button>
+
+                  {/* 7. Delete */}
+                  <button 
+                    onClick={async () => {
+                      const confirmDelete = window.confirm("Are you sure you want to permanently delete this conversation and all its messages?");
+                      if (confirmDelete) {
+                        await deleteStoreConversation(activeMenuUserId);
+                      }
+                      setActiveMenuUserId(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-error/10 active:bg-error/20 text-error rounded-xl text-left text-sm font-bold transition-colors"
+                  >
+                    <Trash2 size={18} />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
