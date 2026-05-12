@@ -6,12 +6,25 @@ import User from "../models/user.model.js";
 export const getUsersForSidebar = async(req,res)=>{
     try{
        const loggedInUserId = req.user._id;
-       const loggedInUser = await User.findById(loggedInUserId).populate({
-         path: "contacts",
-         select: "-password"
-       });
 
-       res.status(200).json(loggedInUser.contacts || []);
+       // Find all unique user IDs that have sent a message to or received a message from the logged-in user
+       const messageUserIds = await Message.distinct("senderId", { receiverId: loggedInUserId });
+       const messageUserIds2 = await Message.distinct("receiverId", { senderId: loggedInUserId });
+       
+       // Merge unique IDs
+       const interactedUserIds = [...new Set([...messageUserIds, ...messageUserIds2])];
+
+       const loggedInUser = await User.findById(loggedInUserId);
+       const contactIds = loggedInUser.contacts || [];
+
+       // Merge contacts and interacted user IDs
+       const allTargetUserIds = [...new Set([...contactIds.map(id => id.toString()), ...interactedUserIds.map(id => id.toString())])];
+
+       const filteredUsers = await User.find({
+         _id: { $in: allTargetUserIds, $ne: loggedInUserId }
+       }).select("-password");
+
+       res.status(200).json(filteredUsers);
     }catch(error){
        console.error("Error in getUsersForSidebar: ", error.message)
        res.status(500).json({error: "Internal server error"});

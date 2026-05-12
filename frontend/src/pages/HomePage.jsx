@@ -1,11 +1,17 @@
 import { useChatstore } from "../store/useChatStore";
+import { useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
 import { MessageSquare, Phone, Image as ImageIcon } from "lucide-react";
 
 const HomePage = () => {
-  const { selectedUser, setSelectedUser, activeTab, setActiveTab } = useChatstore();
+  const { selectedUser, setSelectedUser, activeTab, setActiveTab, subscribeToMessages, unsubscribeFromMessages } = useChatstore();
+
+  useEffect(() => {
+    subscribeToMessages();
+    return () => unsubscribeFromMessages();
+  }, [subscribeToMessages, unsubscribeFromMessages]);
 
   return (
     <div className="h-screen bg-base-100 flex flex-col overflow-hidden text-base-content">

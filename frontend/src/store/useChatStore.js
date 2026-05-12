@@ -60,25 +60,46 @@ export const useChatstore = create((set,get) => ({
   },
   
   subscribeToMessages:()=>{
-    const{selectedUser} = get()
-    if(!selectedUser)return;
-      
     const socket=useAuthStore.getState().socket;
+    if(!socket) return;
 
-    //optimize 
+    socket.off("newMessage");
+
     socket.on("newMessage",(newMessage)=>{
-      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-      if(!isMessageSentFromSelectedUser)return;
+      const { selectedUser, messages, getUsers } = get();
+      const authUser = useAuthStore.getState().authUser;
+      if (!authUser) return;
 
-      set({
-        messages:[...get().messages,newMessage]
-      });
+      if (selectedUser && newMessage.senderId === selectedUser._id) {
+        set({
+          messages: [...messages, newMessage]
+        });
+      }
+
+      // Automatically register the sender as an active conversation
+      const activeKey = `active_conversations_${authUser._id}`;
+      const currentActive = JSON.parse(localStorage.getItem(activeKey) || "[]");
+      if (!currentActive.includes(newMessage.senderId)) {
+        const updated = [...currentActive, newMessage.senderId];
+        localStorage.setItem(activeKey, JSON.stringify(updated));
+        getUsers();
+      } else {
+        getUsers();
+      }
+
+      // Show high-fidelity toast notification if we are not actively in their chat window
+      if (!selectedUser || selectedUser._id !== newMessage.senderId) {
+        toast.success("New message received! 💬", {
+          duration: 3000,
+          position: "top-right"
+        });
+      }
     });
   },
- unsubscribeFromMessages:()=>{
-  const socket=useAuthStore.getState().socket
-  socket.off("newMessage");
- },
+  unsubscribeFromMessages:()=>{
+    const socket=useAuthStore.getState().socket;
+    if(socket) socket.off("newMessage");
+  },
 
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),
