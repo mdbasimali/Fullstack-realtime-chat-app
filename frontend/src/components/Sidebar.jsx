@@ -11,12 +11,11 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } = useChatstore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
   const { initiateCall } = useCallStore();
 
   // Navigation states
-  const [activeTab, setActiveTab] = useState("chats");
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -638,7 +637,7 @@ const Sidebar = () => {
       </div>
 
       {/* 4. Bottom Navigation Bar */}
-      <nav className="absolute bottom-0 inset-x-0 bg-base-100/90 border-t border-base-300 p-2.5 flex justify-around items-center backdrop-blur-md z-10">
+      <nav className="hidden md:flex absolute bottom-0 inset-x-0 bg-base-100/90 border-t border-base-300 p-2.5 justify-around items-center backdrop-blur-md z-10">
         {/* Chats Tab button */}
         <button 
           onClick={() => { setActiveTab("chats"); setSearchQuery(""); }}

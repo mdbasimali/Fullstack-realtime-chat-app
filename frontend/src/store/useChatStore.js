@@ -9,6 +9,8 @@ export const useChatstore = create((set,get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  activeTab: "chats",
+  setActiveTab: (activeTab) => set({ activeTab }),
 
   getUsers: async () => {
     set({ isUsersLoading: true });
