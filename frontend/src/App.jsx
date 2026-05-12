@@ -10,6 +10,8 @@ import { useAuthStore } from "./store/useAuthStore";
 import {Loader} from "lucide-react"
 import {Toaster} from "react-hot-toast";
 import { useThemeStore } from "./store/useThemeStore";
+import { useCallStore } from "./store/useCallStore";
+import CallModal from "./components/CallModal";
 // import axios from "axios";
 
 const App = () => {
@@ -22,6 +24,34 @@ const App = () => {
   useEffect(()=>{
     checkAuth();
   },[checkAuth]);
+
+  const { socket } = useAuthStore();
+  const { 
+    handleIncomingCall, 
+    handleCallAccepted, 
+    handleCallRejected, 
+    handleCallEnded, 
+    handleIceCandidate,
+    users // We might need to find the user info
+  } = useCallStore();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("call:incoming", handleIncomingCall);
+    socket.on("call:accepted", handleCallAccepted);
+    socket.on("call:rejected", handleCallRejected);
+    socket.on("call:ended", handleCallEnded);
+    socket.on("ice:candidate", handleIceCandidate);
+
+    return () => {
+      socket.off("call:incoming");
+      socket.off("call:accepted");
+      socket.off("call:rejected");
+      socket.off("call:ended");
+      socket.off("ice:candidate");
+    };
+  }, [socket, handleIncomingCall, handleCallAccepted, handleCallRejected, handleCallEnded, handleIceCandidate]);
 
   console.log({authUser});
 
@@ -43,6 +73,7 @@ const App = () => {
       </Routes>
       
       <Toaster/>
+      <CallModal />
     </div>
   );
 };

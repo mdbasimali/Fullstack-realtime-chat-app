@@ -1,10 +1,12 @@
-import { Video, X } from "lucide-react";
+import { Video, Phone, X } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatstore } from "../store/useChatStore";
+import { useCallStore } from "../store/useCallStore";
 
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser } = useChatstore();
   const { onlineUsers } = useAuthStore();
+  const { initiateCall } = useCallStore();
 
   return (
     <div className="p-2.5 border-b border-base-300">
@@ -30,13 +32,27 @@ const ChatHeader = () => {
         </div>
 
         {/* right side (vide call + Close) button */}
-        <div className="flex items-center gap-10">
-            {/* TODO  */}
-          <button>
-            <Video/> 
+        <div className="flex items-center gap-4 md:gap-8">
+          <button 
+            onClick={() => initiateCall(selectedUser, "audio")}
+            className="btn btn-ghost btn-circle btn-sm md:btn-md text-base-content/70 hover:text-primary transition-colors"
+            title="Audio Call"
+          >
+            <Phone size={20} />
           </button>
-          <button onClick={() => setSelectedUser(null)}>
-            <X />
+          <button 
+            onClick={() => initiateCall(selectedUser, "video")}
+            className="btn btn-ghost btn-circle btn-sm md:btn-md text-base-content/70 hover:text-primary transition-colors"
+            title="Video Call"
+          >
+            <Video size={20} />
+          </button>
+          <button 
+            onClick={() => setSelectedUser(null)}
+            className="btn btn-ghost btn-circle btn-sm md:btn-md text-base-content/70 hover:text-error transition-colors"
+            title="Close"
+          >
+            <X size={20} />
           </button>
         </div>
 
