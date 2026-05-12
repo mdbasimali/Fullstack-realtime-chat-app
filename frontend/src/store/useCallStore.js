@@ -48,6 +48,48 @@ const stopAllSounds = () => {
     CALLING_SOUND.currentTime = 0;
 };
 
+const addCallLog = (remoteUser, type, status) => {
+  try {
+    if (!remoteUser) return;
+    const authUser = useAuthStore.getState().authUser;
+    if (!authUser) return;
+    
+    const activeKey = `call_logs_${authUser._id}`;
+    const saved = localStorage.getItem(activeKey);
+    const callLogs = saved ? JSON.parse(saved) : [];
+    
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dateString = now.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    
+    const newLog = {
+      id: Date.now().toString() + Math.random().toString(36).substring(2, 7),
+      name: remoteUser.fullName || "Unknown User",
+      type: type || "audio",
+      time: `${dateString}, ${timeString}`,
+      status: status // 'outgoing', 'incoming', 'missed'
+    };
+    
+    const updated = [newLog, ...callLogs];
+    localStorage.setItem(activeKey, JSON.stringify(updated));
+    
+    window.dispatchEvent(new Event("callLogsUpdated"));
+  } catch (e) {
+    console.error("Error logging call:", e);
+  }
+};
+
+const logMissedIfRinging = (get) => {
+  try {
+    const { isIncomingCall, callStatus, remoteUser, callType } = get();
+    if (isIncomingCall && callStatus === "ringing" && remoteUser) {
+      addCallLog(remoteUser, callType, "missed");
+    }
+  } catch (e) {
+    console.error("Error logging missed call:", e);
+  }
+};
+
 export const useCallStore = create((set, get) => ({
   isInCall: false,
   isIncomingCall: false,
@@ -109,6 +151,8 @@ export const useCallStore = create((set, get) => ({
       socket.emit("call:user", { to: receiver._id, offer, type });
 
       playSound("calling");
+
+      addCallLog(receiver, type, "outgoing");
 
       set({
         isInCall: true,
@@ -173,6 +217,8 @@ export const useCallStore = create((set, get) => ({
 
       stopAllSounds();
 
+      addCallLog(remoteUser, callType, "incoming");
+
       set({
         isInCall: true,
         isIncomingCall: false,
@@ -189,6 +235,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   rejectCall: () => {
+    logMissedIfRinging(get);
     stopAllSounds();
     const { remoteUser } = get();
     const socket = useAuthStore.getState().socket;
@@ -219,6 +266,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   endCall: () => {
+    logMissedIfRinging(get);
     stopAllSounds();
     const { remoteUser, pc, localStream } = get();
     const socket = useAuthStore.getState().socket;
@@ -233,6 +281,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   handleCallEnded: () => {
+    logMissedIfRinging(get);
     stopAllSounds();
     const { pc, localStream } = get();
     if (pc) pc.close();
@@ -242,6 +291,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   handleCallRejected: () => {
+    logMissedIfRinging(get);
     stopAllSounds();
     toast.error("Call rejected");
     get().endCall();

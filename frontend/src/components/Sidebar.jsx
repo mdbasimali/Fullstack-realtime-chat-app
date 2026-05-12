@@ -57,6 +57,18 @@ const Sidebar = () => {
     }
   }, [getUsers, authUser?._id, initializeActiveConversations]);
 
+  // Sync real-time call logs instantly when updated
+  useEffect(() => {
+    const handleSync = () => {
+      if (authUser?._id) {
+        const saved = localStorage.getItem(`call_logs_${authUser._id}`);
+        setCallLogs(saved ? JSON.parse(saved) : []);
+      }
+    };
+    window.addEventListener("callLogsUpdated", handleSync);
+    return () => window.removeEventListener("callLogsUpdated", handleSync);
+  }, [authUser?._id]);
+
   // Keep track of active conversation if user selects someone
   useEffect(() => {
     if (selectedUser && !activeConversations.includes(selectedUser._id)) {
