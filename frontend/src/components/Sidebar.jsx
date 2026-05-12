@@ -13,6 +13,33 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import StoryViewer from "./StoryViewer";
 
+const formatLastMessageTime = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+  
+  // Check if today
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  
+  // Check if yesterday
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return "Yesterday";
+  }
+  
+  // Check if within 7 days
+  const diffTime = Math.abs(now - date);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays < 7) {
+    return date.toLocaleDateString([], { weekday: 'short' });
+  }
+  
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
 const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
@@ -461,37 +488,58 @@ const Sidebar = () => {
                           : "hover:bg-base-200 border border-transparent"
                       }`}
                     >
-                      <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="flex items-center gap-3.5 min-w-0 flex-1 mr-2">
                         {/* Avatar */}
-                        <div className="relative">
+                        <div className="relative flex-shrink-0">
                           {user.profilePic ? (
                             <img
                               src={user.profilePic}
                               alt={user.fullName}
-                              className="w-12 h-12 object-cover rounded-full border border-base-300"
+                              className="w-12 h-12 object-cover rounded-full border border-base-300 animate-fade-in"
                             />
                           ) : (
-                            <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-base border border-indigo-100 dark:border-indigo-900/20">
+                            <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-base border border-indigo-100 dark:border-indigo-900/20 shadow-sm">
                               {getInitials(user.fullName)}
                             </div>
                           )}
                           {isOnline && (
-                            <span className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full ring-2 ring-base-100" />
+                            <span className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full ring-2 ring-base-100 animate-pulse" />
                           )}
                         </div>
 
-                        {/* Name & status */}
-                        <div className="text-left min-w-0">
-                          <h4 className="font-semibold text-base-content text-sm md:text-base truncate group-hover:text-primary transition-colors">
-                            {user.fullName}
-                          </h4>
-                          <p className="text-xs text-base-content/60 truncate mt-0.5">
-                            {isOnline ? (
-                              <span className="text-green-500 font-medium">Online</span>
-                            ) : (
-                              "Offline"
+                        {/* Name & Last Message Preview */}
+                        <div className="text-left min-w-0 flex-1">
+                          <div className="flex justify-between items-baseline gap-2">
+                            <h4 className="font-bold text-base-content text-sm md:text-base truncate group-hover:text-primary transition-colors">
+                              {user.fullName}
+                            </h4>
+                            {user.lastMessage && (
+                              <span className="text-[10px] text-base-content/40 font-semibold whitespace-nowrap">
+                                {formatLastMessageTime(user.lastMessage.createdAt)}
+                              </span>
                             )}
-                          </p>
+                          </div>
+                          
+                          <div className="flex items-center justify-between mt-0.5 min-w-0 gap-1">
+                            <p className="text-xs text-base-content/50 truncate flex-1 min-w-0 font-medium leading-relaxed">
+                              {user.lastMessage ? (
+                                <>
+                                  {user.lastMessage.senderId === authUser._id ? (
+                                    <span className="text-primary/70 mr-0.5">You: </span>
+                                  ) : null}
+                                  {user.lastMessage.image ? (
+                                    <span className="italic flex items-center gap-1 text-primary/60">
+                                      📷 Photo
+                                    </span>
+                                  ) : (
+                                    user.lastMessage.text
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-base-content/30 italic">No messages yet</span>
+                              )}
+                            </p>
+                          </div>
                         </div>
                       </div>
 
