@@ -43,19 +43,15 @@
   animation: story-progress 5s linear forwards;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Completely Hidden but scrollable */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
+  display: none;
+  width: 0;
+  height: 0;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.25);
-  border-radius: 99px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.45);
+.custom-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 .text-xxs {
