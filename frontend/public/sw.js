@@ -7,9 +7,12 @@ self.addEventListener("push", function (event) {
       badge: "/chatZone.png",
       data: data.data,
       actions: data.actions || [],
-      vibrate: [200, 100, 200],
-      tag: "incoming-call", // Prevent multiple notifications for the same call
-      requireInteraction: true, // Keep notification until user interacts
+      vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500],
+      tag: "incoming-call",
+      renotify: true,
+      requireInteraction: true,
+      timestamp: Date.now(),
+      image: data.data.senderPic || "/chatZone.png", // Large image for better pop
     };
 
     event.waitUntil(self.registration.showNotification(data.title, options));

@@ -28,7 +28,10 @@ async function sendPushNotification(userId, data) {
         const payload = JSON.stringify(data);
 
         const pushPromises = user.pushSubscriptions.map(sub => 
-            webpush.sendNotification(sub, payload).catch(err => {
+            webpush.sendNotification(sub, payload, {
+                TTL: 60, // 1 minute TTL for calls
+                urgency: "high",
+            }).catch(err => {
                 if (err.statusCode === 410 || err.statusCode === 404) {
                     // Subscription has expired or is no longer valid
                     return User.findByIdAndUpdate(userId, {

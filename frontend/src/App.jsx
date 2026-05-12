@@ -63,7 +63,7 @@ const App = () => {
       // Give a small delay to ensure everything is loaded
       setTimeout(() => {
         handleIncomingCall({ from, type, offer: null }); // Offer might be null, but we can still show the UI
-      }, 1000);
+      }, 500);
       
       // Clean up URL
       window.history.replaceState({}, document.title, "/");
