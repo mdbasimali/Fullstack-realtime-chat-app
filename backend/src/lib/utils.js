@@ -10,8 +10,9 @@ export const generateToken=(userId,res) =>{
     res.cookie("jwt",token, {
         maxAge: 7*24*60*60*1000,//miliSecond
         httpOnly:true,//prevent xss attaccks cross-site scripting attacks
-        sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
-        secure: process.env.NODE_ENV !== "development",
+        sameSite: "none",
+        secure: true,
+        partitioned: true, // Newer browsers support this for cross-site cookies
     });
     return token;
 }

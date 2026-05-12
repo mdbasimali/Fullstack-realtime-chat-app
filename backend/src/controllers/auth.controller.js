@@ -80,8 +80,9 @@ export const logout =(req,res)=>{
    try{
     res.cookie("jwt", "", {
       maxAge: 0,
-      sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
-      secure: process.env.NODE_ENV !== "development",
+      sameSite: "none",
+      secure: true,
+      partitioned: true,
     });
     res.status(200).json({message:"logged out successfully"});
 
