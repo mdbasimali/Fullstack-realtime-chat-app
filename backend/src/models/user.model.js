@@ -30,6 +30,15 @@ const userSchema = new mongoose.Schema(
       ref: "User"
     }
   ],
+  pushSubscriptions: [
+    {
+      endpoint: String,
+      keys: {
+        p256dh: String,
+        auth: String,
+      },
+    },
+  ],
 
 },
 {timestamps:true}

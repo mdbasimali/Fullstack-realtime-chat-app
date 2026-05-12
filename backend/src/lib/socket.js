@@ -1,6 +1,8 @@
 import {Server} from"socket.io";
 import http from "http";
 import express from "express";
+import webpush from "web-push";
+import User from "../models/user.model.js";
 
 
 
@@ -18,6 +20,31 @@ export function getReceiverSocketId(userId){
     return userSocketMap[userId]
 }
 
+async function sendPushNotification(userId, data) {
+    try {
+        const user = await User.findById(userId);
+        if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) return;
+
+        const payload = JSON.stringify(data);
+
+        const pushPromises = user.pushSubscriptions.map(sub => 
+            webpush.sendNotification(sub, payload).catch(err => {
+                if (err.statusCode === 410 || err.statusCode === 404) {
+                    // Subscription has expired or is no longer valid
+                    return User.findByIdAndUpdate(userId, {
+                        $pull: { pushSubscriptions: { endpoint: sub.endpoint } }
+                    });
+                }
+                console.error("Error sending push notification:", err);
+            })
+        );
+
+        await Promise.all(pushPromises);
+    } catch (error) {
+        console.error("Error in sendPushNotification:", error);
+    }
+}
+
 //used to store  online users
 const userSocketMap={};//{userId:socketId}
 
@@ -32,8 +59,28 @@ io.on("connection", (socket) =>{
   // ✅ Video Call Signaling Logic
 
   // Caller sends offer to callee
-  socket.on("call:user", ({ to, offer, type }) => {
+  socket.on("call:user", async ({ to, offer, type }) => {
     const receiverSocketId = getReceiverSocketId(to);
+    
+    // Always send push notification if we have a token, so they get it even if tab is in background/throttled
+    const sender = await User.findById(userId).select("fullName profilePic");
+    sendPushNotification(to, {
+        title: `Incoming ${type} call`,
+        body: `${sender?.fullName || "Someone"} is calling you...`,
+        data: {
+            type: "incoming_call",
+            callType: type,
+            from: userId,
+            senderName: sender?.fullName,
+            senderPic: sender?.profilePic,
+            offer: offer
+        },
+        actions: [
+            { action: "answer", title: "Answer" },
+            { action: "decline", title: "Decline" }
+        ]
+    });
+
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("call:incoming", { from: userId, offer, type });
     }

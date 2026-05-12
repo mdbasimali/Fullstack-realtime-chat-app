@@ -54,6 +54,22 @@ const App = () => {
     };
   }, [socket, handleIncomingCall, handleCallAccepted, handleCallRejected, handleCallEnded, handleIceCandidate]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("call") === "true" && params.get("from")) {
+      const from = params.get("from");
+      const type = params.get("type") || "video";
+      
+      // Give a small delay to ensure everything is loaded
+      setTimeout(() => {
+        handleIncomingCall({ from, type, offer: null }); // Offer might be null, but we can still show the UI
+      }, 1000);
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, "/");
+    }
+  }, [location, handleIncomingCall]);
+
   console.log({authUser});
 
   if(isCheckingAuth && !authUser)return(

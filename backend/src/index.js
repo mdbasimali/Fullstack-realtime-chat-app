@@ -9,12 +9,20 @@ import { connectDB } from "./lib/db.js";
 
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
+import pushRoutes from "./routes/push.route.js";
 import { app, server} from "./lib/socket.js";
+import webpush from "web-push";
 
 app.set("trust proxy", 1); // Required for secure cookies on Render/Vercel
 
 
 dotenv.config()
+
+webpush.setVapidDetails(
+    process.env.VAPID_EMAIL,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+);
 
 
 const PORT=process.env.PORT;
@@ -36,6 +44,7 @@ app.use(cors({
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/push", pushRoutes);
 
 if(process.env.NODE_ENV==="production"){
     app.use(express.static(path.join(__dirname, "../frontend/dist")));

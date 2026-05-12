@@ -20,6 +20,7 @@ export const useAuthStore = create((set,get) => ({
       const res = await axiosInstance.get("/auth/check");
       set({ authUser: res.data });
       get().connectSocket();
+      get().setupPushNotifications();
     } catch (error) {
       set({ authUser: null });
       console.log("Error in checkAuth:", error);
@@ -104,6 +105,37 @@ export const useAuthStore = create((set,get) => ({
 
   disconnectSocket:()=>{
     if(get().socket?.connected) get().socket.disconnect();
-  }
+  },
+
+  setupPushNotifications: async () => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      console.log("Push notifications not supported");
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      console.log("Service Worker registered");
+
+      // Check for permission
+      let permission = Notification.permission;
+      if (permission === "default") {
+        permission = await Notification.requestPermission();
+      }
+
+      if (permission !== "granted") return;
+
+      // Subscribe to push
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: "BH1ZlBiN1Wl58dEAfBeg5_Up-WJGMjSFAfuC1iaw5NUMqIWVB0ZjmCzOeulWTuYXJrv_UxrolQOQmJVloyxOk2k",
+      });
+
+      await axiosInstance.post("/push/subscribe", subscription);
+      console.log("Push subscription successful");
+    } catch (error) {
+      console.error("Error setting up push notifications:", error);
+    }
+  },
 
 }));
