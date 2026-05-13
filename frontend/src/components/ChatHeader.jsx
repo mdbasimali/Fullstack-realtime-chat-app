@@ -1,4 +1,4 @@
-import { Video, Phone, MoreVertical, ArrowLeft, User, Trash2 } from "lucide-react";
+import { Video, Phone, MoreVertical, ArrowLeft, User, Trash2, PhoneOff } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatstore } from "../store/useChatStore";
 import { useCallStore } from "../store/useCallStore";
@@ -84,6 +84,20 @@ const ChatHeader = () => {
               >
                 <Trash2 size={16} />
                 Delete Chat
+              </button>
+            </li>
+            <li>
+              <button 
+                onClick={async () => {
+                  const confirmClear = window.confirm("Are you sure you want to clear all call logs from this chat?");
+                  if (confirmClear) {
+                    await useChatstore.getState().clearCallLogs(selectedUser._id);
+                  }
+                }}
+                className="hover:bg-base-200 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
+              >
+                <PhoneOff size={16} className="text-base-content/60" />
+                Clear Call Logs
               </button>
             </li>
           </ul>

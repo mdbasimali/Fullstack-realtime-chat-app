@@ -189,6 +189,32 @@ export const useChatstore = create((set,get) => ({
     }
   },
 
+  deleteMessage: async (messageId) => {
+    try {
+      await axiosInstance.delete(`/messages/message/${messageId}`);
+      const { messages } = get();
+      set({ messages: messages.filter(m => m._id !== messageId) });
+      toast.success("Message deleted");
+    } catch (error) {
+      toast.error("Failed to delete message");
+    }
+  },
+
+  clearCallLogs: async (userId) => {
+    try {
+      await axiosInstance.delete(`/messages/call-logs/${userId}`);
+      const { messages } = get();
+      set({ 
+        messages: messages.filter(m => 
+          !(m.messageType === "voice_call" || m.messageType === "video_call")
+        ) 
+      });
+      toast.success("Call logs cleared");
+    } catch (error) {
+      toast.error("Failed to clear call logs");
+    }
+  },
+
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),
 }));

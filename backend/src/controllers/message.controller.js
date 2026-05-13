@@ -259,3 +259,44 @@ export const deleteConversation = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const deleteMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const myId = req.user._id;
+
+    const message = await Message.findOneAndDelete({ 
+      _id: id, 
+      $or: [{ senderId: myId }, { receiverId: myId }] 
+    });
+
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    res.status(200).json({ message: "Message deleted successfully" });
+  } catch (error) {
+    console.log("Error in deleteMessage controller: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const clearCallLogs = async (req, res) => {
+  try {
+    const myId = req.user._id;
+    const { id: otherId } = req.params;
+
+    await Message.deleteMany({
+      $or: [
+        { senderId: myId, receiverId: otherId },
+        { senderId: otherId, receiverId: myId }
+      ],
+      messageType: { $in: ["voice_call", "video_call"] }
+    });
+
+    res.status(200).json({ message: "Call logs cleared successfully" });
+  } catch (error) {
+    console.log("Error in clearCallLogs controller: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
