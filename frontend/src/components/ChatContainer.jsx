@@ -43,11 +43,11 @@ const ChatContainer = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-base-100">
+    <div className="flex-1 flex flex-col h-[100dvh] md:h-full overflow-hidden bg-base-100 relative">
       <ChatHeader />
 
       {/* Messages Stream View */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6">
         
         {/* Large, Beautiful Profile Onboarding Card */}
         <div className="flex flex-col items-center justify-center p-6 mb-8 mt-4 bg-base-200/30 dark:bg-base-950/20 border border-base-300/40 rounded-[32px] max-w-[340px] md:max-w-md mx-auto text-center space-y-4 shadow-xs animate-fade-in">
