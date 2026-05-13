@@ -212,23 +212,23 @@ export const sendMessage = async(req,res)=>{
     await newMessage.save();
 
     // socket.io
-    const receiverSocketId =getReceiverSocketId(receiverId);
+    const receiverSocketId = getReceiverSocketId(receiverId);
     if(receiverSocketId){
-        io.to(receiverSocketId).emit("newMessage",newMessage)
-    } else {
-        // Send push notification if user is offline
-        const sender = await User.findById(senderId);
-        await sendPushNotification(receiverId, {
-            type: "message",
-            title: sender.fullName,
-            body: text || "Sent an image",
-            icon: sender.profilePic || "/avatar.png",
-            data: {
-                url: "/",
-                senderId
-            }
-        });
+        io.to(receiverSocketId).emit("newMessage", newMessage);
     }
+
+    // Always send push notification for system tray (it will only show if app is in background)
+    const sender = await User.findById(senderId);
+    await sendPushNotification(receiverId, {
+        type: "message",
+        title: sender.fullName,
+        body: "New Message", // Hidden for privacy as requested
+        icon: sender.profilePic || "/avatar.png",
+        data: {
+            url: "/",
+            senderId
+        }
+    });
     
 
     res.status(201).json(newMessage)
