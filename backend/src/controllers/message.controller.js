@@ -176,6 +176,21 @@ export const getMessages = async(req,res) =>{
       const { id:userToChatId }=req.params
       const myId=req.user._id;
 
+      // Mark all unread incoming messages from this user as read
+      await Message.updateMany(
+        { senderId: userToChatId, receiverId: myId, isRead: false },
+        { $set: { isRead: true } }
+      );
+
+      // Notify the other user that their messages have been read
+      const otherUserSocketId = getReceiverSocketId(userToChatId);
+      if (otherUserSocketId) {
+        io.to(otherUserSocketId).emit("messagesRead", {
+          readBy: myId,
+          senderId: userToChatId,
+        });
+      }
+
       const messages =await Message.find({
         $or:[
             {senderId:myId, receiverId:userToChatId},

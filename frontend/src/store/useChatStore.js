@@ -90,14 +90,14 @@ export const useChatstore = create((set,get) => ({
       toast.error(error.response.data.message);
     }
   },
-  
-  subscribeToMessages:()=>{
-    const socket=useAuthStore.getState().socket;
-    if(!socket) return;
+  subscribeToMessages: () => {
+    const socket = useAuthStore.getState().socket;
+    if (!socket) return;
 
     socket.off("newMessage");
+    socket.off("messagesRead");
 
-    socket.on("newMessage",(newMessage)=>{
+    socket.on("newMessage", (newMessage) => {
       const { selectedUser, messages, getUsers } = get();
       const authUser = useAuthStore.getState().authUser;
       if (!authUser) return;
@@ -106,6 +106,9 @@ export const useChatstore = create((set,get) => ({
         set({
           messages: [...messages, newMessage]
         });
+
+        // Emit messageSeen over socket since we are actively in this user's chat window
+        socket.emit("messageSeen", { senderId: selectedUser._id });
       }
 
       // Automatically register the sender as an active conversation
@@ -128,12 +131,30 @@ export const useChatstore = create((set,get) => ({
         });
       }
     });
-  },
-  unsubscribeFromMessages:()=>{
-    const socket=useAuthStore.getState().socket;
-    if(socket) socket.off("newMessage");
+
+    // Handle real-time read notifications from the recipient
+    socket.on("messagesRead", ({ readBy }) => {
+      const { selectedUser, messages } = get();
+      if (selectedUser && selectedUser._id === readBy) {
+        // Mark all sent messages as read in local state
+        const updatedMessages = messages.map((msg) => {
+          if (msg.receiverId === readBy && !msg.isRead) {
+            return { ...msg, isRead: true };
+          }
+          return msg;
+        });
+        set({ messages: updatedMessages });
+      }
+    });
   },
 
+  unsubscribeFromMessages: () => {
+    const socket = useAuthStore.getState().socket;
+    if (socket) {
+      socket.off("newMessage");
+      socket.off("messagesRead");
+    }
+  },
 
   deleteConversation: async (userId) => {
     try {

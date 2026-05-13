@@ -3,6 +3,8 @@ import http from "http";
 import express from "express";
 import webpush from "web-push";
 import User from "../models/user.model.js";
+import Message from "../models/message.model.js";
+
 
 
 
@@ -141,6 +143,30 @@ io.on("connection", (socket) =>{
     const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("ice:candidate", { from: userId, candidate });
+    }
+  });
+
+  // Real-time Message Seen/Read Event
+  socket.on("messageSeen", async ({ senderId }) => {
+    try {
+      if (senderId && userId) {
+        // Mark all unread messages from this sender to current user as read
+        await Message.updateMany(
+          { senderId, receiverId: userId, isRead: false },
+          { $set: { isRead: true } }
+        );
+
+        // Notify the sender that their messages to this user have been read
+        const senderSocketId = getReceiverSocketId(senderId);
+        if (senderSocketId) {
+          io.to(senderSocketId).emit("messagesRead", {
+            readBy: userId,
+            senderId: senderId,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Error in messageSeen socket handler:", e);
     }
   });
 

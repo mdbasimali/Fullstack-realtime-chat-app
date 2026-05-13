@@ -589,7 +589,16 @@ const Sidebar = () => {
                               {user.lastMessage ? (
                                 <>
                                   {user.lastMessage.senderId === authUser._id ? (
-                                    <span className="text-primary/70 mr-0.5">You: </span>
+                                    <span className="inline-flex items-center align-middle mr-1.5 select-none">
+                                      {user.lastMessage.isRead ? (
+                                        <span className="flex -space-x-1 text-sky-500 dark:text-sky-400">
+                                          <Check size={14} className="stroke-[3.5]" />
+                                          <Check size={14} className="stroke-[3.5]" />
+                                        </span>
+                                      ) : (
+                                        <Check size={14} className="stroke-[2.5] text-base-content/40" />
+                                      )}
+                                    </span>
                                   ) : null}
                                   {user.lastMessage.image ? (
                                     <span className="italic flex items-center gap-1 text-primary/60">

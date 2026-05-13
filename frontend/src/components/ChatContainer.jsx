@@ -118,7 +118,16 @@ const ChatContainer = () => {
                   <div className={`flex items-center gap-1 mt-1.5 text-[10px] self-end font-semibold opacity-75`}>
                     <span>{formatMessageTime(message.createdAt)}</span>
                     {isMyMessage && (
-                      <Check size={12} className="stroke-[3]" />
+                      <span className="inline-flex items-center ml-0.5">
+                        {message.isRead ? (
+                          <div className="flex -space-x-1 text-sky-400 dark:text-sky-300">
+                            <Check size={12} className="stroke-[3.5]" />
+                            <Check size={12} className="stroke-[3.5]" />
+                          </div>
+                        ) : (
+                          <Check size={12} className="stroke-[3] text-white/50" />
+                        )}
+                      </span>
                     )}
                   </div>
                 </div>
