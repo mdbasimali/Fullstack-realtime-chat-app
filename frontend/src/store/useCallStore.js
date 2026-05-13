@@ -8,9 +8,8 @@ const ICE_SERVERS = {
         "stun:stun.l.google.com:19302",
         "stun:stun1.l.google.com:19302",
         "stun:stun2.l.google.com:19302",
-        "stun:stun.l.google.com:19302",
-        "stun:stun.services.mozilla.com",
-        "stun:global.stun.twilio.com:3478"
+        "stun:stun3.l.google.com:19302",
+        "stun:stun4.l.google.com:19302"
       ],
     },
     {
@@ -268,7 +267,8 @@ export const useCallStore = create((set, get) => ({
       };
 
       pc.ontrack = (event) => {
-        set({ remoteStream: event.streams[0] });
+        const [remoteStream] = event.streams;
+        set({ remoteStream });
       };
 
       const offer = await pc.createOffer();
