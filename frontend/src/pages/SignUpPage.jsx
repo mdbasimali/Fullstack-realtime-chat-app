@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User } from "lucide-react";
+import { AtSign, Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import AuthImagePattern from "../components/AuthimagePattern";
 
@@ -9,6 +9,7 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
+    username: "",
     email: "",
     password: "",
   });
@@ -16,6 +17,7 @@ const SignUpPage = () => {
   const { signup, isSigningUp } = useAuthStore();
 
   const validateForm = () => {
+    if(!formData.username.trim()) { console.log("Username is required"); return false; }
     if(!formData.fullName.trim()) { console.log("Full name is required"); return false; }
     if(!formData.email.trim()) { console.log("Email is required"); return false; }
     if(!/\S+@\S+\.\S+/.test(formData.email)) { console.log("Invalid email format"); return false; }
@@ -53,6 +55,25 @@ const SignUpPage = () => {
           </div>
          
          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* username section */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Username</span>
+              </label>
+              <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                  <AtSign className="size-5 text-base-content/40" />
+                </div>
+                <input
+                  type="text"
+                  className={`input input-bordered w-full pl-10`}
+                  placeholder="johndoe"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
+                />
+              </div>
+            </div>
+
            {/* name section */}
              <div className="form-control">
               <label className="label">
@@ -65,7 +86,7 @@ const SignUpPage = () => {
                 <input
                   type="text"
                   className={`input input-bordered w-full pl-10`}
-                  placeholder="Enter Name"
+                  placeholder="John Doe"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 />
