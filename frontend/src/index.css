@@ -80,3 +80,12 @@ body,
 .text-xxs {
   font-size: 0.65rem;
 }
+
+/* Safe Area Padding Utilities for mobile notches and status bars */
+.safe-top {
+  padding-top: calc(1rem + env(safe-area-inset-top, 0px)) !important;
+}
+
+.safe-p-3-top {
+  padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)) !important;
+}

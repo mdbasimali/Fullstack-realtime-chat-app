@@ -66,7 +66,7 @@ const SettingsPage = () => {
     <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col bg-base-100 select-none overflow-hidden">
       
       {/* 1. Header with Signal Styling */}
-      <header className="p-4 border-b border-base-300 flex items-center gap-4 bg-base-100/90 backdrop-blur sticky top-0 z-10">
+      <header className="p-4 safe-top border-b border-base-300 flex items-center gap-4 bg-base-100/90 backdrop-blur sticky top-0 z-10">
         <Link 
           to="/" 
           className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
