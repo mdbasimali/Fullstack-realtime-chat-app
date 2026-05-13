@@ -63,7 +63,7 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col bg-base-100 select-none overflow-y-auto">
+    <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col bg-base-100 select-none overflow-hidden">
       
       {/* 1. Header with Signal Styling */}
       <header className="p-4 border-b border-base-300 flex items-center gap-4 bg-base-100/90 backdrop-blur sticky top-0 z-10">
@@ -80,7 +80,7 @@ const SettingsPage = () => {
       </header>
 
       {/* Main Settings Panel */}
-      <div className="flex-1 max-w-xl w-full mx-auto p-5 pb-16 space-y-6">
+      <div className="flex-1 max-w-xl w-full mx-auto p-5 pb-16 space-y-6 overflow-y-auto custom-scrollbar">
         
         {/* 2. Profile Summary Section */}
         <div className="flex items-center gap-4 py-4 px-2">
