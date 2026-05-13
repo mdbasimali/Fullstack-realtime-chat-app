@@ -4,10 +4,62 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/chatZone" href="chatZone.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Pre-connect to backend to reduce latency -->
+    <link rel="preconnect" href="https://chatzone-backend-c0mn.onrender.com" />
+    <link rel="dns-prefetch" href="https://chatzone-backend-c0mn.onrender.com" />
+
     <title>ChatZone</title>
+    <style>
+      /* Instant Loading Screen Styles */
+      .initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8fafc;
+        z-index: 9999;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .loader-dot {
+        width: 12px;
+        height: 12px;
+        background: #2563eb;
+        border-radius: 50%;
+        margin-bottom: 20px;
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(0.8); opacity: 0.5; }
+        50% { transform: scale(1.2); opacity: 1; }
+      }
+      .loading-text {
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748b;
+        letter-spacing: 0.05em;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Lightweight skeleton shown while JS downloads -->
+      <div class="initial-loader" id="initial-loader">
+        <div class="loader-dot"></div>
+        <div class="loading-text">WAKING UP CHATZONE...</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Hide initial loader once React takes over
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loader = document.getElementById('initial-loader');
+          if (loader) loader.style.display = 'none';
+        }, 500);
+      });
+    </script>
   </body>
 </html>
