@@ -31,15 +31,26 @@ const App = () => {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
+    const { activeTab, setActiveTab, selectedUser, setSelectedUser } = useChatstore.getState();
+
     const setupBackButton = async () => {
       const listener = await CapApp.addListener("backButton", (event) => {
-        if (location.pathname === "/") {
+        const currentPath = window.location.pathname;
+        
+        if (currentPath === "/") {
+          const { selectedUser, activeTab } = useChatstore.getState();
+          
           if (selectedUser) {
-            setSelectedUser(null);
+            // If a chat is open, close it first
+            useChatstore.getState().setSelectedUser(null);
+          } else if (activeTab !== "chats") {
+            // If in another tab (Calls/Friends/etc), go back to Chats tab
+            useChatstore.getState().setActiveTab("chats");
           } else {
+            // Only exit if we are on the base Chats tab
             CapApp.exitApp();
           }
-        } else if (location.pathname === "/settings" || location.pathname === "/profile") {
+        } else if (currentPath === "/settings" || currentPath === "/profile") {
           navigate("/");
         } else {
           if (event.canGoBack) {
@@ -57,7 +68,7 @@ const App = () => {
     return () => {
       listenerPromise.then((listener) => listener.remove());
     };
-  }, [location.pathname, selectedUser, setSelectedUser, navigate]);
+  }, [navigate]);
 
   useEffect(()=>{
     checkAuth();

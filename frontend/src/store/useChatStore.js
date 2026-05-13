@@ -8,10 +8,9 @@ export const useChatstore = create((set,get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
-  activeTab: localStorage.getItem("active_tab") || "chats",
+  activeTab: "chats",
   setActiveTab: (activeTab) => {
     set({ activeTab });
-    localStorage.setItem("active_tab", activeTab);
   },
 
   activeConversations: [],
