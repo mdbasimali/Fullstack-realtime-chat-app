@@ -180,15 +180,15 @@ const SettingsPage = () => {
             )}
           </div>
 
-          {/* ================= DONATE TO SIGNAL ================= */}
+          {/* ================= DONATE TO CHATZONE ================= */}
           <button 
             onClick={() => {
-              toast.success("Thank you for supporting Signal! ❤️");
+              toast.success("Thank you for supporting ChatZone! ❤️");
             }}
             className="w-full p-4 flex items-center gap-4 rounded-2xl hover:bg-base-200 transition-colors text-left"
           >
             <Heart size={22} className="text-rose-500" />
-            <span className="font-semibold text-sm md:text-base text-base-content">Donate to Signal</span>
+            <span className="font-semibold text-sm md:text-base text-base-content">Donate to ChatZone</span>
           </button>
 
           {/* Divider separating Group 1 and Group 2 exactly like the screenshot */}
@@ -352,7 +352,7 @@ const SettingsPage = () => {
                     <Lock size={15} /> End-to-End Encrypted
                   </p>
                   <p className="text-xxs text-base-content/60">
-                    Signal utilizes high-grade AES-256 and WebRTC encryption protocols to secure all messages, documents, and real-time audio/video media feeds. No middle servers can decrypt your logs.
+                    ChatZone utilizes high-grade AES-256 and WebRTC encryption protocols to secure all messages, documents, and real-time audio/video media feeds. No middle servers can decrypt your logs.
                   </p>
                 </div>
               </div>

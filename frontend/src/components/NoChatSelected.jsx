@@ -21,7 +21,7 @@ const NoChatSelected = () => {
             {/* Welcome Text */}
             <div className="space-y-2">
                 <h2 className='text-2xl font-extrabold tracking-tight text-base-content'>
-                  Signal Desktop
+                  ChatZone Desktop
                 </h2>
                 <p className='text-sm text-base-content/60 max-w-[280px] mx-auto leading-relaxed'>
                   Select a contact from the sidebar or click the pencil icon to begin a secure chat session.

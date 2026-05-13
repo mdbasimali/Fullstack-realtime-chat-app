@@ -347,7 +347,7 @@ const Sidebar = () => {
 
           {/* Dynamic Header Title based on Active Tab */}
           <h1 className="text-xl font-bold tracking-tight text-base-content">
-            {activeTab === "chats" && "Signal"}
+            {activeTab === "chats" && "ChatZone"}
             {activeTab === "calls" && "Calls"}
             {activeTab === "friends" && "Friends"}
             {activeTab === "stories" && "Stories"}
@@ -512,7 +512,7 @@ const Sidebar = () => {
                           </div>
                           <div>
                             <h4 className="font-semibold text-emerald-950 dark:text-emerald-200 text-sm">Invite friends</h4>
-                            <p className="text-xs text-emerald-900/60 dark:text-emerald-300/60 mt-0.5">Share Signal link with others.</p>
+                            <p className="text-xs text-emerald-900/60 dark:text-emerald-300/60 mt-0.5">Share ChatZone link with others.</p>
                           </div>
                         </div>
                         <button 

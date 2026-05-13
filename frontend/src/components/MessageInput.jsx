@@ -99,7 +99,7 @@ const MessageInput = () => {
             spellCheck="true"
             data-lpignore="true"
             className="flex-1 bg-transparent text-sm md:text-base border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content"
-            placeholder="Signal message"
+            placeholder="ChatZone message"
             value={text}
             onChange={(e) => setText(e.target.value)}
             ref={textInputRef}
