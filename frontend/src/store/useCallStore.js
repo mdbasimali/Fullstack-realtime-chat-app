@@ -101,6 +101,7 @@ export const useCallStore = create((set, get) => ({
   callStatus: "idle", // 'idle', 'calling', 'ringing', 'ongoing'
   isMuted: false,
   isVideoOff: false,
+  callStartTime: null,
 
   toggleMic: () => {
     const { localStream, isMuted } = get();
@@ -226,6 +227,7 @@ export const useCallStore = create((set, get) => ({
         pc,
         callStatus: "ongoing",
         pendingOffer: null,
+        callStartTime: Date.now(),
       });
     } catch (error) {
       console.error("Error accepting call:", error);
@@ -237,10 +239,10 @@ export const useCallStore = create((set, get) => ({
   rejectCall: () => {
     logMissedIfRinging(get);
     stopAllSounds();
-    const { remoteUser } = get();
+    const { remoteUser, callType } = get();
     const socket = useAuthStore.getState().socket;
     if (socket && remoteUser) {
-      socket.emit("call:rejected", { to: remoteUser._id });
+      socket.emit("call:rejected", { to: remoteUser._id, type: callType });
     }
     get().resetCallState();
   },
@@ -250,7 +252,7 @@ export const useCallStore = create((set, get) => ({
     const { pc } = get();
     if (pc) {
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
-      set({ callStatus: "ongoing" });
+      set({ callStatus: "ongoing", callStartTime: Date.now() });
     }
   },
 
@@ -268,10 +270,21 @@ export const useCallStore = create((set, get) => ({
   endCall: () => {
     logMissedIfRinging(get);
     stopAllSounds();
-    const { remoteUser, pc, localStream } = get();
+    const { remoteUser, pc, localStream, callStartTime, callType, callStatus } = get();
     const socket = useAuthStore.getState().socket;
+    
+    let duration = 0;
+    if (callStartTime && callStatus === "ongoing") {
+      duration = Math.floor((Date.now() - callStartTime) / 1000);
+    }
+
     if (socket && remoteUser) {
-      socket.emit("call:ended", { to: remoteUser._id });
+      socket.emit("call:ended", { 
+        to: remoteUser._id, 
+        type: callType, 
+        duration,
+        status: callStatus === "ongoing" ? "ended" : "missed"
+      });
     }
 
     if (pc) pc.close();
@@ -310,6 +323,7 @@ export const useCallStore = create((set, get) => ({
       pendingOffer: null,
       isMuted: false,
       isVideoOff: false,
+      callStartTime: null,
     });
   },
 

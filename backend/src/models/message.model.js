@@ -22,6 +22,17 @@ const messageSchema = new mongoose.Schema(
             type:Boolean,
             default:false,
         },
+        messageType: {
+            type: String,
+            enum: ["text", "image", "voice_call", "video_call"],
+            default: "text",
+        },
+        callStatus: {
+            type: String, // "accepted", "rejected", "missed", "ended"
+        },
+        callDuration: {
+            type: Number, // duration in seconds
+        }
     },
     {timestamps:true}
 );

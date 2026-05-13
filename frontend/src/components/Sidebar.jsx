@@ -600,7 +600,12 @@ const Sidebar = () => {
                                       )}
                                     </span>
                                   ) : null}
-                                  {user.lastMessage.image ? (
+                                  {user.lastMessage.messageType === "voice_call" || user.lastMessage.messageType === "video_call" ? (
+                                    <span className="flex items-center gap-1 text-primary/70 font-semibold">
+                                      {user.lastMessage.messageType === "video_call" ? <Video size={13} /> : <Phone size={13} />}
+                                      {user.lastMessage.messageType === "video_call" ? "Video call" : "Voice call"}
+                                    </span>
+                                  ) : user.lastMessage.image ? (
                                     <span className="italic flex items-center gap-1 text-primary/60">
                                       📷 Photo
                                     </span>

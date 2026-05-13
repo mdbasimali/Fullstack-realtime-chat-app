@@ -54,6 +54,32 @@ async function sendPushNotification(userId, data) {
     }
 }
 
+async function saveCallLog(senderId, receiverId, type, status, duration = 0) {
+    try {
+        const newMessage = new Message({
+            senderId,
+            receiverId,
+            messageType: type === "video" ? "video_call" : "voice_call",
+            callStatus: status,
+            callDuration: duration,
+            text: type === "video" ? "Video call" : "Voice call",
+        });
+
+        await newMessage.save();
+
+        // Notify both parties to update their UI
+        const senderSocketId = getReceiverSocketId(senderId);
+        const receiverSocketId = getReceiverSocketId(receiverId);
+
+        if (senderSocketId) io.to(senderSocketId).emit("newMessage", newMessage);
+        if (receiverSocketId) io.to(receiverSocketId).emit("newMessage", newMessage);
+        
+        return newMessage;
+    } catch (error) {
+        console.error("Error saving call log:", error);
+    }
+}
+
 //used to store  online users
 const userSocketMap={};//{userId:socketId}
 const pendingCalls = new Map(); // {userId: {from, offer, type, timestamp}}
@@ -123,6 +149,10 @@ io.on("connection", (socket) =>{
   // Callee rejects the call
   socket.on("call:rejected", ({ to }) => {
     pendingCalls.delete(userId); // Clear pending call for callee
+    
+    // Log as missed call
+    saveCallLog(to, userId, "voice", "rejected"); // 'to' is the original caller
+
     const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("call:rejected", { from: userId });
@@ -130,8 +160,14 @@ io.on("connection", (socket) =>{
   });
 
   // Either party ends the call
-  socket.on("call:ended", ({ to }) => {
+  socket.on("call:ended", ({ to, type, duration }) => {
     pendingCalls.delete(to); // Clear pending call if it was ended
+    
+    // Log call as ended with duration
+    if (to && userId) {
+        saveCallLog(userId, to, type || "voice", "ended", duration || 0);
+    }
+
     const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("call:ended", { from: userId });
