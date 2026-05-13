@@ -157,6 +157,11 @@ export const useCallStore = create((set, get) => ({
   },
 
   switchCamera: async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast.error("Camera and Microphone access requires a Secure Context (HTTPS). Please ensure you are using localhost or an https:// URL!");
+      return;
+    }
+
     const { localStream, pc, callType } = get();
     if (!localStream || callType !== "video") return;
 
@@ -203,6 +208,11 @@ export const useCallStore = create((set, get) => ({
   },
 
   initiateCall: async (receiver, type) => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast.error("Camera and Microphone access requires a Secure Context (HTTPS). Please ensure you are using localhost or an https:// URL!");
+      return;
+    }
+
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
 
@@ -266,6 +276,11 @@ export const useCallStore = create((set, get) => ({
   },
 
   acceptCall: async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast.error("Camera and Microphone access requires a Secure Context (HTTPS). Please ensure you are using localhost or an https:// URL!");
+      return;
+    }
+
     const { pendingOffer, remoteUser, callType } = get();
     const socket = useAuthStore.getState().socket;
     if (!socket) return;

@@ -15,10 +15,19 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         
         // Request essential camera and microphone permissions on app startup
-        String[] permissions = {
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
-        };
+        String[] permissions;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            permissions = new String[]{
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.BLUETOOTH_CONNECT
+            };
+        } else {
+            permissions = new String[]{
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO
+            };
+        }
         
         boolean needsRequest = false;
         for (String permission : permissions) {
