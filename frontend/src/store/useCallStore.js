@@ -11,7 +11,10 @@ const ICE_SERVERS = {
         "stun:stun2.l.google.com:19302",
         "stun:stun3.l.google.com:19302",
         "stun:stun4.l.google.com:19302",
-        "stun:global.stun.twilio.com:3478"
+        "stun:stun.services.mozilla.com",
+        "stun:stun.l.google.com:19302?transport=udp",
+        "stun:global.stun.twilio.com:3478?transport=udp",
+        "stun:stun.cloudflare.com:3478"
       ],
     },
     {
@@ -24,6 +27,7 @@ const ICE_SERVERS = {
       credential: "openrelay"
     }
   ],
+  iceCandidatePoolSize: 10,
 };
 
 const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1357/1357-preview.mp3"); // Classic 'Cring Cring' bell ring
@@ -196,7 +200,7 @@ export const useCallStore = create((set, get) => ({
         audio: true,
       });
 
-      const pc = new RTCPeerConnection(ICE_SERVERS);
+      const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       pc.onicecandidate = (event) => {
@@ -260,7 +264,7 @@ export const useCallStore = create((set, get) => ({
         audio: true,
       });
 
-      const pc = new RTCPeerConnection(ICE_SERVERS);
+      const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       pc.onicecandidate = (event) => {
