@@ -189,26 +189,33 @@ const CallModal = () => {
             )
           ) : (
             /* Ongoing call: Remote stream */
-            <div className="w-full h-full flex items-center justify-center bg-[#0b141a]">
+            <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
               {isRemoteSharingScreen && (
-                <div className="absolute top-28 left-0 right-0 z-10 flex justify-center">
-                  <span className="bg-primary/80 backdrop-blur-md text-white text-xs px-3 py-1 rounded-full animate-pulse">
-                    {remoteUser?.fullName} is sharing screen
-                  </span>
+                <div className="absolute top-16 left-0 right-0 z-30 flex justify-center pointer-events-none">
+                  <div className="bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-b-2xl border-x border-b border-white/10 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                    <span className="text-xs font-medium text-white/90">
+                      {remoteUser?.fullName}'s screen
+                    </span>
+                  </div>
                 </div>
               )}
               <video
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
-                className={`w-full h-full transition-all duration-700 ${isRemoteSharingScreen ? "object-contain" : "object-cover"}`}
+                className={`max-w-full max-h-full transition-all duration-500 ${isRemoteSharingScreen ? "object-contain shadow-2xl" : "w-full h-full object-cover"}`}
               />
             </div>
           )}
 
-          {/* Local View (Floating PIP) - only shown when call is ongoing AND remoteStream exists AND video is not off */}
+          {/* Local View (Floating PIP) */}
           {callStatus === "ongoing" && remoteStream && localStream && !isVideoOff && (
-            <div className={`absolute ${isRemoteSharingScreen ? "bottom-32 right-4 w-[80px]" : "top-24 right-6 w-[100px] md:w-[140px]"} aspect-[3/4] bg-[#1c1f26] rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl z-20 transition-all duration-500 animate-in fade-in zoom-in`}>
+            <div className={`absolute z-40 transition-all duration-700 ease-in-out rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl ${
+              isRemoteSharingScreen 
+                ? "bottom-32 right-4 w-[75px] aspect-[3/4]" 
+                : "top-24 right-6 w-[100px] md:w-[140px] aspect-[3/4]"
+            }`}>
               <video
                 ref={localVideoRef}
                 autoPlay
