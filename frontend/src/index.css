@@ -3,28 +3,17 @@
 @tailwind utilities;
 
 html,
-body {
+body,
+#root {
   margin: 0;
   padding: 0;
-  height: 100%;
+  min-height: 100%;
   width: 100%;
-  overflow: auto; /* Allow native refresh gesture */
-  overscroll-behavior-y: contain; 
 }
 
-#root {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
+body {
   display: flex;
   flex-direction: column;
-}
-
-.no-overscroll {
-  overscroll-behavior: none;
 }
 
 /* Fix for mobile keyboard pushing up content */

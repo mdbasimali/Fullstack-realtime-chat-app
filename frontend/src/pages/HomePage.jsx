@@ -14,7 +14,7 @@ const HomePage = () => {
   }, [subscribeToMessages, unsubscribeFromMessages]);
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] w-full bg-base-100 flex flex-col overflow-hidden text-base-content">
+    <div className="min-h-screen w-full bg-base-100 flex flex-col text-base-content">
       
       {/* 1. Core Content Layout */}
       <div className="flex-1 flex overflow-hidden">
