@@ -242,7 +242,7 @@ export const useCallStore = create((set, get) => ({
       });
     } catch (error) {
       console.error("Error initiating call:", error);
-      toast.error("Could not access camera/microphone");
+      toast.error("Microphone/Camera access denied. Please ensure you are on HTTPS and have granted permissions in your browser and device settings.");
     }
   },
 
@@ -313,7 +313,7 @@ export const useCallStore = create((set, get) => ({
       });
     } catch (error) {
       console.error("Error accepting call:", error);
-      toast.error("Could not access camera/microphone");
+      toast.error("Microphone/Camera access denied. Please check your browser and device permissions.");
       get().rejectCall();
     }
   },
