@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import { axiosInstance } from "../lib/axios";
 
 export const useStoryStore = create((set, get) => ({
   stories: [], // Array of { user, stories: [] }
