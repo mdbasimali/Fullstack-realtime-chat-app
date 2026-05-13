@@ -43,14 +43,11 @@ const ChatContainer = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full max-h-full overflow-hidden bg-base-100 relative no-overscroll">
-      {/* Hard-Locked Header Wrapper */}
-      <div className="absolute top-0 left-0 w-full z-[60] bg-base-100">
-        <ChatHeader />
-      </div>
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-base-100 relative">
+      <ChatHeader />
 
-      {/* Messages Stream View with Top Padding for Header */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6 pt-[72px] md:pt-[80px]">
+      {/* Messages Stream View */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6">
         
         {/* Large, Beautiful Profile Onboarding Card */}
         <div className="flex flex-col items-center justify-center p-6 mb-8 mt-4 bg-base-200/30 dark:bg-base-950/20 border border-base-300/40 rounded-[32px] max-w-[340px] md:max-w-md mx-auto text-center space-y-4 shadow-xs animate-fade-in">
