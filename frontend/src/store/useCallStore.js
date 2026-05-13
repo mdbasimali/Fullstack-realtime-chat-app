@@ -219,23 +219,56 @@ export const useCallStore = create((set, get) => ({
       }
   },
 
-  initiateCall: async (receiver, type) => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      console.error("Camera access requires HTTPS.");
-      return;
+  handleIceCandidate: async ({ candidate }) => {
+    const { pc, pendingIceCandidates } = get();
+    try {
+      if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } else {
+        set({ pendingIceCandidates: [...get().pendingIceCandidates, candidate] });
+      }
+    } catch (error) {
+      console.error("Error adding ICE candidate:", error);
     }
+  },
 
+  startCall: async (receiver, type) => {
+    if (!receiver) return;
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
 
+    set({ 
+      isIncomingCall: false,
+      isInCall: true,
+      callType: type,
+      remoteUser: receiver,
+      callStatus: "calling",
+      isMinimized: false
+    });
+
+    playSound("calling");
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: type === "video",
-        audio: true,
+      const localStream = await navigator.mediaDevices.getUserMedia({
+        video: type === "video" ? { facingMode: "user" } : false,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
 
-      const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      const pc = new RTCPeerConnection(ICE_SERVERS);
+      
+      localStream.getTracks().forEach((track) => {
+        pc.addTrack(track, localStream);
+      });
+
+      pc.ontrack = (event) => {
+        if (event.streams && event.streams[0]) {
+          set({ remoteStream: event.streams[0] });
+        }
+      };
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
@@ -243,67 +276,67 @@ export const useCallStore = create((set, get) => ({
         }
       };
 
-      pc.ontrack = (event) => {
-        set({ remoteStream: event.streams[0] });
+      pc.onconnectionstatechange = () => {
+        console.log("Connection State:", pc.connectionState);
+        if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+          // Could implement ICE restart here if needed
+        }
       };
 
-      const offer = await pc.createOffer();
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: type === "video"
+      });
       await pc.setLocalDescription(offer);
 
       socket.emit("call:user", { to: receiver._id, offer, type });
-
-      playSound("ringing");
-
-      addCallLog(receiver, type, "outgoing");
-
-      set({
-        isInCall: true,
-        callType: type,
-        remoteUser: receiver,
-        localStream: stream,
-        pc,
-        callStatus: "calling",
-      });
+      set({ pc, localStream });
     } catch (error) {
-      console.error("Error initiating call:", error);
+      console.error("Error starting call:", error);
+      get().endCall();
     }
   },
 
   handleIncomingCall: async ({ from, offer, type }) => {
-    // Try to find the user in useChatstore's users list
-    const { useChatstore } = await import("./useChatStore");
-    const users = useChatstore.getState().users;
-    const sender = users.find(u => u._id === from);
-
-    playSound("ringing");
-
     set({
       isIncomingCall: true,
-      remoteUser: sender || { _id: from, fullName: "Unknown User" },
+      incomingCallData: { from: { _id: from }, offer },
       callType: type,
-      pendingOffer: offer,
       callStatus: "ringing",
+      isMinimized: false
     });
+    playSound("ringing");
   },
 
   acceptCall: async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      console.error("Camera access requires HTTPS.");
-      return;
-    }
-
-    const { pendingOffer, remoteUser, callType } = get();
+    const { remoteUser, callType, incomingCallData } = get();
     const socket = useAuthStore.getState().socket;
-    if (!socket) return;
+    if (!socket || !incomingCallData) return;
+
+    const { offer } = incomingCallData;
+    stopAllSounds();
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: callType === "video",
-        audio: true,
+      const localStream = await navigator.mediaDevices.getUserMedia({
+        video: callType === "video" ? { facingMode: "user" } : false,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
 
-      const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      const pc = new RTCPeerConnection(ICE_SERVERS);
+      
+      localStream.getTracks().forEach((track) => {
+        pc.addTrack(track, localStream);
+      });
+
+      pc.ontrack = (event) => {
+        if (event.streams && event.streams[0]) {
+          set({ remoteStream: event.streams[0] });
+        }
+      };
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
@@ -311,37 +344,40 @@ export const useCallStore = create((set, get) => ({
         }
       };
 
-      pc.ontrack = (event) => {
-        set({ remoteStream: event.streams[0] });
-      };
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      
+      const candidates = get().pendingIceCandidates;
+      for (const candidate of candidates) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.warn("Error adding pending candidate:", e);
+        }
+      }
 
-      await pc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
+      set({ 
+        pc, 
+        localStream, 
+        callStatus: "ongoing", 
+        isInCall: true, 
+        isIncomingCall: false,
+        isMinimized: false,
+        pendingIceCandidates: [],
+        callStartTime: Date.now()
+      });
+
       socket.emit("call:accepted", { to: remoteUser._id, answer });
 
-      stopAllSounds();
-
-      addCallLog(remoteUser, callType, "incoming");
-
-      set({
-        isInCall: true,
-        isIncomingCall: false,
-        localStream: stream,
-        pc,
-        callStatus: "ongoing",
-        pendingOffer: null,
-        callStartTime: Date.now(),
-      });
     } catch (error) {
       console.error("Error accepting call:", error);
-      get().rejectCall();
+      get().endCall();
     }
   },
 
   rejectCall: () => {
-    logMissedIfRinging(get);
     stopAllSounds();
     const { remoteUser, callType } = get();
     const socket = useAuthStore.getState().socket;
@@ -355,20 +391,23 @@ export const useCallStore = create((set, get) => ({
     stopAllSounds();
     const { pc } = get();
     if (pc) {
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
-      set({ callStatus: "ongoing", callStartTime: Date.now() });
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        set({ callStatus: "ongoing", callStartTime: Date.now() });
+      } catch (error) {
+        console.error("Error setting remote answer:", error);
+      }
     }
   },
 
-  handleIceCandidate: async ({ candidate }) => {
-    const { pc } = get();
-    if (pc) {
-      try {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (e) {
-        console.error("Error adding ice candidate", e);
-      }
-    }
+  handleCallRejected: () => {
+    stopAllSounds();
+    get().resetCallState();
+  },
+
+  handleCallEnded: () => {
+    stopAllSounds();
+    get().resetCallState();
   },
 
   toggleScreenShare: async () => {
