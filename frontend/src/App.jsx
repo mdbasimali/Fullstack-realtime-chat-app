@@ -4,7 +4,6 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatstore } from "./store/useChatStore";
 import { Loader } from "lucide-react"
-import { Toaster } from "react-hot-toast";
 import { useThemeStore } from "./store/useThemeStore";
 import { useCallStore } from "./store/useCallStore";
 import CallModal from "./components/CallModal";
@@ -132,7 +131,6 @@ const App = () => {
         </React.Suspense>
       </div>
       
-      <Toaster/>
       <CallModal />
     </div>
   );

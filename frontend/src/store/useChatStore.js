@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
 
@@ -49,7 +48,7 @@ export const useChatstore = create((set,get) => ({
         }
       }
     } catch (error) {
-      toast.error(error.response.data.message);
+      console.error("GetUsers error:", error);
     } finally {
       set({ isUsersLoading: false });
     }
@@ -58,11 +57,10 @@ export const useChatstore = create((set,get) => ({
   addContact: async (contactInput) => {
     try {
       const res = await axiosInstance.post("/messages/add-contact", { contactInput });
-      toast.success(res.data.message || "Contact added!");
       get().getUsers();
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to add contact");
+      console.error("AddContact error:", error);
       return false;
     }
   },
@@ -70,11 +68,10 @@ export const useChatstore = create((set,get) => ({
   removeContact: async (contactId) => {
     try {
       const res = await axiosInstance.post("/messages/remove-contact", { contactId });
-      toast.success(res.data.message || "Contact removed!");
       get().getUsers();
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to remove contact");
+      console.error("RemoveContact error:", error);
       return false;
     }
   },
@@ -82,11 +79,10 @@ export const useChatstore = create((set,get) => ({
   blockContact: async (contactId) => {
     try {
       const res = await axiosInstance.post("/messages/block-contact", { contactId });
-      toast.success(res.data.message || "Contact blocked successfully!");
       get().getUsers();
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to block contact");
+      console.error("BlockContact error:", error);
       return false;
     }
   },
@@ -98,7 +94,7 @@ export const useChatstore = create((set,get) => ({
       set({ messages: res.data });
       get().getUsers(); // Update sidebar unread badge states and previews instantly!
     } catch (error) {
-      toast.error(error.response.data.message);
+      console.error("GetMessages error:", error);
     } finally {
       set({ isMessagesLoading: false });
     }
@@ -134,9 +130,9 @@ export const useChatstore = create((set,get) => ({
       
       getUsers(); // Refresh sidebar for lastMessage preview
     } catch (error) {
-      // 4. If sending fails, remove the optimistic message and notify user
+      // 4. If sending fails, remove the optimistic message
       set({ messages: get().messages.filter(m => m._id !== optimisticMessage._id) });
-      toast.error(error.response?.data?.message || "Failed to send message");
+      console.error("SendMessage error:", error);
     }
   },
   subscribeToMessages: () => {
@@ -170,14 +166,6 @@ export const useChatstore = create((set,get) => ({
         getUsers();
       } else {
         getUsers();
-      }
-
-      // Show high-fidelity toast notification if we are not actively in their chat window
-      if (!selectedUser || selectedUser._id !== newMessage.senderId) {
-        toast.success("New message received! 💬", {
-          duration: 3000,
-          position: "top-right"
-        });
       }
     });
 
@@ -229,11 +217,8 @@ export const useChatstore = create((set,get) => ({
 
       // Refresh sidebar list
       getUsers();
-
-      toast.success("Conversation deleted successfully");
     } catch (error) {
       console.error("Error deleting conversation:", error);
-      toast.error("Failed to delete conversation");
     }
   },
 
@@ -242,9 +227,8 @@ export const useChatstore = create((set,get) => ({
       await axiosInstance.delete(`/messages/message/${messageId}`);
       const { messages } = get();
       set({ messages: messages.filter(m => m._id !== messageId) });
-      toast.success("Message deleted");
     } catch (error) {
-      toast.error("Failed to delete message");
+      console.error("DeleteMessage error:", error);
     }
   },
 
@@ -257,9 +241,8 @@ export const useChatstore = create((set,get) => ({
           !(m.messageType === "voice_call" || m.messageType === "video_call")
         ) 
       });
-      toast.success("Call logs cleared");
     } catch (error) {
-      toast.error("Failed to clear call logs");
+      console.error("ClearCallLogs error:", error);
     }
   },
 

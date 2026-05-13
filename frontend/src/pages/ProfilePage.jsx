@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Camera, ArrowLeft, User, Pencil, Award, AtSign, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
 
 // 12 beautiful, high-fidelity custom SVGs matching the cute Signal avatar designs
 const SIGNAL_AVATARS = [
@@ -201,7 +200,6 @@ const ProfilePage = () => {
       const base64Image = reader.result;
       setSelectedImg(base64Image);
       setSelectedAvatarId(""); // clear avatar selection
-      toast.success("Photo loaded! Click Save to apply. 📸");
     };
   };
 
@@ -215,7 +213,7 @@ const ProfilePage = () => {
   // Handle Save
   const handleSave = async () => {
     if (!fullName.trim()) {
-      toast.error("Please enter a valid name");
+      console.log("Please enter a valid name");
       return;
     }
     try {
@@ -225,10 +223,9 @@ const ProfilePage = () => {
         username: usernameText.trim(),
         about: aboutText.trim()
       });
-      toast.success("Profile saved successfully! 🌟");
       navigate("/"); // return to home dashboard
     } catch (err) {
-      toast.error("Failed to update profile");
+      console.error("Failed to update profile:", err);
     }
   };
 
@@ -367,7 +364,7 @@ const ProfilePage = () => {
           </div>
 
           {/* Row 3: Badges */}
-          <div className="flex items-center gap-5 py-3 border-b border-base-200 cursor-pointer hover:bg-base-200/30 px-1 -mx-1 rounded-xl transition-colors" onClick={() => toast.success("You hold the Founder badge! 🏅")}>
+          <div className="flex items-center gap-5 py-3 border-b border-base-200 cursor-pointer hover:bg-base-200/30 px-1 -mx-1 rounded-xl transition-colors">
             <Award size={22} className="text-base-content/50" />
             <span className="flex-1 text-[15px] font-semibold text-base-content">
               Badges

@@ -7,7 +7,6 @@ import {
   Image, Bell, Lock, RotateCcw, ShieldCheck, Check, Info, Settings, Sparkles
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import toast from "react-hot-toast";
 
 const SettingsPage = () => {
   const { theme, setTheme } = useThemeStore();
@@ -46,7 +45,7 @@ const SettingsPage = () => {
     if (isBackingUp) return;
     setIsBackingUp(true);
     setBackupProgress(0);
-    toast.success("Starting local backup...");
+    console.log("Starting local backup...");
     
     const interval = setInterval(() => {
       setBackupProgress((prev) => {
@@ -54,7 +53,7 @@ const SettingsPage = () => {
           clearInterval(interval);
           setIsBackingUp(false);
           setLastBackupTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " Today");
-          toast.success("All chats backed up successfully!");
+          console.log("All chats backed up successfully!");
           return 100;
         }
         return prev + 10;
@@ -183,7 +182,7 @@ const SettingsPage = () => {
           {/* ================= DONATE TO CHATZONE ================= */}
           <button 
             onClick={() => {
-              toast.success("Thank you for supporting ChatZone! ❤️");
+              console.log("Thank you for supporting ChatZone! ❤️");
             }}
             className="w-full p-4 flex items-center gap-4 rounded-2xl hover:bg-base-200 transition-colors text-left"
           >
@@ -221,7 +220,7 @@ const SettingsPage = () => {
                   {THEMES.map((t) => (
                     <button
                       key={t}
-                      onClick={() => { setTheme(t); toast.success(`Theme switched to ${t}! 🎨`); }}
+                      onClick={() => { setTheme(t); console.log(`Theme switched to ${t}! 🎨`); }}
                       className={`group flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all border ${theme === t ? "border-primary bg-primary/10" : "border-base-300 hover:bg-base-100"}`}
                     >
                       <div className="relative h-6 w-full rounded-md overflow-hidden" data-theme={t}>

@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { useAuthStore } from "./useAuthStore";
-import toast from "react-hot-toast";
 
 const ICE_SERVERS = {
   iceServers: [
@@ -146,7 +145,7 @@ export const useCallStore = create((set, get) => ({
 
   switchCamera: async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast.error("Camera and Microphone access requires a Secure Context (HTTPS). Please ensure you are using localhost or an https:// URL!");
+      console.error("Camera access requires HTTPS.");
       return;
     }
 
@@ -191,13 +190,12 @@ export const useCallStore = create((set, get) => ({
       });
     } catch (error) {
       console.error("Error switching camera:", error);
-      toast.error("Could not switch camera");
     }
   },
 
   initiateCall: async (receiver, type) => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast.error("Camera and Microphone access requires a Secure Context (HTTPS). Please ensure you are using localhost or an https:// URL!");
+      console.error("Camera access requires HTTPS.");
       return;
     }
 
@@ -242,15 +240,6 @@ export const useCallStore = create((set, get) => ({
       });
     } catch (error) {
       console.error("Error initiating call:", error);
-      if (!window.isSecureContext) {
-        toast.error("SECURITY ERROR: WebRTC requires HTTPS. Camera/Mic will NOT work on HTTP.");
-      } else if (error.name === "NotAllowedError") {
-        toast.error("Permission Denied: Please enable Camera/Mic in your browser/app settings.");
-      } else if (error.name === "NotFoundError") {
-        toast.error("No Camera/Microphone found on this device.");
-      } else {
-        toast.error(`Access Error: ${error.message}`);
-      }
     }
   },
 
@@ -273,7 +262,7 @@ export const useCallStore = create((set, get) => ({
 
   acceptCall: async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast.error("Camera and Microphone access requires a Secure Context (HTTPS). Please ensure you are using localhost or an https:// URL!");
+      console.error("Camera access requires HTTPS.");
       return;
     }
 
@@ -321,11 +310,6 @@ export const useCallStore = create((set, get) => ({
       });
     } catch (error) {
       console.error("Error accepting call:", error);
-      if (!window.isSecureContext) {
-        toast.error("SECURITY ERROR: HTTPS is required for calls.");
-      } else {
-        toast.error("Microphone/Camera access denied. Please check your browser and device permissions.");
-      }
       get().rejectCall();
     }
   },
@@ -393,14 +377,12 @@ export const useCallStore = create((set, get) => ({
     const { pc, localStream } = get();
     if (pc) pc.close();
     if (localStream) localStream.getTracks().forEach((track) => track.stop());
-    toast("Call ended");
     get().resetCallState();
   },
 
   handleCallRejected: () => {
     logMissedIfRinging(get);
     stopAllSounds();
-    toast.error("Call rejected");
     get().endCall();
   },
 

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import toast from "react-hot-toast";
+import { axiosInstance } from "../lib/axios";
 
 export const useStoryStore = create((set, get) => ({
   stories: [], // Array of { user, stories: [] }
@@ -13,7 +13,7 @@ export const useStoryStore = create((set, get) => ({
       const res = await axiosInstance.get("/stories");
       set({ stories: res.data });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to load stories");
+      console.error("Load stories error:", error);
     } finally {
       set({ isStoriesLoading: false });
     }
@@ -40,10 +40,9 @@ export const useStoryStore = create((set, get) => ({
         });
       }
       
-      toast.success("Story posted successfully!");
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to post story");
+      console.error("Post story error:", error);
       return false;
     } finally {
       set({ isUploadingStory: false });
@@ -55,9 +54,8 @@ export const useStoryStore = create((set, get) => ({
       await axiosInstance.delete(`/stories/${storyId}`);
       // Refresh stories
       get().getStories();
-      toast.success("Story deleted");
     } catch (error) {
-      toast.error("Failed to delete story");
+      console.error("Delete story error:", error);
     }
   }
 }));
