@@ -31,12 +31,17 @@ const App = () => {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    const { activeTab, setActiveTab, selectedUser, setSelectedUser } = useChatstore.getState();
-
     const setupBackButton = async () => {
-      const listener = await CapApp.addListener("backButton", (event) => {
+      const backListener = await CapApp.addListener("backButton", (data) => {
         const currentPath = window.location.pathname;
-        
+        const { isInCall, isMinimized, setIsMinimized } = useCallStore.getState();
+
+        if (isInCall && !isMinimized) {
+          // If in a call, minimize it instead of exiting
+          setIsMinimized(true);
+          return;
+        }
+
         if (currentPath === "/") {
           const { selectedUser, activeTab } = useChatstore.getState();
           
@@ -44,16 +49,16 @@ const App = () => {
             // If a chat is open, close it first
             useChatstore.getState().setSelectedUser(null);
           } else if (activeTab !== "chats") {
-            // If in another tab (Calls/Friends/etc), go back to Chats tab
+            // If not on chats tab, go to chats tab
             useChatstore.getState().setActiveTab("chats");
           } else {
-            // Only exit if we are on the base Chats tab
+            // Only exit if we are on the base Chats tab and NO active call
             CapApp.exitApp();
           }
         } else if (currentPath === "/settings" || currentPath === "/profile") {
           navigate("/");
         } else {
-          if (event.canGoBack) {
+          if (data.canGoBack) {
             window.history.back();
           } else {
             CapApp.exitApp();

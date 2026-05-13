@@ -33,6 +33,8 @@ const CallModal = () => {
     isVideoOff,
     isSharingScreen,
     isRemoteSharingScreen,
+    isMinimized,
+    setIsMinimized,
     toggleMic,
     toggleVideo,
     switchCamera,
@@ -83,7 +85,7 @@ const CallModal = () => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
-  }, [localStream, isInCall, callType, callStatus, isVideoOff, isSharingScreen]);
+  }, [localStream, isInCall, callType, callStatus, isVideoOff, isSharingScreen, isMinimized]);
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
@@ -92,9 +94,38 @@ const CallModal = () => {
     if (remoteAudioRef.current && remoteStream) {
       remoteAudioRef.current.srcObject = remoteStream;
     }
-  }, [remoteStream, isInCall, callType, callStatus, isRemoteSharingScreen]);
+  }, [remoteStream, isInCall, callType, callStatus, isRemoteSharingScreen, isMinimized]);
 
   if (!isInCall && !isIncomingCall) return null;
+
+  // Minimized View (Bubble)
+  if (isMinimized && isInCall) {
+    return (
+      <div 
+        onClick={() => setIsMinimized(false)}
+        className="fixed top-24 right-6 w-24 h-32 z-[1000] bg-[#1c1f26] rounded-2xl overflow-hidden border-2 border-primary shadow-2xl cursor-pointer animate-in zoom-in fade-in"
+      >
+        {callType === "video" && remoteStream ? (
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+             <img src={remoteUser?.profilePic || "/avatar.png"} className="w-12 h-12 rounded-full object-cover" alt="user" />
+             <span className="text-[10px] text-white/70">{formatDuration(duration)}</span>
+          </div>
+        )}
+        {/* Indicators on bubble */}
+        <div className="absolute top-1 right-1 flex gap-1">
+          {isMuted && <MicOff size={10} className="text-red-500" />}
+          {isVideoOff && <VideoOff size={10} className="text-red-500" />}
+        </div>
+      </div>
+    );
+  }
 
   // Incoming Call UI
   if (isIncomingCall && !isInCall) {
@@ -201,6 +232,17 @@ const CallModal = () => {
           ) : (
             /* Ongoing call: Remote stream */
             <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
+              {/* Overlay info and toggle */}
+              <div className="absolute top-20 right-6 z-50 flex flex-col gap-3">
+                <button 
+                  onClick={() => setManualFullView(!manualFullView)}
+                  className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 shadow-xl active:scale-90 transition-all"
+                  title="Toggle Full View / Zoom"
+                >
+                  {manualFullView ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                </button>
+              </div>
+
               {isRemoteSharingScreen && (
                 <div className="absolute top-16 left-0 right-0 z-30 flex justify-center pointer-events-none">
                   <div className="bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-b-2xl border-x border-b border-white/10 flex items-center gap-2">
@@ -256,9 +298,9 @@ const CallModal = () => {
       <div className="z-10 flex items-center justify-between w-full px-6 pt-12 pb-4 bg-gradient-to-b from-black/60 to-transparent pointer-events-auto">
         <div className="flex items-center gap-4">
           <button 
-            onClick={endCall} 
+            onClick={() => setIsMinimized(true)} 
             className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
-            title="End call"
+            title="Minimize call"
           >
             <ArrowLeft className="w-6 h-6 text-white" />
           </button>

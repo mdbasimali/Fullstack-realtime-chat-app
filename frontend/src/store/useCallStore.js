@@ -123,6 +123,7 @@ export const useCallStore = create((set, get) => ({
   facingMode: "user", // 'user' or 'environment'
   isSharingScreen: false,
   isRemoteSharingScreen: false,
+  isMinimized: false,
   screenStream: null,
 
   toggleMic: () => {
@@ -145,6 +146,7 @@ export const useCallStore = create((set, get) => ({
     }
   },
 
+  setIsMinimized: (val) => set({ isMinimized: val }),
   handleScreenShareStarted: () => set({ isRemoteSharingScreen: true }),
   handleScreenShareStopped: () => set({ isRemoteSharingScreen: false }),
 
