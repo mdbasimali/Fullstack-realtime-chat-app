@@ -118,6 +118,7 @@ export const useCallStore = create((set, get) => ({
   isMuted: false,
   isVideoOff: false,
   callStartTime: null,
+  facingMode: "user", // 'user' or 'environment'
 
   toggleMic: () => {
     const { localStream, isMuted } = get();
@@ -136,6 +137,52 @@ export const useCallStore = create((set, get) => ({
         track.enabled = isVideoOff;
       });
       set({ isVideoOff: !isVideoOff });
+    }
+  },
+
+  switchCamera: async () => {
+    const { localStream, pc, callType } = get();
+    if (!localStream || callType !== "video") return;
+
+    const currentVideoTrack = localStream.getVideoTracks()[0];
+    if (!currentVideoTrack) return;
+
+    const currentFacingMode = get().facingMode || "user";
+    const newFacingMode = currentFacingMode === "user" ? "environment" : "user";
+
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: newFacingMode },
+        audio: false,
+      });
+
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      if (!newVideoTrack) return;
+
+      // Stop the old camera track to turn off physical camera light and release hardware
+      currentVideoTrack.stop();
+
+      // Create a brand new MediaStream combining the new video track and existing audio tracks
+      const audioTracks = localStream.getAudioTracks();
+      const newLocalStream = new MediaStream([newVideoTrack, ...audioTracks]);
+
+      // Update the WebRTC Peer Connection tracks if active
+      if (pc) {
+        const senders = pc.getSenders();
+        const videoSender = senders.find(sender => sender.track && sender.track.kind === "video");
+        if (videoSender) {
+          await videoSender.replaceTrack(newVideoTrack);
+        }
+      }
+
+      // Update local stream state
+      set({ 
+        localStream: newLocalStream,
+        facingMode: newFacingMode
+      });
+    } catch (error) {
+      console.error("Error switching camera:", error);
+      toast.error("Could not switch camera");
     }
   },
 
@@ -340,6 +387,7 @@ export const useCallStore = create((set, get) => ({
       isMuted: false,
       isVideoOff: false,
       callStartTime: null,
+      facingMode: "user",
     });
   },
 

@@ -30,6 +30,8 @@ const CallModal = () => {
     isVideoOff,
     toggleMic,
     toggleVideo,
+    switchCamera,
+    facingMode,
   } = useCallStore();
 
   const localVideoRef = useRef(null);
@@ -37,6 +39,11 @@ const CallModal = () => {
   const remoteAudioRef = useRef(null);
   const [duration, setDuration] = useState(0);
   const [isMirrored, setIsMirrored] = useState(true);
+
+  // Sync mirroring: Mirror front camera (selfie) but NOT rear camera (outwards look)
+  useEffect(() => {
+    setIsMirrored(facingMode === "user");
+  }, [facingMode]);
 
   useEffect(() => {
     let interval;
@@ -257,11 +264,11 @@ const CallModal = () => {
 
           {/* Switch camera / Flip stream / Mirror option button */}
           <button 
-            onClick={() => setIsMirrored(!isMirrored)} 
+            onClick={switchCamera} 
             className="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white border border-white/10 transition-all active:scale-95 shadow-lg"
-            title="Flip camera view"
+            title="Switch Camera (Front/Back)"
           >
-            <RefreshCw size={20} className={`${isMirrored ? "rotate-180" : ""} transition-transform duration-500`} />
+            <RefreshCw size={20} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
           </button>
         </div>
       )}
