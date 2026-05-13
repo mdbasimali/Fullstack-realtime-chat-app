@@ -8,6 +8,8 @@ import { Toaster } from "react-hot-toast";
 import { useThemeStore } from "./store/useThemeStore";
 import { useCallStore } from "./store/useCallStore";
 import CallModal from "./components/CallModal";
+import { Capacitor } from "@capacitor/core";
+import { App as CapApp } from "@capacitor/app";
 
 // Lazy load pages for faster initial load
 const HomePage = React.lazy(() => import("./pages/HomePage"));
@@ -26,7 +28,37 @@ const App = () => {
 
   console.log({onlineUsers});
 
+  // Handle native Android hardware back button & system navigation gesture swipes
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
 
+    const setupBackButton = async () => {
+      const listener = await CapApp.addListener("backButton", (event) => {
+        if (location.pathname === "/") {
+          if (selectedUser) {
+            setSelectedUser(null);
+          } else {
+            CapApp.exitApp();
+          }
+        } else if (location.pathname === "/settings" || location.pathname === "/profile") {
+          navigate("/");
+        } else {
+          if (event.canGoBack) {
+            window.history.back();
+          } else {
+            CapApp.exitApp();
+          }
+        }
+      });
+      return listener;
+    };
+
+    const listenerPromise = setupBackButton();
+
+    return () => {
+      listenerPromise.then((listener) => listener.remove());
+    };
+  }, [location.pathname, selectedUser, setSelectedUser, navigate]);
 
   useEffect(()=>{
     checkAuth();
