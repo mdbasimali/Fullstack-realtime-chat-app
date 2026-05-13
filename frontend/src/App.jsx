@@ -88,7 +88,7 @@ const App = () => {
     handleIceCandidate,
     handleScreenShareStarted,
     handleScreenShareStopped,
-    users
+    handleActiveSync,
   } = useCallStore();
 
   useEffect(() => {
@@ -101,6 +101,7 @@ const App = () => {
     socket.on("ice:candidate", handleIceCandidate);
     socket.on("call:screen-share-started", handleScreenShareStarted);
     socket.on("call:screen-share-stopped", handleScreenShareStopped);
+    socket.on("call:active-sync", handleActiveSync);
 
     return () => {
       socket.off("call:incoming");
@@ -110,8 +111,23 @@ const App = () => {
       socket.off("ice:candidate");
       socket.off("call:screen-share-started");
       socket.off("call:screen-share-stopped");
+      socket.off("call:active-sync");
     };
-  }, [socket, handleIncomingCall, handleCallAccepted, handleCallRejected, handleCallEnded, handleIceCandidate, handleScreenShareStarted, handleScreenShareStopped]);
+  }, [socket, handleIncomingCall, handleCallAccepted, handleCallRejected, handleCallEnded, handleIceCandidate, handleScreenShareStarted, handleScreenShareStopped, handleActiveSync]);
+
+  // Warn user before refresh during a call
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      const { isInCall } = useCallStore.getState();
+      if (isInCall) {
+        e.preventDefault();
+        e.returnValue = "You are in an active call. Refreshing will disconnect you.";
+        return e.returnValue;
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);

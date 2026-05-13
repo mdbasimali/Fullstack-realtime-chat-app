@@ -150,6 +150,19 @@ export const useCallStore = create((set, get) => ({
   handleScreenShareStarted: () => set({ isRemoteSharingScreen: true }),
   handleScreenShareStopped: () => set({ isRemoteSharingScreen: false }),
 
+  handleActiveSync: ({ partner, type }) => {
+    const { isInCall } = get();
+    if (!isInCall) {
+      console.log("Restoring active call session with", partner.fullName);
+      set({
+        remoteUser: partner,
+        callType: type || "video",
+        callStatus: "ongoing",
+        isInCall: true,
+      });
+    }
+  },
+
   switchCamera: async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       console.error("Camera access requires HTTPS.");
