@@ -17,19 +17,12 @@ export const useAuthStore = create((set,get) => ({
 
   checkAuth: async () => {
     try {
-      // Add a safety timeout of 60 seconds for Render cold starts
-      const checkPromise = axiosInstance.get("/auth/check");
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Auth check timed out")), 60000)
-      );
-
-      const res = await Promise.race([checkPromise, timeoutPromise]);
+      const res = await axiosInstance.get("/auth/check");
       set({ authUser: res.data });
       get().connectSocket();
       get().setupPushNotifications();
     } catch (error) {
       set({ authUser: null });
-      console.log("Error in checkAuth or timeout:", error);
     } finally {
       set({ isCheckingAuth: false });
     }

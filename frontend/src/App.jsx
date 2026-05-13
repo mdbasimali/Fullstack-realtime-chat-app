@@ -69,23 +69,18 @@ const App = () => {
 
   console.log({authUser});
 
-  // Only block the whole screen if we are actively checking AND have no cached user
-  if (isCheckingAuth && !authUser) return (
-    <div className="flex flex-col items-center justify-center h-screen bg-base-100">
-      <Loader className="size-12 animate-spin text-primary mb-4" />
-      <p className="text-lg font-bold text-base-content mb-1">
-        Waking up Server...
-      </p>
-      <p className="text-sm text-base-content/50 animate-pulse">
-        This may take up to 60s on first visit.
-      </p>
-    </div>
-  );
-
+  // Removed full-screen blocking loader for instant app start
   const showNavbar = !["/", "/settings", "/profile"].includes(location.pathname);
 
   return (
-    <div data-theme={theme} className="h-screen overflow-hidden flex flex-col">
+    <div data-theme={theme} className="h-screen overflow-hidden flex flex-col relative">
+      {/* Subtle indicator if server is still waking up */}
+      {isCheckingAuth && (
+        <div className="absolute top-0 inset-x-0 z-[100] h-1 bg-primary/20 overflow-hidden">
+          <div className="h-full bg-primary animate-progress-fast w-1/2"></div>
+        </div>
+      )}
+      
       {showNavbar && <Navbar />}
       <div className="flex-1 overflow-hidden">
         <React.Suspense fallback={
