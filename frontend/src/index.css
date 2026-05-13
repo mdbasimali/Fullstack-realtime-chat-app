@@ -13,6 +13,8 @@ body,
   position: fixed;
   top: 0;
   left: 0;
+  overscroll-behavior-y: none;
+  overscroll-behavior: none;
 }
 
 /* Custom Fluid Animations for Signal App Feel */
