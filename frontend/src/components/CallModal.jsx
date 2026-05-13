@@ -260,16 +260,20 @@ const CallModal = () => {
       {/* Overlay Video Action Buttons (Over mid-bottom section, but above the bottom drawer) */}
       {callType === "video" && (
         <div className="z-10 flex justify-between items-center w-full px-8 mb-4 pointer-events-auto mt-auto">
-          {/* Screen Share toggle button */}
-          <button 
-            onClick={toggleScreenShare}
-            className={`w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center border border-white/10 transition-all active:scale-95 shadow-lg ${
-              isSharingScreen ? "bg-primary text-primary-content" : "bg-black/40 text-white hover:bg-black/60"
-            }`}
-            title={isSharingScreen ? "Stop Screen Share" : "Share Screen"}
-          >
-            <Monitor size={22} />
-          </button>
+          {/* Screen Share toggle button - Only show if supported (usually desktop only) */}
+          {navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? (
+            <button 
+              onClick={toggleScreenShare}
+              className={`w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center border border-white/10 transition-all active:scale-95 shadow-lg ${
+                isSharingScreen ? "bg-primary text-primary-content" : "bg-black/40 text-white hover:bg-black/60"
+              }`}
+              title={isSharingScreen ? "Stop Screen Share" : "Share Screen"}
+            >
+              <Monitor size={22} />
+            </button>
+          ) : (
+            <div className="w-12" /> // Spacer if not supported
+          )}
 
           {/* Switch camera / Flip stream / Mirror option button */}
           <button 
