@@ -54,21 +54,12 @@
     <script type="module" src="/src/main.jsx"></script>
     <script>
       // Hide initial loader once React takes over
-      const hideLoader = () => {
-        const loader = document.getElementById('initial-loader');
-        if (loader) {
-          loader.style.opacity = '0';
-          loader.style.transition = 'opacity 0.5s ease';
-          setTimeout(() => {
-            loader.style.display = 'none';
-          }, 500);
-        }
-      };
-
-      // Safety timeout: hide after 3 seconds regardless
-      setTimeout(hideLoader, 3000);
-
-      window.addEventListener('load', hideLoader);
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loader = document.getElementById('initial-loader');
+          if (loader) loader.style.display = 'none';
+        }, 500);
+      });
     </script>
   </body>
 </html>

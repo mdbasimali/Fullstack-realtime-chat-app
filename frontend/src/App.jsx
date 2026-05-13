@@ -69,9 +69,13 @@ const App = () => {
 
   console.log({authUser});
 
-  if(isCheckingAuth && !authUser)return(
-    <div className="flex items-center justify-center h-screen">
-      <Loader className="size-10 animate-spin"/>
+  // Only block the whole screen if we are actively checking AND have no cached user
+  if (isCheckingAuth && !authUser) return (
+    <div className="flex flex-col items-center justify-center h-screen bg-base-100">
+      <Loader className="size-12 animate-spin text-primary mb-4" />
+      <p className="text-sm font-medium text-base-content/60 animate-pulse">
+        Connecting to ChatZone...
+      </p>
     </div>
   );
 
