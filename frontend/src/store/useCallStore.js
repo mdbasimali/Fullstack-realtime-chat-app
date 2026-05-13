@@ -150,16 +150,29 @@ export const useCallStore = create((set, get) => ({
   handleScreenShareStarted: () => set({ isRemoteSharingScreen: true }),
   handleScreenShareStopped: () => set({ isRemoteSharingScreen: false }),
 
-  handleActiveSync: ({ partner, type }) => {
-    const { isInCall } = get();
+  handleActiveSync: async ({ partner, type }) => {
+    const { isInCall, setupMediaStream, startCall } = get();
     if (!isInCall) {
-      console.log("Restoring active call session with", partner.fullName);
+      console.log("🔄 Restoring active call session with", partner.fullName);
+      
+      // 1. Restore UI state
       set({
         remoteUser: partner,
         callType: type || "video",
         callStatus: "ongoing",
         isInCall: true,
       });
+
+      // 2. Re-acquire media streams
+      const stream = await setupMediaStream();
+      if (stream) {
+        console.log("✅ Media restored, re-negotiating connection...");
+        // 3. Initiate a fresh offer to the partner to restore WebRTC
+        // We use a slight delay to ensure socket is fully ready
+        setTimeout(() => {
+          get().startCall(partner, type || "video");
+        }, 1000);
+      }
     }
   },
 
@@ -281,7 +294,19 @@ export const useCallStore = create((set, get) => ({
   },
 
   handleIncomingCall: async ({ from, offer, type }) => {
-    // Try to find the user in useChatstore's users list
+    const { isInCall, remoteUser } = get();
+    
+    // Auto-reconnect: if already in call with this person, accept automatically
+    if (isInCall && remoteUser?._id === from) {
+      console.log("🔄 Auto-accepting reconnection offer from partner...");
+      set({ pendingOffer: offer });
+      setTimeout(() => {
+        get().acceptCall();
+      }, 500);
+      return;
+    }
+
+    // Normal incoming call
     const { useChatstore } = await import("./useChatStore");
     const users = useChatstore.getState().users;
     const sender = users.find(u => u._id === from);
