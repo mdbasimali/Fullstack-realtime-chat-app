@@ -9,22 +9,24 @@ const ICE_SERVERS = {
         "stun:stun1.l.google.com:19302",
         "stun:stun2.l.google.com:19302",
         "stun:stun3.l.google.com:19302",
-        "stun:stun4.l.google.com:19302"
+        "stun:stun4.l.google.com:19302",
+        "stun:stun.services.mozilla.com",
       ],
     },
     {
       urls: [
         "turn:openrelay.metered.ca:80",
         "turn:openrelay.metered.ca:443",
-        "turn:openrelay.metered.ca:443?transport=tcp"
+        "turn:openrelay.metered.ca:443?transport=tcp",
       ],
       username: "openrelay",
-      credential: "openrelay"
-    }
+      credential: "openrelay",
+    },
   ],
-  iceCandidatePoolSize: 20, // Increased for faster mobile data connections
+  iceCandidatePoolSize: 20,
+  iceTransportPolicy: "all",
   bundlePolicy: "max-bundle",
-  rtcpMuxPolicy: "require"
+  rtcpMuxPolicy: "require",
 };
 
 const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1357/1357-preview.mp3"); // Classic 'Cring Cring' bell ring
