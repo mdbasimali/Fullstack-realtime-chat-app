@@ -7,6 +7,7 @@ const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
+  const textInputRef = useRef(null);
   const { sendMessage } = useChatstore();
 
   const handleImageChange = (e) => {
@@ -43,6 +44,11 @@ const MessageInput = () => {
       setText("");
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+
+      // Auto-refocus to keep the software keyboard open on mobile
+      setTimeout(() => {
+        textInputRef.current?.focus();
+      }, 10);
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -89,6 +95,7 @@ const MessageInput = () => {
             placeholder="Signal message"
             value={text}
             onChange={(e) => setText(e.target.value)}
+            ref={textInputRef}
           />
 
           <input
@@ -123,6 +130,7 @@ const MessageInput = () => {
         {/* Circular Action Button */}
         <button
           type="submit"
+          onMouseDown={(e) => e.preventDefault()}
           className="btn btn-circle bg-primary hover:bg-primary/90 text-primary-content border-none flex items-center justify-center size-11 shrink-0"
         >
           {text.trim() || imagePreview ? (
