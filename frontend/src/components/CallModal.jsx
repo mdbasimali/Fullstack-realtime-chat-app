@@ -76,86 +76,74 @@ const CallModal = () => {
 
   // Incoming Call UI
   if (isIncomingCall && !isInCall) {
-    const avatarUrl = remoteUser?.profilePic || "/avatar.png";
     return (
-      <div className="fixed inset-0 z-[999] flex flex-col justify-between items-center bg-[#0b0e11] text-white overflow-hidden animate-in fade-in duration-500 select-none font-sans py-24 px-6">
-        
-        {/* Ambient Blurred Background of Caller's Avatar */}
+      <div className="fixed inset-0 z-[999] flex flex-col justify-between bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
+        {/* Blown-up, blurred background of caller's profile pic */}
         <div 
-          className="absolute inset-0 bg-cover bg-center filter blur-3xl scale-125 opacity-25 pointer-events-none transition-all duration-1000"
-          style={{ backgroundImage: `url(${avatarUrl})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
+          className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-35 scale-110 pointer-events-none" 
+          style={{ backgroundImage: `url(${remoteUser?.profilePic || "/avatar.png"})` }}
+        ></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-[#0b141a] pointer-events-none"></div>
 
-        {/* Central Caller Avatar with concentric glowing rings */}
-        <div className="flex-1 flex items-center justify-center mt-12">
-          <div className="relative flex items-center justify-center">
-            {/* Pulsating outer rings */}
-            <div className="absolute w-[260px] h-[260px] rounded-full border border-blue-500/10 animate-[ping-slow_3s_infinite]" />
-            <div className="absolute w-[220px] h-[220px] rounded-full border border-blue-500/20 animate-[ping-medium_2.5s_infinite]" />
-            <div className="absolute w-[190px] h-[190px] rounded-full border-2 border-blue-500/35 animate-pulse" />
-            
-            {/* Inner border glow */}
-            <div className="absolute w-[164px] h-[164px] rounded-full bg-blue-500/5 border border-blue-400/50 shadow-[0_0_30px_rgba(59,130,246,0.3)]" />
-            
-            {/* Perfect circular avatar */}
-            <div className="relative w-[150px] h-[150px] rounded-full border-4 border-slate-950/80 overflow-hidden shadow-2xl">
-              <img 
-                src={avatarUrl} 
-                alt={remoteUser?.fullName} 
-                className="w-full h-full object-cover"
-              />
+        {/* Top Info section */}
+        <div className="z-10 text-center pt-20 px-6">
+          <span className="text-sm font-semibold tracking-widest text-[#00a884] uppercase animate-pulse">
+            Incoming {callType === "video" ? "Video" : "Voice"} Call
+          </span>
+          <h2 className="text-3xl font-bold mt-2 text-white drop-shadow-md">
+            {remoteUser?.fullName || "WhatsApp Friend"}
+          </h2>
+          <span className="text-sm text-white/60 block mt-1">Ringing...</span>
+        </div>
+
+        {/* Pulsing Avatar in center */}
+        <div className="z-10 flex-1 flex items-center justify-center">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping-slow"></div>
+            <div className="absolute -inset-10 rounded-full bg-primary/10 animate-ping-slower"></div>
+            <div className="avatar animate-bounce-slow">
+              <div className="w-40 h-40 rounded-full ring-4 ring-primary ring-offset-[#0b141a] ring-offset-4 relative z-10 overflow-hidden shadow-2xl">
+                <img 
+                  src={remoteUser?.profilePic || "/avatar.png"} 
+                  alt={remoteUser?.fullName} 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Caller Information */}
-        <div className="z-10 text-center mb-16">
-          <h2 className="text-4xl font-semibold tracking-wide text-white drop-shadow-lg mb-2 animate-pulse">
-            {remoteUser?.fullName || "Incoming Call"}
-          </h2>
-          <p className="text-white/60 font-light tracking-wide text-base">
-            ProStream {callType === "video" ? "Video" : "Voice"} Call...
-          </p>
+        {/* Bottom Panel Actions */}
+        <div className="z-10 w-full px-10 pb-16 flex flex-col items-center">
+          <div className="flex justify-around items-center w-full max-w-sm mb-10">
+            {/* Decline Action */}
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={rejectCall}
+                className="w-16 h-16 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-red-600 shadow-lg hover:scale-110 active:scale-95 transition-all text-white"
+                title="Decline"
+              >
+                <Phone size={28} className="rotate-[135deg]" />
+              </button>
+              <span className="text-xs font-semibold text-white/70">Decline</span>
+            </div>
+
+            {/* Accept Action */}
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={acceptCall}
+                className="w-16 h-16 rounded-full flex items-center justify-center bg-[#00a884] hover:bg-[#008f70] shadow-lg animate-bounce hover:scale-110 active:scale-95 transition-all text-white"
+                title="Accept"
+              >
+                {callType === "video" ? <Video size={28} /> : <Phone size={28} />}
+              </button>
+              <span className="text-xs font-semibold text-white/70">Accept</span>
+            </div>
+          </div>
+
+          {/* Modern OS Gesture Bar Indicator */}
+          <div className="w-32 h-1.5 bg-white/25 rounded-full"></div>
         </div>
-
-        {/* Bottom Call Actions Buttons (Side-by-side, no labels) */}
-        <div className="z-10 flex justify-center items-center gap-20 w-full max-w-xs mb-10">
-          {/* Decline Button (Soft coral pinkish red) */}
-          <button
-            onClick={rejectCall}
-            className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-[#ff8e86] hover:bg-[#ff7c73] hover:scale-105 active:scale-95 transition-all text-white shadow-[0_10px_25px_-5px_rgba(255,142,134,0.3)]"
-            title="Decline"
-          >
-            <Phone size={28} className="rotate-[135deg]" />
-          </button>
-
-          {/* Accept Button (Vibrant turquoise green) */}
-          <button
-            onClick={acceptCall}
-            className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-[#0fb478] hover:bg-[#0da26c] hover:scale-105 active:scale-95 animate-[bounce-subtle_2s_infinite] transition-all text-white shadow-[0_10px_25px_-5px_rgba(15,180,120,0.4)]"
-            title="Accept"
-          >
-            {callType === "video" ? <Video size={28} /> : <Phone size={28} />}
-          </button>
-        </div>
-
-        {/* Extra styles for custom animations in incoming call screen */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes ping-slow {
-            0% { transform: scale(0.9); opacity: 0.6; }
-            100% { transform: scale(1.4); opacity: 0; }
-          }
-          @keyframes ping-medium {
-            0% { transform: scale(0.9); opacity: 0.8; }
-            100% { transform: scale(1.25); opacity: 0; }
-          }
-          @keyframes bounce-subtle {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-          }
-        `}} />
-
       </div>
     );
   }
@@ -334,8 +322,13 @@ const CallModal = () => {
             0% { transform: scale(1); opacity: 0.5; }
             100% { transform: scale(2); opacity: 0; }
         }
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
         .animate-ping-slow { animation: ping-slow 3s cubic-bezier(0, 0, 0.2, 1) infinite; }
         .animate-ping-slower { animation: ping-slower 4s cubic-bezier(0, 0, 0.2, 1) infinite; }
+        .animate-bounce-slow { animation: bounce-slow 4s ease-in-out infinite; }
       `}} />
     </div>
   );
