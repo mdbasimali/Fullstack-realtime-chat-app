@@ -20,6 +20,21 @@ const App = () => {
   const {authUser,checkAuth,isCheckingAuth,onlineUsers}=useAuthStore();
   const { theme } = useThemeStore();
   const location = useLocation();
+  const [isServerAwake, setIsServerAwake] = React.useState(false);
+
+  // Aggressively wake up the backend on mount
+  useEffect(() => {
+    const wakeUp = async () => {
+      try {
+        await axiosInstance.get("/auth/check");
+        setIsServerAwake(true);
+      } catch (err) {
+        // If it fails, try again in 3 seconds
+        setTimeout(wakeUp, 3000);
+      }
+    };
+    wakeUp();
+  }, []);
 
   console.log({onlineUsers});
 
@@ -75,9 +90,12 @@ const App = () => {
   return (
     <div data-theme={theme} className="h-screen overflow-hidden flex flex-col relative">
       {/* Subtle indicator if server is still waking up */}
-      {isCheckingAuth && (
-        <div className="absolute top-0 inset-x-0 z-[100] h-1 bg-primary/20 overflow-hidden">
-          <div className="h-full bg-primary animate-progress-fast w-1/2"></div>
+      {!isServerAwake && (
+        <div className="absolute top-0 inset-x-0 z-[100] bg-warning/20 px-4 py-1 flex items-center justify-center gap-2">
+           <Loader className="size-3 animate-spin text-warning" />
+           <span className="text-[10px] font-bold text-warning-content uppercase tracking-widest">
+             Server is waking up... Please wait a moment
+           </span>
         </div>
       )}
       
