@@ -12,8 +12,8 @@ const ICE_SERVERS = {
         "stun:stun3.l.google.com:19302",
         "stun:stun4.l.google.com:19302",
         "stun:stun.services.mozilla.com",
-        "stun:stun.l.google.com:19302?transport=udp",
-        "stun:global.stun.twilio.com:3478?transport=udp",
+        "stun:stun.l.google.com:19302",
+        "stun:global.stun.twilio.com:3478",
         "stun:stun.cloudflare.com:3478"
       ],
     },
