@@ -12,8 +12,8 @@ const ICE_SERVERS = {
         "stun:stun3.l.google.com:19302",
         "stun:stun4.l.google.com:19302",
         "stun:stun.services.mozilla.com",
+        "stun:global.stun.twilio.com:3478",
         "stun:stun.l.google.com:19302?transport=udp",
-        "stun:global.stun.twilio.com:3478?transport=udp",
         "stun:stun.cloudflare.com:3478"
       ],
     },
@@ -21,13 +21,25 @@ const ICE_SERVERS = {
       urls: [
         "turn:openrelay.metered.ca:80",
         "turn:openrelay.metered.ca:443",
-        "turn:openrelay.metered.ca:443?transport=tcp"
+        "turn:openrelay.metered.ca:443?transport=tcp",
+        "turn:relay.metered.ca:80",
+        "turn:relay.metered.ca:443",
+        "turn:relay.metered.ca:443?transport=tcp"
       ],
       username: "openrelay",
       credential: "openrelay"
+    },
+    {
+       urls: [
+         "turn:18.191.223.12:3478?transport=udp",
+         "turn:18.191.223.12:3478?transport=tcp"
+       ],
+       username: "guest",
+       credential: "somepassword"
     }
   ],
   iceCandidatePoolSize: 10,
+  iceTransportPolicy: "all"
 };
 
 const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1357/1357-preview.mp3"); // Classic 'Cring Cring' bell ring
@@ -200,7 +212,7 @@ export const useCallStore = create((set, get) => ({
         audio: true,
       });
 
-      const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
+      const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle", sdpSemantics: "unified-plan" });
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       pc.onicecandidate = (event) => {
@@ -264,7 +276,7 @@ export const useCallStore = create((set, get) => ({
         audio: true,
       });
 
-      const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
+      const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle", sdpSemantics: "unified-plan" });
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       pc.onicecandidate = (event) => {
