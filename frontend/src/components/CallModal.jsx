@@ -232,17 +232,6 @@ const CallModal = () => {
           ) : (
             /* Ongoing call: Remote stream */
             <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
-              {/* Overlay info and toggle */}
-              <div className="absolute top-20 right-6 z-50 flex flex-col gap-3">
-                <button 
-                  onClick={() => setManualFullView(!manualFullView)}
-                  className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 shadow-xl active:scale-90 transition-all"
-                  title="Toggle Full View / Zoom"
-                >
-                  {manualFullView ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                </button>
-              </div>
-
               {isRemoteSharingScreen && (
                 <div className="absolute top-16 left-0 right-0 z-30 flex justify-center pointer-events-none">
                   <div className="bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-b-2xl border-x border-b border-white/10 flex items-center gap-2">
