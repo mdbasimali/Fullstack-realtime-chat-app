@@ -5,7 +5,7 @@ import { useCallStore } from "../store/useCallStore";
 import { useStoryStore } from "../store/useStoryStore";
 import { 
   Search, MoreVertical, Camera, Pencil, Users, Mail, X, 
-  MessageSquare, Phone, Plus, Check, User, Settings, RefreshCw,
+  MessageSquare, Phone, Plus, Check, User, Settings, 
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
   Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban
 } from "lucide-react";
@@ -140,12 +140,6 @@ const Sidebar = () => {
     window.addEventListener("callLogsUpdated", handleSync);
     return () => window.removeEventListener("callLogsUpdated", handleSync);
   }, [authUser?._id]);
-
-  const handleManualRefresh = () => {
-    getUsers();
-    getStories();
-    toast.success("Refreshing data... 🔄");
-  };
 
   // Keep track of active conversation if user selects someone
   useEffect(() => {
@@ -376,13 +370,6 @@ const Sidebar = () => {
               className="w-0 focus:w-40 sm:focus:w-48 px-0 focus:px-3 py-1 text-sm bg-base-200 border border-transparent focus:border-base-300 rounded-full transition-all duration-300 opacity-0 focus:opacity-100 outline-none"
               id="search-input"
             />
-            <button 
-              onClick={handleManualRefresh}
-              className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors animate-fade-in"
-              title="Refresh Data"
-            >
-              <RefreshCw size={20} className={isUsersLoading || isStoriesLoading ? "animate-spin text-primary" : ""} />
-            </button>
             <button 
               onClick={() => document.getElementById("search-input")?.focus()}
               className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
