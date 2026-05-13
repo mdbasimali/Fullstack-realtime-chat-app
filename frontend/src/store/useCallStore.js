@@ -8,12 +8,9 @@ const ICE_SERVERS = {
         "stun:stun.l.google.com:19302",
         "stun:stun1.l.google.com:19302",
         "stun:stun2.l.google.com:19302",
-        "stun:stun3.l.google.com:19302",
-        "stun:stun4.l.google.com:19302",
-        "stun:stun.services.mozilla.com",
         "stun:stun.l.google.com:19302",
-        "stun:global.stun.twilio.com:3478",
-        "stun:stun.cloudflare.com:3478"
+        "stun:stun.services.mozilla.com",
+        "stun:global.stun.twilio.com:3478"
       ],
     },
     {
@@ -26,7 +23,9 @@ const ICE_SERVERS = {
       credential: "openrelay"
     }
   ],
-  iceCandidatePoolSize: 10,
+  iceCandidatePoolSize: 20, // Increased for faster mobile data connections
+  bundlePolicy: "max-bundle",
+  rtcpMuxPolicy: "require"
 };
 
 const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1357/1357-preview.mp3"); // Classic 'Cring Cring' bell ring
