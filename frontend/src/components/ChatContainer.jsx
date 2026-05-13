@@ -6,7 +6,7 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
-import { User, Phone, Users, Check } from "lucide-react";
+import { User, Phone, Users, Check, Video, PhoneMissed, PhoneOutgoing, PhoneIncoming } from "lucide-react";
 
 const ChatContainer = () => {
   const {
@@ -108,10 +108,37 @@ const ChatContainer = () => {
                       className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover"
                     />
                   )}
-                  {message.text && (
+                  {message.text && message.messageType === "text" && (
                     <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed">
                       {message.text}
                     </p>
+                  )}
+
+                  {/* Render Call Logs */}
+                  {(message.messageType === "voice_call" || message.messageType === "video_call") && (
+                    <div className="flex items-center gap-3 py-1">
+                      <div className={`p-2.5 rounded-full ${isMyMessage ? "bg-white/20" : "bg-base-300/50"}`}>
+                        {message.messageType === "video_call" ? <Video size={20} /> : <Phone size={20} />}
+                      </div>
+                      <div className="flex flex-col">
+                        <p className="text-sm md:text-base font-bold">
+                          {message.messageType === "video_call" ? "Video call" : "Voice call"}
+                        </p>
+                        <p className="text-[11px] opacity-80 font-semibold flex items-center gap-1">
+                          {message.callStatus === "rejected" || message.callStatus === "missed" ? (
+                            <>
+                              <PhoneMissed size={12} className="text-error" />
+                              <span>{isMyMessage ? "No answer" : "Missed call"}</span>
+                            </>
+                          ) : (
+                            <>
+                              {isMyMessage ? <PhoneOutgoing size={12} /> : <PhoneIncoming size={12} />}
+                              <span>{message.callDuration ? `${Math.floor(message.callDuration / 60)}m ${message.callDuration % 60}s` : "No answer"}</span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
                   )}
 
                   {/* Bubble timestamp & status indicator */}
