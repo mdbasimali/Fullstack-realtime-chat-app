@@ -43,7 +43,7 @@ const ChatContainer = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full max-h-full overflow-hidden bg-base-100 relative">
+    <div className="flex-1 flex flex-col h-full max-h-full overflow-hidden bg-base-100 relative no-overscroll">
       {/* Hard-Locked Header Wrapper */}
       <div className="absolute top-0 left-0 w-full z-[60] bg-base-100">
         <ChatHeader />
