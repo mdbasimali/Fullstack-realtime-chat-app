@@ -104,14 +104,39 @@ export const useChatstore = create((set,get) => ({
     }
   },
 
-  sendMessage:async(messageData)=>{
-    const {selectedUser,messages,getUsers}=get()
-    try{
-      const res =await axiosInstance.post(`/messages/send/${selectedUser._id}`,messageData);
-      set({messages:[...messages,res.data]});
-      getUsers(); // Refresh sidebar items to show our newly sent message as the lastMessage instantly!
-    }catch(error){
-      toast.error(error.response.data.message);
+  sendMessage: async (messageData) => {
+    const { selectedUser, messages, getUsers } = get();
+    const authUser = useAuthStore.getState().authUser;
+    if (!authUser || !selectedUser) return;
+
+    // 1. Create an Optimistic Message for Instant UI Feedback
+    const optimisticMessage = {
+      _id: Date.now().toString(), // temporary ID
+      senderId: authUser._id,
+      receiverId: selectedUser._id,
+      text: messageData.text,
+      image: messageData.image,
+      createdAt: new Date().toISOString(),
+      isOptimistic: true, // flag to show it's still sending (optional styling)
+    };
+
+    // 2. Update local state immediately
+    set({ messages: [...messages, optimisticMessage] });
+
+    try {
+      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
+      
+      // 3. Replace the optimistic message with the actual one from server
+      const updatedMessages = get().messages.map(m => 
+        m._id === optimisticMessage._id ? res.data : m
+      );
+      set({ messages: updatedMessages });
+      
+      getUsers(); // Refresh sidebar for lastMessage preview
+    } catch (error) {
+      // 4. If sending fails, remove the optimistic message and notify user
+      set({ messages: get().messages.filter(m => m._id !== optimisticMessage._id) });
+      toast.error(error.response?.data?.message || "Failed to send message");
     }
   },
   subscribeToMessages: () => {

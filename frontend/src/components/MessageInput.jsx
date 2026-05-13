@@ -35,17 +35,19 @@ const MessageInput = () => {
     if (!text.trim() && !imagePreview) return;
 
     try {
-      await sendMessage({
+      const messageToSend = {
         text: text.trim(),
         image: imagePreview,
-      });
+      };
 
-      //clear form
+      // Clear form IMMEDIATELY for instant feel
       setText("");
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      // Auto-refocus to keep the software keyboard open on mobile
+      await sendMessage(messageToSend);
+
+      // Auto-refocus
       setTimeout(() => {
         textInputRef.current?.focus();
       }, 10);
