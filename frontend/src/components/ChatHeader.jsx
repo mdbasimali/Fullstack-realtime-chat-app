@@ -6,7 +6,7 @@ import { useCallStore } from "../store/useCallStore";
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser } = useChatstore();
   const { onlineUsers } = useAuthStore();
-  const { startCall } = useCallStore();
+  const { initiateCall } = useCallStore();
 
   return (
     <div className="p-3 safe-p-3-top border-b border-base-300 bg-base-100/95 backdrop-blur-md flex items-center justify-between shadow-sm">
@@ -52,14 +52,14 @@ const ChatHeader = () => {
       {/* Right Actions: Video Call, Phone Call, 3-Dot menu */}
       <div className="flex items-center gap-1.5">
         <button 
-          onClick={() => startCall(selectedUser, "video")}
+          onClick={() => initiateCall(selectedUser, "video")}
           className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
           title="Video Call"
         >
           <Video size={20} />
         </button>
         <button 
-          onClick={() => startCall(selectedUser, "audio")}
+          onClick={() => initiateCall(selectedUser, "audio")}
           className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
           title="Voice Call"
         >

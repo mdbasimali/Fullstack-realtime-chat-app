@@ -17,7 +17,7 @@ const ChatContainer = () => {
     selectedUser,
   } = useChatstore();
   
-  const { startCall } = useCallStore();
+  const { initiateCall } = useCallStore();
 
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
@@ -120,7 +120,7 @@ const ChatContainer = () => {
                   {/* Render Call Logs */}
                   {(message.messageType === "voice_call" || message.messageType === "video_call") && (
                     <div 
-                      onClick={() => startCall(selectedUser, message.messageType === "video_call" ? "video" : "audio")}
+                      onClick={() => initiateCall(selectedUser, message.messageType === "video_call" ? "video" : "audio")}
                       className={`flex items-center gap-3 py-1 cursor-pointer hover:opacity-80 active:scale-95 transition-all p-2 rounded-xl ${isMyMessage ? "hover:bg-white/10" : "hover:bg-base-300/30"}`}
                     >
                       <div className={`p-2.5 rounded-full ${isMyMessage ? "bg-white/20" : "bg-base-300/50"}`}>
