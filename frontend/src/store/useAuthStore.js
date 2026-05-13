@@ -23,6 +23,7 @@ export const useAuthStore = create((set,get) => ({
       get().setupPushNotifications();
     } catch (error) {
       set({ authUser: null });
+      console.log("Error in checkAuth:", error);
     } finally {
       set({ isCheckingAuth: false });
     }
