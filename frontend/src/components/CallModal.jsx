@@ -43,6 +43,15 @@ const CallModal = () => {
   const remoteAudioRef = useRef(null);
   const [duration, setDuration] = useState(0);
   const [isMirrored, setIsMirrored] = useState(true);
+  const [manualFullView, setManualFullView] = useState(false);
+
+  // Sync manual toggle with remote status
+  useEffect(() => {
+    if (isRemoteSharingScreen) {
+      setManualFullView(true);
+      console.log("Remote screen share detected! Switching to full view.");
+    }
+  }, [isRemoteSharingScreen]);
 
   // Sync mirroring: Mirror front camera (selfie) but NOT rear camera or screen share
   useEffect(() => {
@@ -190,6 +199,17 @@ const CallModal = () => {
           ) : (
             /* Ongoing call: Remote stream */
             <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
+              {/* Overlay info and toggle */}
+              <div className="absolute top-20 right-6 z-50 flex flex-col gap-3">
+                <button 
+                  onClick={() => setManualFullView(!manualFullView)}
+                  className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 shadow-xl active:scale-90 transition-all"
+                  title="Toggle Full View / Zoom"
+                >
+                  <RefreshCw size={18} className={manualFullView ? "rotate-180" : ""} />
+                </button>
+              </div>
+
               {isRemoteSharingScreen && (
                 <div className="absolute top-16 left-0 right-0 z-30 flex justify-center pointer-events-none">
                   <div className="bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-b-2xl border-x border-b border-white/10 flex items-center gap-2">
@@ -204,7 +224,7 @@ const CallModal = () => {
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
-                className={`w-full h-full transition-all duration-500 ${isRemoteSharingScreen ? "object-contain bg-black shadow-2xl" : "object-cover"}`}
+                className={`w-full h-full transition-all duration-500 ${manualFullView ? "object-contain bg-black shadow-2xl" : "object-cover"}`}
               />
             </div>
           )}
@@ -212,7 +232,7 @@ const CallModal = () => {
           {/* Local View (Floating PIP) */}
           {callStatus === "ongoing" && remoteStream && localStream && !isVideoOff && (
             <div className={`absolute z-40 transition-all duration-700 ease-in-out rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl ${
-              isRemoteSharingScreen 
+              manualFullView 
                 ? "bottom-32 right-4 w-[75px] aspect-[3/4]" 
                 : "top-24 right-6 w-[100px] md:w-[140px] aspect-[3/4]"
             }`}>
