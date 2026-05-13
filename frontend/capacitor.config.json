@@ -1,0 +1,13 @@
+{
+  "appId": "com.chatzone.app",
+  "appName": "ChatZone",
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorCookies": {
+      "enabled": true
+    },
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}
