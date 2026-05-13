@@ -18,13 +18,33 @@ export const useChatstore = create((set,get) => ({
     if (!userId) return;
     const saved = localStorage.getItem(`active_conversations_${userId}`);
     set({ activeConversations: saved ? JSON.parse(saved) : [] });
+
+    // Restore selected user if saved
+    const savedSelectedId = localStorage.getItem(`selected_user_${userId}`);
+    if (savedSelectedId) {
+      // We will find and set the user in getUsers or a separate call
+      get().setSelectedUserId(savedSelectedId);
+    }
   },
+
+  selectedUserId: null,
+  setSelectedUserId: (id) => set({ selectedUserId: id }),
 
   getUsers: async () => {
     set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/messages/users");
       set({ users: res.data });
+      
+      // Auto-select user if we have a persisted ID
+      const { selectedUserId, selectedUser, getMessages } = get();
+      if (selectedUserId && !selectedUser) {
+        const userToRestore = res.data.find(u => u._id === selectedUserId);
+        if (userToRestore) {
+          set({ selectedUser: userToRestore });
+          getMessages(userToRestore._id);
+        }
+      }
     } catch (error) {
       toast.error(error.response.data.message);
     } finally {
@@ -216,5 +236,17 @@ export const useChatstore = create((set,get) => ({
   },
 
 
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
+  setSelectedUser: (selectedUser) => {
+    set({ selectedUser });
+    const authUser = useAuthStore.getState().authUser;
+    if (authUser) {
+      if (selectedUser) {
+        localStorage.setItem(`selected_user_${authUser._id}`, selectedUser._id);
+        set({ selectedUserId: selectedUser._id });
+      } else {
+        localStorage.removeItem(`selected_user_${authUser._id}`);
+        set({ selectedUserId: null });
+      }
+    }
+  },
 }));
