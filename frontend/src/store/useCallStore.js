@@ -150,7 +150,7 @@ export const useCallStore = create((set, get) => ({
 
       socket.emit("call:user", { to: receiver._id, offer, type });
 
-      playSound("calling");
+      playSound("ringing");
 
       addCallLog(receiver, type, "outgoing");
 
