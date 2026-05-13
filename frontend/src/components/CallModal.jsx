@@ -222,11 +222,9 @@ const CallModal = () => {
 
           {/* Local View (Floating PIP) */}
           {callStatus === "ongoing" && remoteStream && localStream && !isVideoOff && (
-            <div className={`absolute z-40 transition-all duration-700 ease-in-out rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl ${
-              manualFullView 
-                ? "bottom-32 right-4 w-[75px] aspect-[3/4]" 
-                : "top-24 right-6 w-[100px] md:w-[140px] aspect-[3/4]"
-            }`}>
+            <div className={`absolute z-[60] transition-all duration-500 ease-in-out rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl top-24 right-6 ${
+              manualFullView ? "w-[85px]" : "w-[100px] md:w-[140px]"
+            } aspect-[3/4]`}>
               <video
                 ref={localVideoRef}
                 autoPlay
