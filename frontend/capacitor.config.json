@@ -9,5 +9,8 @@
     "CapacitorHttp": {
       "enabled": true
     }
+  },
+  "server": {
+    "androidScheme": "https"
   }
 }

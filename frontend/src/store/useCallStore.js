@@ -244,7 +244,7 @@ export const useCallStore = create((set, get) => ({
       });
     } catch (error) {
       console.error("Error initiating call:", error);
-      toast.error("Could not access camera/microphone");
+      toast.error("Could not access camera/microphone. Please enable permissions in Settings -> Apps -> ChatZone -> Permissions!");
     }
   },
 
@@ -310,7 +310,7 @@ export const useCallStore = create((set, get) => ({
       });
     } catch (error) {
       console.error("Error accepting call:", error);
-      toast.error("Could not access camera/microphone");
+      toast.error("Could not access camera/microphone. Please enable permissions in Settings -> Apps -> ChatZone -> Permissions!");
       get().rejectCall();
     }
   },
