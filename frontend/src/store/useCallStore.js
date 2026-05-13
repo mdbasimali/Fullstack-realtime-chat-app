@@ -242,7 +242,15 @@ export const useCallStore = create((set, get) => ({
       });
     } catch (error) {
       console.error("Error initiating call:", error);
-      toast.error("Microphone/Camera access denied. Please ensure you are on HTTPS and have granted permissions in your browser and device settings.");
+      if (!window.isSecureContext) {
+        toast.error("SECURITY ERROR: WebRTC requires HTTPS. Camera/Mic will NOT work on HTTP.");
+      } else if (error.name === "NotAllowedError") {
+        toast.error("Permission Denied: Please enable Camera/Mic in your browser/app settings.");
+      } else if (error.name === "NotFoundError") {
+        toast.error("No Camera/Microphone found on this device.");
+      } else {
+        toast.error(`Access Error: ${error.message}`);
+      }
     }
   },
 
@@ -313,7 +321,11 @@ export const useCallStore = create((set, get) => ({
       });
     } catch (error) {
       console.error("Error accepting call:", error);
-      toast.error("Microphone/Camera access denied. Please check your browser and device permissions.");
+      if (!window.isSecureContext) {
+        toast.error("SECURITY ERROR: HTTPS is required for calls.");
+      } else {
+        toast.error("Microphone/Camera access denied. Please check your browser and device permissions.");
+      }
       get().rejectCall();
     }
   },
