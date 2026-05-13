@@ -76,45 +76,86 @@ const CallModal = () => {
 
   // Incoming Call UI
   if (isIncomingCall && !isInCall) {
+    const avatarUrl = remoteUser?.profilePic || "/avatar.png";
     return (
-      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-300">
-        <div className="bg-[#1c1f26]/90 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-10 max-w-sm w-full text-center border border-white/10">
-          <div className="relative inline-block mb-6">
-            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping"></div>
-            <div className="avatar">
-              <div className="w-32 h-32 rounded-full ring-4 ring-primary ring-offset-base-200 ring-offset-4 relative z-10 overflow-hidden">
-                <img src={remoteUser?.profilePic || "/avatar.png"} alt={remoteUser?.fullName} className="w-full h-full object-cover" />
-              </div>
-            </div>
-          </div>
-          
-          <h2 className="text-3xl font-bold mb-1 text-white">{remoteUser?.fullName}</h2>
-          <p className="text-primary font-medium animate-pulse mb-10 tracking-widest uppercase text-sm">
-            Incoming {callType} Call...
-          </p>
-          
-          <div className="flex justify-around items-center w-full">
-            <div className="flex flex-col items-center gap-2">
-              <button
-                onClick={rejectCall}
-                className="w-16 h-16 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 shadow-lg hover:scale-110 transition-all text-white"
-              >
-                <PhoneOff size={28} className="rotate-[135deg]" />
-              </button>
-              <span className="text-xs font-semibold text-white/60">Decline</span>
-            </div>
+      <div className="fixed inset-0 z-[999] flex flex-col justify-between items-center bg-[#0b0e11] text-white overflow-hidden animate-in fade-in duration-500 select-none font-sans py-24 px-6">
+        
+        {/* Ambient Blurred Background of Caller's Avatar */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center filter blur-3xl scale-125 opacity-25 pointer-events-none transition-all duration-1000"
+          style={{ backgroundImage: `url(${avatarUrl})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
 
-            <div className="flex flex-col items-center gap-2">
-              <button
-                onClick={acceptCall}
-                className="w-16 h-16 rounded-full flex items-center justify-center bg-green-500 hover:bg-green-600 shadow-lg animate-bounce hover:scale-110 transition-all text-white"
-              >
-                {callType === "video" ? <Video size={28} /> : <Phone size={28} />}
-              </button>
-              <span className="text-xs font-semibold text-white/60">Accept</span>
+        {/* Central Caller Avatar with concentric glowing rings */}
+        <div className="flex-1 flex items-center justify-center mt-12">
+          <div className="relative flex items-center justify-center">
+            {/* Pulsating outer rings */}
+            <div className="absolute w-[260px] h-[260px] rounded-full border border-blue-500/10 animate-[ping-slow_3s_infinite]" />
+            <div className="absolute w-[220px] h-[220px] rounded-full border border-blue-500/20 animate-[ping-medium_2.5s_infinite]" />
+            <div className="absolute w-[190px] h-[190px] rounded-full border-2 border-blue-500/35 animate-pulse" />
+            
+            {/* Inner border glow */}
+            <div className="absolute w-[164px] h-[164px] rounded-full bg-blue-500/5 border border-blue-400/50 shadow-[0_0_30px_rgba(59,130,246,0.3)]" />
+            
+            {/* Perfect circular avatar */}
+            <div className="relative w-[150px] h-[150px] rounded-full border-4 border-slate-950/80 overflow-hidden shadow-2xl">
+              <img 
+                src={avatarUrl} 
+                alt={remoteUser?.fullName} 
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
         </div>
+
+        {/* Caller Information */}
+        <div className="z-10 text-center mb-16">
+          <h2 className="text-4xl font-semibold tracking-wide text-white drop-shadow-lg mb-2 animate-pulse">
+            {remoteUser?.fullName || "Incoming Call"}
+          </h2>
+          <p className="text-white/60 font-light tracking-wide text-base">
+            ProStream {callType === "video" ? "Video" : "Voice"} Call...
+          </p>
+        </div>
+
+        {/* Bottom Call Actions Buttons (Side-by-side, no labels) */}
+        <div className="z-10 flex justify-center items-center gap-20 w-full max-w-xs mb-10">
+          {/* Decline Button (Soft coral pinkish red) */}
+          <button
+            onClick={rejectCall}
+            className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-[#ff8e86] hover:bg-[#ff7c73] hover:scale-105 active:scale-95 transition-all text-white shadow-[0_10px_25px_-5px_rgba(255,142,134,0.3)]"
+            title="Decline"
+          >
+            <Phone size={28} className="rotate-[135deg]" />
+          </button>
+
+          {/* Accept Button (Vibrant turquoise green) */}
+          <button
+            onClick={acceptCall}
+            className="w-[72px] h-[72px] rounded-full flex items-center justify-center bg-[#0fb478] hover:bg-[#0da26c] hover:scale-105 active:scale-95 animate-[bounce-subtle_2s_infinite] transition-all text-white shadow-[0_10px_25px_-5px_rgba(15,180,120,0.4)]"
+            title="Accept"
+          >
+            {callType === "video" ? <Video size={28} /> : <Phone size={28} />}
+          </button>
+        </div>
+
+        {/* Extra styles for custom animations in incoming call screen */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes ping-slow {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            100% { transform: scale(1.4); opacity: 0; }
+          }
+          @keyframes ping-medium {
+            0% { transform: scale(0.9); opacity: 0.8; }
+            100% { transform: scale(1.25); opacity: 0; }
+          }
+          @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+          }
+        `}} />
+
       </div>
     );
   }
