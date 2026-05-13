@@ -33,34 +33,34 @@ const App = () => {
 
     const setupBackButton = async () => {
       const backListener = await CapApp.addListener("backButton", (data) => {
-        const currentPath = window.location.pathname;
         const { isInCall, isMinimized, setIsMinimized } = useCallStore.getState();
 
+        // If in an active call, always prioritize minimizing it
         if (isInCall && !isMinimized) {
-          // If in a call, minimize it instead of exiting
           setIsMinimized(true);
           return;
         }
 
+        const currentPath = window.location.pathname;
         if (currentPath === "/") {
           const { selectedUser, activeTab } = useChatstore.getState();
           
           if (selectedUser) {
-            // If a chat is open, close it first
             useChatstore.getState().setSelectedUser(null);
           } else if (activeTab !== "chats") {
-            // If not on chats tab, go to chats tab
             useChatstore.getState().setActiveTab("chats");
           } else {
-            // Only exit if we are on the base Chats tab and NO active call
-            CapApp.exitApp();
+            // Only exit if NO active call
+            if (!isInCall) {
+              CapApp.exitApp();
+            }
           }
         } else if (currentPath === "/settings" || currentPath === "/profile") {
           navigate("/");
         } else {
           if (data.canGoBack) {
             window.history.back();
-          } else {
+          } else if (!isInCall) {
             CapApp.exitApp();
           }
         }
