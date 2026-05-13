@@ -91,6 +91,13 @@ const MessageInput = () => {
           {/* Text Input */}
           <input
             type="text"
+            name="chat-message-text"
+            id="chat-message-text"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="sentences"
+            spellCheck="true"
+            data-lpignore="true"
             className="flex-1 bg-transparent text-sm md:text-base border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content"
             placeholder="Signal message"
             value={text}

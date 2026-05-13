@@ -360,6 +360,10 @@ const Sidebar = () => {
           <div className="relative flex items-center">
             <input 
               type="text"
+              name="sidebar-search"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
