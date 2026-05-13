@@ -17,10 +17,10 @@ export const useAuthStore = create((set,get) => ({
 
   checkAuth: async () => {
     try {
-      // Add a safety timeout of 8 seconds for the initial check
+      // Add a safety timeout of 60 seconds for Render cold starts
       const checkPromise = axiosInstance.get("/auth/check");
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Auth check timed out")), 8000)
+        setTimeout(() => reject(new Error("Auth check timed out")), 60000)
       );
 
       const res = await Promise.race([checkPromise, timeoutPromise]);

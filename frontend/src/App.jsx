@@ -73,8 +73,11 @@ const App = () => {
   if (isCheckingAuth && !authUser) return (
     <div className="flex flex-col items-center justify-center h-screen bg-base-100">
       <Loader className="size-12 animate-spin text-primary mb-4" />
-      <p className="text-sm font-medium text-base-content/60 animate-pulse">
-        Connecting to ChatZone...
+      <p className="text-lg font-bold text-base-content mb-1">
+        Waking up Server...
+      </p>
+      <p className="text-sm text-base-content/50 animate-pulse">
+        This may take up to 60s on first visit.
       </p>
     </div>
   );
