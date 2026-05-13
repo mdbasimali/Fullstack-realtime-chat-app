@@ -122,6 +122,7 @@ export const useCallStore = create((set, get) => ({
   isVideoOff: false,
   callStartTime: null,
   facingMode: "user", // 'user' or 'environment'
+  isSharingScreen: false,
 
   toggleMic: () => {
     const { localStream, isMuted } = get();
@@ -359,6 +360,87 @@ export const useCallStore = create((set, get) => ({
       } catch (e) {
         console.error("Error adding ice candidate", e);
       }
+    }
+  },
+
+  toggleScreenShare: async () => {
+    const { isSharingScreen, localStream, pc, facingMode } = get();
+    
+    if (!isSharingScreen) {
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: false // Usually we don't want to share system audio to avoid loops
+        });
+
+        const screenTrack = screenStream.getVideoTracks()[0];
+        
+        // Handle when user clicks "Stop Sharing" from the browser's native UI
+        screenTrack.onended = () => {
+          get().stopScreenShare();
+        };
+
+        if (pc) {
+          const senders = pc.getSenders();
+          const videoSender = senders.find(s => s.track && s.track.kind === "video");
+          if (videoSender) {
+            await videoSender.replaceTrack(screenTrack);
+          }
+        }
+
+        // Update local stream to show screen preview
+        const audioTracks = localStream.getAudioTracks();
+        const newLocalStream = new MediaStream([screenTrack, ...audioTracks]);
+
+        set({ 
+          isSharingScreen: true,
+          localStream: newLocalStream,
+          screenStream // Store it to stop it later
+        });
+      } catch (error) {
+        console.error("Error starting screen share:", error);
+      }
+    } else {
+      await get().stopScreenShare();
+    }
+  },
+
+  stopScreenShare: async () => {
+    const { screenStream, localStream, pc, facingMode } = get();
+    
+    // Stop all screen tracks
+    if (screenStream) {
+      screenStream.getTracks().forEach(track => track.stop());
+    }
+
+    try {
+      // Re-acquire camera stream
+      const cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facingMode || "user" },
+        audio: false
+      });
+
+      const cameraTrack = cameraStream.getVideoTracks()[0];
+      
+      if (pc) {
+        const senders = pc.getSenders();
+        const videoSender = senders.find(s => s.track && s.track.kind === "video");
+        if (videoSender) {
+          await videoSender.replaceTrack(cameraTrack);
+        }
+      }
+
+      const audioTracks = localStream.getAudioTracks();
+      const newLocalStream = new MediaStream([cameraTrack, ...audioTracks]);
+
+      set({ 
+        isSharingScreen: false,
+        localStream: newLocalStream,
+        screenStream: null
+      });
+    } catch (error) {
+      console.error("Error reverting to camera:", error);
+      set({ isSharingScreen: false, screenStream: null });
     }
   },
 

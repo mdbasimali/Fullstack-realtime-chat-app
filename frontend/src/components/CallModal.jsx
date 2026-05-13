@@ -11,7 +11,8 @@ import {
   ArrowLeft, 
   MoreHorizontal, 
   RefreshCw, 
-  Info 
+  Info,
+  Monitor
 } from "lucide-react";
 
 const CallModal = () => {
@@ -28,9 +29,11 @@ const CallModal = () => {
     callStatus,
     isMuted,
     isVideoOff,
+    isSharingScreen,
     toggleMic,
     toggleVideo,
     switchCamera,
+    toggleScreenShare,
     facingMode,
   } = useCallStore();
 
@@ -40,10 +43,10 @@ const CallModal = () => {
   const [duration, setDuration] = useState(0);
   const [isMirrored, setIsMirrored] = useState(true);
 
-  // Sync mirroring: Mirror front camera (selfie) but NOT rear camera (outwards look)
+  // Sync mirroring: Mirror front camera (selfie) but NOT rear camera or screen share
   useEffect(() => {
-    setIsMirrored(facingMode === "user");
-  }, [facingMode]);
+    setIsMirrored(facingMode === "user" && !isSharingScreen);
+  }, [facingMode, isSharingScreen]);
 
   useEffect(() => {
     let interval;
@@ -68,7 +71,7 @@ const CallModal = () => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
-  }, [localStream, isInCall, callType, callStatus, isVideoOff]);
+  }, [localStream, isInCall, callType, callStatus, isVideoOff, isSharingScreen]);
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
@@ -257,9 +260,15 @@ const CallModal = () => {
       {/* Overlay Video Action Buttons (Over mid-bottom section, but above the bottom drawer) */}
       {callType === "video" && (
         <div className="z-10 flex justify-between items-center w-full px-8 mb-4 pointer-events-auto mt-auto">
-          {/* Option dots button */}
-          <button className="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white border border-white/10 transition-all active:scale-95 shadow-lg">
-            <MoreHorizontal size={22} />
+          {/* Screen Share toggle button */}
+          <button 
+            onClick={toggleScreenShare}
+            className={`w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center border border-white/10 transition-all active:scale-95 shadow-lg ${
+              isSharingScreen ? "bg-primary text-primary-content" : "bg-black/40 text-white hover:bg-black/60"
+            }`}
+            title={isSharingScreen ? "Stop Screen Share" : "Share Screen"}
+          >
+            <Monitor size={22} />
           </button>
 
           {/* Switch camera / Flip stream / Mirror option button */}
