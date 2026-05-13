@@ -13,6 +13,7 @@ body,
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  overscroll-behavior: none;
 }
 
 /* Fix for mobile keyboard pushing up content */
