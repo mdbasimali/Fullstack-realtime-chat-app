@@ -17,15 +17,17 @@ const ICE_SERVERS = {
       urls: [
         "turn:openrelay.metered.ca:80",
         "turn:openrelay.metered.ca:443",
-        "turn:openrelay.metered.ca:443?transport=tcp"
+        "turn:openrelay.metered.ca:443?transport=tcp",
+        "turn:openrelay.metered.ca:443?transport=udp"
       ],
       username: "openrelay",
       credential: "openrelay"
     }
   ],
-  iceCandidatePoolSize: 20, // Increased for faster mobile data connections
+  iceCandidatePoolSize: 20,
   bundlePolicy: "max-bundle",
-  rtcpMuxPolicy: "require"
+  rtcpMuxPolicy: "require",
+  sdpSemantics: "unified-plan"
 };
 
 const RINGING_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/1357/1357-preview.mp3"); // Classic 'Cring Cring' bell ring
