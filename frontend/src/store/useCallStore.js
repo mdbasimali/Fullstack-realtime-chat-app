@@ -152,45 +152,62 @@ export const useCallStore = create((set, get) => ({
     const { localStream, pc, callType } = get();
     if (!localStream || callType !== "video") return;
 
-    const currentVideoTrack = localStream.getVideoTracks()[0];
-    if (!currentVideoTrack) return;
+      const currentVideoTrack = localStream.getVideoTracks()[0];
+      const currentFacingMode = get().facingMode || "user";
+      const newFacingMode = currentFacingMode === "user" ? "environment" : "user";
 
-    const currentFacingMode = get().facingMode || "user";
-    const newFacingMode = currentFacingMode === "user" ? "environment" : "user";
-
-    try {
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacingMode },
-        audio: false,
-      });
-
-      const newVideoTrack = newStream.getVideoTracks()[0];
-      if (!newVideoTrack) return;
-
-      // Stop the old camera track to turn off physical camera light and release hardware
-      currentVideoTrack.stop();
-
-      // Create a brand new MediaStream combining the new video track and existing audio tracks
-      const audioTracks = localStream.getAudioTracks();
-      const newLocalStream = new MediaStream([newVideoTrack, ...audioTracks]);
-
-      // Update the WebRTC Peer Connection tracks if active
-      if (pc) {
-        const senders = pc.getSenders();
-        const videoSender = senders.find(sender => sender.track && sender.track.kind === "video");
-        if (videoSender) {
-          await videoSender.replaceTrack(newVideoTrack);
-        }
+      // Stop the current track FIRST to release hardware lock on some mobile devices
+      if (currentVideoTrack) {
+        currentVideoTrack.stop();
       }
 
-      // Update local stream state
-      set({ 
-        localStream: newLocalStream,
-        facingMode: newFacingMode
-      });
-    } catch (error) {
-      console.error("Error switching camera:", error);
-    }
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: newFacingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false,
+        });
+
+        const newVideoTrack = newStream.getVideoTracks()[0];
+        if (!newVideoTrack) return;
+
+        // Combine new video with existing audio
+        const audioTracks = localStream.getAudioTracks();
+        const newLocalStream = new MediaStream([newVideoTrack, ...audioTracks]);
+
+        // Update Peer Connection
+        if (pc) {
+          const senders = pc.getSenders();
+          const videoSender = senders.find(s => s.track && s.track.kind === "video");
+          if (videoSender) {
+            await videoSender.replaceTrack(newVideoTrack);
+          }
+        }
+
+        set({ 
+          localStream: newLocalStream,
+          facingMode: newFacingMode
+        });
+      } catch (error) {
+        console.error("New camera request failed, trying to restore old one:", error);
+        // Fallback: try to get the original camera back if the switch failed
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: currentFacingMode },
+          audio: false
+        });
+        const fallbackTrack = fallbackStream.getVideoTracks()[0];
+        if (fallbackTrack) {
+          const audioTracks = localStream.getAudioTracks();
+          set({ localStream: new MediaStream([fallbackTrack, ...audioTracks]) });
+          if (pc) {
+            const videoSender = pc.getSenders().find(s => s.track && s.track.kind === "video");
+            if (videoSender) await videoSender.replaceTrack(fallbackTrack);
+          }
+        }
+      }
   },
 
   initiateCall: async (receiver, type) => {
