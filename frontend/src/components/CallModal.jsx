@@ -12,7 +12,9 @@ import {
   MoreHorizontal, 
   RefreshCw, 
   Info,
-  Monitor
+  Monitor,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 
 const CallModal = () => {
@@ -199,17 +201,6 @@ const CallModal = () => {
           ) : (
             /* Ongoing call: Remote stream */
             <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
-              {/* Overlay info and toggle */}
-              <div className="absolute top-20 right-6 z-50 flex flex-col gap-3">
-                <button 
-                  onClick={() => setManualFullView(!manualFullView)}
-                  className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 shadow-xl active:scale-90 transition-all"
-                  title="Toggle Full View / Zoom"
-                >
-                  <RefreshCw size={18} className={manualFullView ? "rotate-180" : ""} />
-                </button>
-              </div>
-
               {isRemoteSharingScreen && (
                 <div className="absolute top-16 left-0 right-0 z-30 flex justify-center pointer-events-none">
                   <div className="bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-b-2xl border-x border-b border-white/10 flex items-center gap-2">
@@ -296,8 +287,8 @@ const CallModal = () => {
 
       {/* Overlay Video Action Buttons (Over mid-bottom section, but above the bottom drawer) */}
       {callType === "video" && (
-        <div className="z-10 flex justify-between items-center w-full px-8 mb-4 pointer-events-auto mt-auto">
-          {/* Screen Share toggle button - Only show if supported (usually desktop only) */}
+        <div className="z-10 flex justify-between items-end w-full px-8 mb-6 pointer-events-auto mt-auto">
+          {/* Left Side: Screen Share toggle button */}
           {navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? (
             <button 
               onClick={toggleScreenShare}
@@ -309,17 +300,29 @@ const CallModal = () => {
               <Monitor size={22} />
             </button>
           ) : (
-            <div className="w-12" /> // Spacer if not supported
+            <div className="w-12" />
           )}
 
-          {/* Switch camera / Flip stream / Mirror option button */}
-          <button 
-            onClick={switchCamera} 
-            className="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white border border-white/10 transition-all active:scale-95 shadow-lg"
-            title="Switch Camera (Front/Back)"
-          >
-            <RefreshCw size={20} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
-          </button>
+          {/* Right Side: View Toggles & Camera Switch */}
+          <div className="flex flex-col gap-3">
+            {/* Manual Full View Toggle (New Design) */}
+            <button 
+              onClick={() => setManualFullView(!manualFullView)}
+              className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl flex items-center justify-center text-white border border-white/20 shadow-2xl active:scale-90 transition-all"
+              title={manualFullView ? "Zoom to Fill" : "Fit to Screen"}
+            >
+              {manualFullView ? <Minimize2 size={22} /> : <Maximize2 size={22} />}
+            </button>
+
+            {/* Switch camera button */}
+            <button 
+              onClick={switchCamera} 
+              className="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white border border-white/10 transition-all active:scale-95 shadow-lg"
+              title="Switch Camera"
+            >
+              <RefreshCw size={20} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
+            </button>
+          </div>
         </div>
       )}
 
