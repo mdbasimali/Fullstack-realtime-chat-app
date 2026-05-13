@@ -43,8 +43,10 @@ const ChatContainer = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-[100dvh] md:h-full overflow-hidden bg-base-100 relative">
-      <ChatHeader />
+    <div className="flex-1 flex flex-col h-full max-h-full overflow-hidden bg-base-100 relative">
+      <div className="flex-shrink-0 z-50">
+        <ChatHeader />
+      </div>
 
       {/* Messages Stream View */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6">
