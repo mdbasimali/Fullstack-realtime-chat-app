@@ -3,16 +3,16 @@ import { useAuthStore } from "./useAuthStore";
 
 const ICE_SERVERS = {
   iceServers: [
-    {
-      urls: [
-        "stun:stun.l.google.com:19302",
-        "stun:stun1.l.google.com:19302",
-        "stun:stun2.l.google.com:19302",
-        "stun:stun3.l.google.com:19302",
-        "stun:stun4.l.google.com:19302",
-        "stun:stun.services.mozilla.com",
-      ],
-    },
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun3.l.google.com:19302" },
+    { urls: "stun:stun4.l.google.com:19302" },
+    { urls: "stun:stun.services.mozilla.com" },
+    { urls: "stun:stun.voiparound.com" },
+    { urls: "stun:stun.voipbuster.com" },
+    { urls: "stun:stun.voipstunt.com" },
+    { urls: "stun:stun.voxgratia.org" },
     {
       urls: [
         "turn:openrelay.metered.ca:80",
@@ -152,11 +152,10 @@ export const useCallStore = create((set, get) => ({
   handleScreenShareStopped: () => set({ isRemoteSharingScreen: false }),
 
   handleActiveSync: async ({ partner, type }) => {
-    const { isInCall, setupMediaStream, startCall } = get();
+    const { isInCall } = get();
     if (!isInCall) {
       console.log("🔄 Restoring active call session with", partner.fullName);
       
-      // 1. Restore UI state
       set({
         remoteUser: partner,
         callType: type || "video",
@@ -164,16 +163,41 @@ export const useCallStore = create((set, get) => ({
         isInCall: true,
       });
 
-      // 2. Re-acquire media streams
-      const stream = await setupMediaStream();
+      const stream = await get().setupMediaStream(type || "video");
       if (stream) {
-        console.log("✅ Media restored, re-negotiating connection...");
-        // 3. Initiate a fresh offer to the partner to restore WebRTC
-        // We use a slight delay to ensure socket is fully ready
+        console.log("✅ Media restored, re-negotiating...");
         setTimeout(() => {
           get().startCall(partner, type || "video");
-        }, 1000);
+        }, 1500);
       }
+    }
+  },
+
+  setupMediaStream: async (type = "video") => {
+    try {
+      const { localStream, facingMode } = get();
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: type === "video" ? { 
+          facingMode: facingMode || "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } : false,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+
+      set({ localStream: stream, isVideoOff: type !== "video" });
+      return stream;
+    } catch (error) {
+      console.error("Error setting up media stream:", error);
+      return null;
     }
   },
 
