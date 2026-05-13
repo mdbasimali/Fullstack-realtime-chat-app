@@ -81,7 +81,9 @@ const App = () => {
     handleCallRejected, 
     handleCallEnded, 
     handleIceCandidate,
-    users // We might need to find the user info
+    handleScreenShareStarted,
+    handleScreenShareStopped,
+    users
   } = useCallStore();
 
   useEffect(() => {
@@ -92,6 +94,8 @@ const App = () => {
     socket.on("call:rejected", handleCallRejected);
     socket.on("call:ended", handleCallEnded);
     socket.on("ice:candidate", handleIceCandidate);
+    socket.on("call:screen-share-started", handleScreenShareStarted);
+    socket.on("call:screen-share-stopped", handleScreenShareStopped);
 
     return () => {
       socket.off("call:incoming");
@@ -99,8 +103,10 @@ const App = () => {
       socket.off("call:rejected");
       socket.off("call:ended");
       socket.off("ice:candidate");
+      socket.off("call:screen-share-started");
+      socket.off("call:screen-share-stopped");
     };
-  }, [socket, handleIncomingCall, handleCallAccepted, handleCallRejected, handleCallEnded, handleIceCandidate]);
+  }, [socket, handleIncomingCall, handleCallAccepted, handleCallRejected, handleCallEnded, handleIceCandidate, handleScreenShareStarted, handleScreenShareStopped]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);

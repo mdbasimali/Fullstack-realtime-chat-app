@@ -122,6 +122,7 @@ export const useCallStore = create((set, get) => ({
   callStartTime: null,
   facingMode: "user", // 'user' or 'environment'
   isSharingScreen: false,
+  isRemoteSharingScreen: false,
   screenStream: null,
 
   toggleMic: () => {
@@ -143,6 +144,9 @@ export const useCallStore = create((set, get) => ({
       set({ isVideoOff: !isVideoOff });
     }
   },
+
+  handleScreenShareStarted: () => set({ isRemoteSharingScreen: true }),
+  handleScreenShareStopped: () => set({ isRemoteSharingScreen: false }),
 
   switchCamera: async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -364,7 +368,8 @@ export const useCallStore = create((set, get) => ({
   },
 
   toggleScreenShare: async () => {
-    const { isSharingScreen, localStream, pc, facingMode } = get();
+    const { isSharingScreen, localStream, pc, facingMode, remoteUser } = get();
+    const socket = useAuthStore.getState().socket;
     
     if (!isSharingScreen) {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
@@ -393,6 +398,11 @@ export const useCallStore = create((set, get) => ({
           }
         }
 
+        // Notify remote user
+        if (socket && remoteUser) {
+          socket.emit("call:screen-share-started", { to: remoteUser._id });
+        }
+
         const audioTracks = localStream ? localStream.getAudioTracks() : [];
         const newLocalStream = new MediaStream([screenTrack, ...audioTracks]);
 
@@ -411,10 +421,16 @@ export const useCallStore = create((set, get) => ({
   },
 
   stopScreenShare: async () => {
-    const { screenStream, localStream, pc, facingMode } = get();
+    const { screenStream, localStream, pc, facingMode, remoteUser } = get();
+    const socket = useAuthStore.getState().socket;
     
     if (screenStream) {
       screenStream.getTracks().forEach(track => track.stop());
+    }
+
+    // Notify remote user
+    if (socket && remoteUser) {
+      socket.emit("call:screen-share-stopped", { to: remoteUser._id });
     }
 
     try {
