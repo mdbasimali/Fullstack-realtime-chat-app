@@ -43,7 +43,7 @@ const formatLastMessageTime = (dateString) => {
 const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
-  const { initiateCall } = useCallStore();
+  const { startCall } = useCallStore();
 
   // Navigation states
   const [showContactsModal, setShowContactsModal] = useState(false);
@@ -794,7 +794,7 @@ const Sidebar = () => {
                       <button 
                         onClick={() => {
                           const targetUser = users.find(u => u.fullName === log.name);
-                          if (targetUser) initiateCall(targetUser, log.type);
+                          if (targetUser) startCall(targetUser, log.type);
                           else toast.error("User offline/not found to call");
                         }}
                         className="p-2.5 rounded-full hover:bg-primary/10 hover:text-primary text-base-content/70 transition-all"
