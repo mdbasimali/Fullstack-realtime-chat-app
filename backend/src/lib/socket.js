@@ -20,7 +20,7 @@ export function getReceiverSocketId(userId){
     return userSocketMap[userId]
 }
 
-async function sendPushNotification(userId, data) {
+export async function sendPushNotification(userId, data) {
     try {
         const user = await User.findById(userId);
         if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) {
