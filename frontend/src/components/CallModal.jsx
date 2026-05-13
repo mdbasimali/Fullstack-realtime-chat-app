@@ -204,7 +204,7 @@ const CallModal = () => {
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
-                className={`max-w-full max-h-full transition-all duration-500 ${isRemoteSharingScreen ? "object-contain shadow-2xl" : "w-full h-full object-cover"}`}
+                className={`w-full h-full transition-all duration-500 ${isRemoteSharingScreen ? "object-contain bg-black shadow-2xl" : "object-cover"}`}
               />
             </div>
           )}

@@ -182,6 +182,21 @@ io.on("connection", (socket) =>{
     }
   });
 
+  // Relay Screen Share Status
+  socket.on("call:screen-share-started", ({ to }) => {
+    const receiverSocketId = getReceiverSocketId(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("call:screen-share-started", { from: userId });
+    }
+  });
+
+  socket.on("call:screen-share-stopped", ({ to }) => {
+    const receiverSocketId = getReceiverSocketId(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("call:screen-share-stopped", { from: userId });
+    }
+  });
+
   // Real-time Message Seen/Read Event
   socket.on("messageSeen", async ({ senderId }) => {
     try {
