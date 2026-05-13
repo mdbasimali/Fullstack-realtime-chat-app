@@ -3,10 +3,16 @@
 @tailwind utilities;
 
 html,
-body,
-#root {
+body {
   margin: 0;
   padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: auto; /* Allow native refresh gesture */
+  overscroll-behavior-y: contain; 
+}
+
+#root {
   height: 100%;
   width: 100%;
   overflow: hidden;
