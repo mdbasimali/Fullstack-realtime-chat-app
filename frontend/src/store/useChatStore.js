@@ -73,6 +73,7 @@ export const useChatstore = create((set,get) => ({
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
       set({ messages: res.data });
+      get().getUsers(); // Update sidebar unread badge states and previews instantly!
     } catch (error) {
       toast.error(error.response.data.message);
     } finally {
@@ -81,11 +82,11 @@ export const useChatstore = create((set,get) => ({
   },
 
   sendMessage:async(messageData)=>{
-    const {selectedUser,messages}=get()
+    const {selectedUser,messages,getUsers}=get()
     try{
       const res =await axiosInstance.post(`/messages/send/${selectedUser._id}`,messageData);
-      set({messages:[...messages,res.data]})
-
+      set({messages:[...messages,res.data]});
+      getUsers(); // Refresh sidebar items to show our newly sent message as the lastMessage instantly!
     }catch(error){
       toast.error(error.response.data.message);
     }
@@ -134,7 +135,7 @@ export const useChatstore = create((set,get) => ({
 
     // Handle real-time read notifications from the recipient
     socket.on("messagesRead", ({ readBy }) => {
-      const { selectedUser, messages } = get();
+      const { selectedUser, messages, getUsers } = get();
       if (selectedUser && selectedUser._id === readBy) {
         // Mark all sent messages as read in local state
         const updatedMessages = messages.map((msg) => {
@@ -145,6 +146,8 @@ export const useChatstore = create((set,get) => ({
         });
         set({ messages: updatedMessages });
       }
+      // Also refresh sidebar list so that the lastMessage checkmark turns blue instantly
+      getUsers();
     });
   },
 
