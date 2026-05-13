@@ -9,7 +9,7 @@ const ChatHeader = () => {
   const { initiateCall } = useCallStore();
 
   return (
-    <div className="p-3.5 border-b border-base-300 bg-base-100 flex items-center justify-between sticky top-0 z-10">
+    <div className="p-3 border-b border-base-300 bg-base-100 flex items-center justify-between shrink-0 z-20">
       <div className="flex items-center gap-3">
         {/* Back button */}
         <button
