@@ -44,9 +44,9 @@ const autoLinkMatchedContacts = async (newUser) => {
 
 
 export const signup = async (req, res) => {
-  const { fullName, email, password, username } = req.body;
+  const { fullName, email, password, username, phoneNumber } = req.body;
   try {
-    if (!fullName || !email || !password || !username) {
+    if (!fullName || !email || !password || !username || !phoneNumber) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -60,6 +60,10 @@ export const signup = async (req, res) => {
     const usernameExists = await User.findOne({ username });
     if (usernameExists) return res.status(400).json({ message: "Username already exists" });
 
+    const cleanPhone = phoneNumber.trim();
+    const phoneExists = await User.findOne({ phoneNumber: cleanPhone });
+    if (phoneExists) return res.status(400).json({ message: "Phone number already exists" });
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -68,6 +72,7 @@ export const signup = async (req, res) => {
       email,
       password: hashedPassword,
       username,
+      phoneNumber: cleanPhone,
     });
 
     if (newUser) {
@@ -81,6 +86,7 @@ export const signup = async (req, res) => {
         fullName: newUser.fullName,
         email: newUser.email,
         username: newUser.username,
+        phoneNumber: newUser.phoneNumber,
         profilePic: newUser.profilePic,
         token: token,
       });
@@ -191,7 +197,8 @@ export const updateProfile = async (req, res) => {
 };
 export const checkAuth = (req,res)=>{
   try{
-    res.status(200).json(req.user);
+    const token = req.cookies.jwt || req.headers.authorization?.split(" ")[1] || req.query.token;
+    res.status(200).json({ ...req.user.toObject(), token });
    }catch(error){
     console.log("Error in checkAuth controller", error.message);
     res.status(500).json({message:"Internal Server Error"});

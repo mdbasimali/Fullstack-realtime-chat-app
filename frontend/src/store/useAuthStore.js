@@ -27,6 +27,9 @@ export const useAuthStore = create((set,get) => ({
   checkAuth: async () => {
     try {
       const res = await axiosInstance.get("/auth/check");
+      if (res.data?.token) {
+        localStorage.setItem("token", res.data.token);
+      }
       set({ authUser: res.data });
       get().connectSocket();
       get().setupPushNotifications();

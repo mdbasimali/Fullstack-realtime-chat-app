@@ -31,10 +31,6 @@ const userSchema = new mongoose.Schema(
     type:String,
     default:""
   },
-  username:{
-    type:String,
-    default:""
-  },
   about:{
     type:String,
     default:"Available"

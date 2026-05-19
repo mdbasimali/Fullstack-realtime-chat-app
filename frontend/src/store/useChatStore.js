@@ -270,7 +270,7 @@ export const useChatstore = create((set,get) => ({
       get().getUsers();
     } catch (error) {
       console.error("DeleteMessage error:", error);
-      toast.error("Failed to delete message");
+      throw error;
     }
   },
 

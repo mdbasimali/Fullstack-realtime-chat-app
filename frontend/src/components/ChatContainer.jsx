@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import VoicePlayer from "./VoicePlayer";
 import toast from "react-hot-toast";
+import { axiosInstance } from "../lib/axios";
 
 const getSenderColor = (senderId) => {
   const colors = [
@@ -133,47 +134,44 @@ const ChatContainer = () => {
   };
 
   const handleDownloadImage = async (imageUrl) => {
+    const toastId = toast.loading("Preparing download...");
     try {
-      const token = localStorage.getItem("token") || "";
-      const isDev = import.meta.env.MODE === "development";
-      const hostname = window.location.hostname;
-      const apiBase = isDev 
-        ? `http://${hostname}:5001/api` 
-        : "https://chatzone-backend-c0mn.onrender.com/api";
-        
-      const downloadUrl = `${apiBase}/messages/download?url=${encodeURIComponent(imageUrl)}&token=${token}`;
-      
-      const toastId = toast.loading("Preparing download...");
-      
+      let blob;
+      // 1. Try direct fetch first (Cloudinary supports CORS, public asset)
       try {
-        const res = await fetch(downloadUrl);
-        if (!res.ok) throw new Error("Fetch failed");
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        
-        let filename = `chat-image-${Date.now()}.jpg`;
-        if (imageUrl.toLowerCase().includes(".png")) filename = `chat-image-${Date.now()}.png`;
-        else if (imageUrl.toLowerCase().includes(".gif")) filename = `chat-image-${Date.now()}.gif`;
-        else if (imageUrl.toLowerCase().includes(".webp")) filename = `chat-image-${Date.now()}.webp`;
-        
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 200);
-        toast.success("Image saved to gallery!", { id: toastId });
-      } catch (err) {
-        console.warn("Blob download failed, trying tab-open fallback...", err);
-        window.open(downloadUrl, "_blank");
-        toast.success("Downloading image...", { id: toastId });
+        const res = await fetch(imageUrl, { mode: "cors" });
+        if (!res.ok) throw new Error("Direct fetch failed");
+        blob = await res.blob();
+      } catch (directErr) {
+        console.warn("Direct fetch from Cloudinary failed, calling authenticated backend proxy...", directErr);
+        // 2. Fall back to backend download proxy using axiosInstance (injects auth credentials/headers automatically)
+        const response = await axiosInstance.get(`/messages/download?url=${encodeURIComponent(imageUrl)}`, {
+          responseType: "blob"
+        });
+        blob = response.data;
       }
+
+      if (!blob) throw new Error("Could not retrieve file blob");
+
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      
+      let filename = `chat-image-${Date.now()}.jpg`;
+      if (imageUrl.toLowerCase().includes(".png")) filename = `chat-image-${Date.now()}.png`;
+      else if (imageUrl.toLowerCase().includes(".gif")) filename = `chat-image-${Date.now()}.gif`;
+      else if (imageUrl.toLowerCase().includes(".webp")) filename = `chat-image-${Date.now()}.webp`;
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 200);
+      toast.success("Image saved to gallery!", { id: toastId });
     } catch (error) {
       console.error("Download failed:", error);
-      toast.error("Failed to download image");
+      toast.error("Failed to download image", { id: toastId });
     }
     setContextMenu(null);
   };
@@ -476,7 +474,7 @@ const ChatContainer = () => {
 
             {contextMenu.isMobile ? (
               /* Mobile Bottom Sheet Drawer */
-              <div className="fixed inset-x-0 bottom-0 z-55 bg-base-100 rounded-t-[28px] p-5 pb-8 shadow-[0_-8px_30px_rgb(0,0,0,0.18)] border-t border-base-300 animate-slide-up max-w-md mx-auto">
+              <div className="fixed inset-x-0 bottom-0 z-[60] bg-base-100 rounded-t-[28px] p-5 pb-8 shadow-[0_-8px_30px_rgb(0,0,0,0.18)] border-t border-base-300 animate-slide-up max-w-md mx-auto">
                 {/* Drag Handle indicator */}
                 <div className="w-12 h-1 bg-base-300 rounded-full mx-auto mb-5" />
                 
@@ -528,7 +526,7 @@ const ChatContainer = () => {
                   top: `${Math.min(contextMenu.y, window.innerHeight - 150)}px`, 
                   left: `${Math.min(contextMenu.x, window.innerWidth - 200)}px` 
                 }}
-                className="fixed z-55 w-48 bg-base-100 border border-base-300 rounded-2xl shadow-xl p-1.5 animate-fade-in text-base-content"
+                className="fixed z-[60] w-48 bg-base-100 border border-base-300 rounded-2xl shadow-xl p-1.5 animate-fade-in text-base-content"
               >
                 {contextMenu.message.text && (
                   <button 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { MessageSquare, Loader2, Mail, Lock, Eye, EyeOff, User, AtSign } from "lucide-react";
+import { MessageSquare, Loader2, Mail, Lock, Eye, EyeOff, User, AtSign, Phone } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
@@ -13,6 +13,7 @@ const SignUpPage = () => {
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -29,7 +30,7 @@ const SignUpPage = () => {
 
   const handleEmailSignup = async (e) => {
     e.preventDefault();
-    if (!fullName || !username || !email || !password) {
+    if (!fullName || !username || !email || !password || !phoneNumber) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -37,7 +38,7 @@ const SignUpPage = () => {
       toast.error("Password must be at least 6 characters long");
       return;
     }
-    const res = await signup({ fullName, username, email, password });
+    const res = await signup({ fullName, username, email, password, phoneNumber });
     if (res.success) {
       toast.success("Account created successfully!");
       localStorage.setItem("trigger_contact_sync", "true");
@@ -198,6 +199,23 @@ const SignUpPage = () => {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone Number</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <Phone className="size-3.5" />
+                </div>
+                <input
+                  type="tel"
+                  placeholder="+1234567890"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
                   className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
                   required
                 />

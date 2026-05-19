@@ -731,83 +731,18 @@ const Sidebar = () => {
 
       {/* 2. Scrollable Body Content */}
       <main className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 pb-24">
-        
         {/* ==================== TABS: CHATS ==================== */}
         {activeTab === "chats" && (
-          <div className={`${chatUsers.length === 0 ? "flex flex-col min-h-[66vh] justify-between space-y-6" : "space-y-4"}`}>
+          <div className="space-y-4">
             
             {/* If no active conversations, show premium "No Chats Yet" empty state */}
             {chatUsers.length === 0 ? (
-              <>
-                {/* Centered Empty State Text */}
-                <div className="flex-1 flex flex-col items-center justify-center py-10 text-center space-y-2 animate-fade-in">
-                  <h2 className="text-xl font-semibold text-base-content">No chats yet.</h2>
-                  <p className="text-sm text-base-content/60 max-w-[280px]">
-                    Get started by messaging a friend.
-                  </p>
-                </div>
-
-                {/* "Get started" Quick Action Cards - Anchored to the bottom */}
-                <div className="w-full text-left mt-auto animate-fade-in">
-                  <h3 className="text-sm font-semibold text-base-content/80 mb-3 px-1">Get started</h3>
-                  <div className="flex gap-4 overflow-x-auto custom-scrollbar pb-2 snap-x snap-mandatory">
-                    
-                    {/* New Group Card - Pastel Orange */}
-                    {!dismissedCards.includes("group") && (
-                      <div className="flex-shrink-0 w-[210px] bg-[#FDF6ED] dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-4 flex flex-col justify-between relative snap-start shadow-sm hover:shadow transition-shadow">
-                        <button 
-                          onClick={() => dismissCard("group")} 
-                          className="absolute top-2.5 right-2.5 p-1 rounded-full hover:bg-amber-100/50 dark:hover:bg-amber-950/40 text-amber-900/40 dark:text-amber-200/40"
-                        >
-                          <X size={15} />
-                        </button>
-                        <div className="space-y-3">
-                          <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-700 dark:text-amber-300">
-                            <Users size={20} />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-amber-950 dark:text-amber-200 text-sm">New group</h4>
-                            <p className="text-xs text-amber-900/60 dark:text-amber-300/60 mt-0.5">Chat with multiple friends.</p>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={handleNewGroup}
-                          className="mt-4 text-xs font-bold text-amber-800 dark:text-amber-300 hover:underline text-left"
-                        >
-                          Create group
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Invite Friends Card - Pastel Green */}
-                    {!dismissedCards.includes("invite") && (
-                      <div className="flex-shrink-0 w-[210px] bg-[#EEF7F2] dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-4 flex flex-col justify-between relative snap-start shadow-sm hover:shadow transition-shadow">
-                        <button 
-                          onClick={() => dismissCard("invite")} 
-                          className="absolute top-2.5 right-2.5 p-1 rounded-full hover:bg-emerald-100/50 dark:hover:bg-emerald-950/40 text-emerald-900/40 dark:text-emerald-200/40"
-                        >
-                          <X size={15} />
-                        </button>
-                        <div className="space-y-3">
-                          <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-700 dark:text-emerald-300">
-                            <Mail size={20} />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-emerald-950 dark:text-emerald-200 text-sm">Invite friends</h4>
-                            <p className="text-xs text-emerald-900/60 dark:text-emerald-300/60 mt-0.5">Share ChatZone link with others.</p>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={handleInviteFriends}
-                          className="mt-4 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:underline text-left"
-                        >
-                          Copy invite link
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
+              <div className="flex flex-col items-center justify-center py-20 text-center space-y-2 animate-fade-in">
+                <h2 className="text-xl font-semibold text-base-content">No chats yet.</h2>
+                <p className="text-sm text-base-content/60 max-w-[280px]">
+                  Get started by messaging a friend.
+                </p>
+              </div>
             ) : (
               /* Active Chat List styled beautifully like Signal */
               <div className="space-y-1">

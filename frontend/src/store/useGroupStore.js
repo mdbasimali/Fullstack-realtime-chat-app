@@ -317,7 +317,7 @@ export const useGroupStore = create((set, get) => ({
       set({ messages: messages.filter((msg) => msg._id !== messageId) });
     } catch (error) {
       console.error("deleteGroupMessage error:", error);
-      toast.error("Failed to delete message");
+      throw error;
     }
   }
 }));

@@ -277,8 +277,11 @@ export const deleteMessage = async (req, res) => {
       return res.status(404).json({ message: "Message not found" });
     }
 
+    const senderIdStr = message.senderId?._id ? message.senderId._id.toString() : message.senderId?.toString();
+    const receiverIdStr = message.receiverId?._id ? message.receiverId._id.toString() : message.receiverId?.toString();
+
     let canDelete = false;
-    if (message.senderId.toString() === myId.toString() || message.receiverId?.toString() === myId.toString()) {
+    if (senderIdStr === myId.toString() || receiverIdStr === myId.toString()) {
       canDelete = true;
     } else if (message.groupId) {
       const group = await Group.findById(message.groupId);
@@ -297,7 +300,7 @@ export const deleteMessage = async (req, res) => {
     if (message.groupId) {
       io.to(`group_${message.groupId}`).emit("groupMessageDeleted", { messageId: id, groupId: message.groupId });
     } else {
-      const targetUserId = message.senderId.toString() === myId.toString() ? message.receiverId : message.senderId;
+      const targetUserId = senderIdStr === myId.toString() ? receiverIdStr : senderIdStr;
       const receiverSocketId = getReceiverSocketId(targetUserId);
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("messageDeleted", id);
