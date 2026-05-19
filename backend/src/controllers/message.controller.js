@@ -305,3 +305,50 @@ export const clearCallLogs = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const syncContacts = async (req, res) => {
+  try {
+    const { contacts } = req.body; // array of { email, phoneNumber, name }
+    const loggedInUserId = req.user._id;
+
+    if (!contacts || !Array.isArray(contacts)) {
+      return res.status(400).json({ message: "Contacts list must be an array" });
+    }
+
+    // Clean emails and phone numbers
+    const emails = contacts
+      .map(c => c.email && c.email.trim().toLowerCase())
+      .filter(Boolean);
+    const phoneNumbers = contacts
+      .map(c => c.phoneNumber && c.phoneNumber.trim().replace(/[^a-zA-Z0-9+]/g, ""))
+      .filter(Boolean);
+
+    // Find registered users matching any of the emails or phone numbers
+    // Excluding the current logged-in user!
+    const matchedUsers = await User.find({
+      _id: { $ne: loggedInUserId },
+      $or: [
+        { email: { $in: emails } },
+        { phoneNumber: { $in: phoneNumbers } }
+      ]
+    }).select("-password");
+
+    if (matchedUsers.length > 0) {
+      const matchedIds = matchedUsers.map(u => u._id);
+      
+      // Add all matched users to the current user's contacts
+      await User.findByIdAndUpdate(loggedInUserId, {
+        $addToSet: { contacts: { $each: matchedIds } }
+      });
+    }
+
+    res.status(200).json({
+      message: "Contacts synchronized successfully",
+      matchedCount: matchedUsers.length,
+      matchedUsers
+    });
+  } catch (error) {
+    console.error("Error in syncContacts controller:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

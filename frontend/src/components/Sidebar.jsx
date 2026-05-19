@@ -43,9 +43,160 @@ const formatLastMessageTime = (dateString) => {
 };
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation } = useChatstore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation, syncContacts } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
   const { initiateCall } = useCallStore();
+
+  // Contact Sync local state
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncStep, setSyncStep] = useState("ask"); // "ask" | "syncing" | "matched" | "fallback"
+  const [matchedContacts, setMatchedContacts] = useState([]);
+  const [manualEmails, setManualEmails] = useState("");
+  const [isSyncingContacts, setIsSyncingContacts] = useState(false);
+  const [vcfFile, setVcfFile] = useState(null);
+  const vcfInputRef = useRef(null);
+
+  useEffect(() => {
+    if (localStorage.getItem("trigger_contact_sync") === "true") {
+      localStorage.removeItem("trigger_contact_sync");
+      setShowSyncModal(true);
+      setSyncStep("ask");
+    }
+  }, []);
+
+  const parseVCF = (text) => {
+    const parsed = [];
+    const cards = text.split("BEGIN:VCARD");
+    for (const card of cards) {
+      if (!card.includes("END:VCARD")) continue;
+      const nameMatch = card.match(/FN:(.+)/);
+      const emailMatches = [...card.matchAll(/EMAIL.*:(.+)/g)];
+      const telMatches = [...card.matchAll(/TEL.*:(.+)/g)];
+
+      const name = nameMatch ? nameMatch[1].trim() : "";
+      const emails = emailMatches.map(m => m[1].trim());
+      const tels = telMatches.map(m => m[1].trim().replace(/[^a-zA-Z0-9+]/g, ""));
+
+      const maxLen = Math.max(emails.length, tels.length);
+      for (let i = 0; i < maxLen; i++) {
+        parsed.push({
+          name: name || `Contact ${parsed.length + 1}`,
+          email: emails[i] || "",
+          phoneNumber: tels[i] || ""
+        });
+      }
+    }
+    return parsed;
+  };
+
+  const handleNativeContactSync = async () => {
+    if (!navigator.contacts || !navigator.contacts.select) {
+      setSyncStep("fallback");
+      return;
+    }
+
+    setIsSyncingContacts(true);
+    setSyncStep("syncing");
+
+    try {
+      const props = ["name", "email", "tel"];
+      const opts = { multiple: true };
+      const nativeContacts = await navigator.contacts.select(props, opts);
+      
+      const formatted = nativeContacts.map(c => ({
+        name: c.name?.[0] || "",
+        email: c.email?.[0] || "",
+        phoneNumber: c.tel?.[0] || ""
+      }));
+
+      if (formatted.length === 0) {
+        toast.error("No contacts selected");
+        setSyncStep("ask");
+        setIsSyncingContacts(false);
+        return;
+      }
+
+      const res = await syncContacts(formatted);
+      if (res.success) {
+        setMatchedContacts(res.matchedUsers || []);
+        setSyncStep("matched");
+      } else {
+        toast.error(res.error || "Sync failed");
+        setSyncStep("ask");
+      }
+    } catch (err) {
+      console.error("Native Contact Picker failed:", err);
+      setSyncStep("fallback");
+    } finally {
+      setIsSyncingContacts(false);
+    }
+  };
+
+  const handleVCFUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setVcfFile(file);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target.result;
+      const parsed = parseVCF(text);
+      if (parsed.length === 0) {
+        toast.error("Could not find any contacts in the VCF file");
+        return;
+      }
+
+      setIsSyncingContacts(true);
+      setSyncStep("syncing");
+
+      const res = await syncContacts(parsed);
+      if (res.success) {
+        setMatchedContacts(res.matchedUsers || []);
+        setSyncStep("matched");
+      } else {
+        toast.error(res.error || "Sync failed");
+        setSyncStep("fallback");
+      }
+      setIsSyncingContacts(false);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleManualEmailSync = async (e) => {
+    e.preventDefault();
+    if (!manualEmails.trim()) {
+      toast.error("Please enter some emails or phone numbers");
+      return;
+    }
+
+    const emailRegex = /[\w.-]+@[\w.-]+\.\w+/g;
+    const phoneRegex = /\+?\(?\d{2,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{4}/g;
+
+    const emails = manualEmails.match(emailRegex) || [];
+    const phones = manualEmails.match(phoneRegex) || [];
+
+    const parsedContacts = [];
+    emails.forEach(email => parsedContacts.push({ email, phoneNumber: "", name: email }));
+    phones.forEach(phone => parsedContacts.push({ email: "", phoneNumber: phone, name: phone }));
+
+    if (parsedContacts.length === 0) {
+      toast.error("No valid emails or phone numbers found");
+      return;
+    }
+
+    setIsSyncingContacts(true);
+    setSyncStep("syncing");
+
+    const res = await syncContacts(parsedContacts);
+    if (res.success) {
+      setMatchedContacts(res.matchedUsers || []);
+      setSyncStep("matched");
+    } else {
+      toast.error(res.error || "Sync failed");
+      setSyncStep("fallback");
+    }
+    setIsSyncingContacts(false);
+  };
 
   // Group Store integrations
   const {
@@ -1303,6 +1454,25 @@ const Sidebar = () => {
               </div>
             </div>
 
+            {/* Sync Contacts Callout Box */}
+            <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-between gap-4 animate-fade-in">
+              <div className="text-left space-y-1">
+                <h4 className="text-xs font-bold text-base-content">Sync Device Contacts</h4>
+                <p className="text-[10px] text-base-content/60 leading-relaxed font-medium">
+                  Automatically match friends already registered on ChatZone.
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowSyncModal(true);
+                  setSyncStep("ask");
+                }}
+                className="btn btn-xs btn-primary rounded-xl font-bold px-3 normal-case shadow-sm"
+              >
+                Sync Now
+              </button>
+            </div>
+
             {/* Friends Count */}
             <div className="flex justify-between items-center px-1">
               <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Friends list</span>
@@ -2033,6 +2203,209 @@ const Sidebar = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL: CONTACT SYNC SYSTEM ==================== */}
+      {showSyncModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-base-100 border border-base-200/80 dark:border-base-850 w-full max-w-lg rounded-[32px] shadow-[0_24px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden animate-scale-up text-left">
+            
+            {/* Header */}
+            <header className="px-6 py-5 border-b border-base-200/60 dark:border-base-800 flex justify-between items-center bg-base-50/50 dark:bg-base-950/20">
+              <div>
+                <h3 className="text-lg font-extrabold text-base-content tracking-tight">Sync Contacts</h3>
+                <p className="text-xs text-base-content/50 mt-0.5">Find your friends on ChatZone</p>
+              </div>
+              <button 
+                onClick={() => { 
+                  setShowSyncModal(false); 
+                  setSyncStep("ask");
+                }}
+                className="p-1.5 rounded-full hover:bg-base-200 text-base-content/60 hover:text-base-content transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              
+              {/* Step 1: Ask */}
+              {syncStep === "ask" && (
+                <div className="space-y-6 text-center">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary animate-pulse">
+                    <UserPlus size={32} />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-base font-bold text-base-content">Discover Registered Contacts</h4>
+                    <p className="text-xs text-base-content/60 max-w-sm mx-auto leading-relaxed">
+                      By allowing ChatZone to sync your contacts, we will match emails and phone numbers to add friends automatically.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                    <button
+                      onClick={() => setShowSyncModal(false)}
+                      className="btn btn-ghost rounded-full px-6 text-xs font-semibold"
+                    >
+                      Maybe Later
+                    </button>
+                    <button
+                      onClick={handleNativeContactSync}
+                      className="btn btn-primary rounded-full px-8 text-xs font-semibold shadow-md hover:shadow-lg transition-all"
+                    >
+                      Sync Contacts
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Syncing Loader */}
+              {syncStep === "syncing" && (
+                <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                  <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                  <div className="text-center space-y-1">
+                    <h4 className="text-sm font-bold text-base-content">Matching Contacts...</h4>
+                    <p className="text-xs text-base-content/50">Checking registers on ChatZone securely</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Fallback Options */}
+              {syncStep === "fallback" && (
+                <div className="space-y-6">
+                  <div className="text-center space-y-1">
+                    <h4 className="text-sm font-bold text-base-content">Import Contacts</h4>
+                    <p className="text-xs text-base-content/50">Native contact sync is not supported on this device. Choose a fallback method:</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Option A: VCF Upload */}
+                    <div className="p-5 bg-base-200/50 hover:bg-base-200 border border-base-300/40 rounded-2xl text-center space-y-3 transition-colors cursor-pointer" onClick={() => vcfInputRef.current?.click()}>
+                      <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center mx-auto text-indigo-600 dark:text-indigo-400">
+                        <Layers size={20} />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-bold text-base-content">Upload VCF File</h5>
+                        <p className="text-[10px] text-base-content/50 mt-1 leading-normal">Export from Google/Apple Contacts & upload here</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        accept=".vcf" 
+                        ref={vcfInputRef} 
+                        onChange={handleVCFUpload} 
+                        className="hidden" 
+                      />
+                      <button className="btn btn-xs btn-outline btn-neutral rounded-lg text-[9px] pointer-events-none">Choose File</button>
+                    </div>
+
+                    {/* Option B: Manual List */}
+                    <div className="p-5 bg-base-200/50 hover:bg-base-200 border border-base-300/40 rounded-2xl text-center space-y-3 transition-colors cursor-pointer" onClick={() => setSyncStep("manual_input")}>
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400">
+                        <Mail size={20} />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-bold text-base-content">Paste Emails</h5>
+                        <p className="text-[10px] text-base-content/50 mt-1 leading-normal">Manually enter a list of emails / phone numbers</p>
+                      </div>
+                      <button className="btn btn-xs btn-outline btn-neutral rounded-lg text-[9px] pointer-events-none">Enter List</button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center pt-2">
+                    <button onClick={() => setSyncStep("ask")} className="text-xs text-base-content/65 hover:underline font-semibold flex items-center gap-1">
+                      <ArrowLeft size={14} /> Back to permissions
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3.5: Manual Input Field */}
+              {syncStep === "manual_input" && (
+                <form onSubmit={handleManualEmailSync} className="space-y-4">
+                  <div className="space-y-1.5 text-left">
+                    <label className="text-xs font-bold text-base-content/70 tracking-wide uppercase px-1">Emails / Phone Numbers</label>
+                    <textarea 
+                      placeholder="Paste values here (e.g. friend1@gmail.com, +15550192834)" 
+                      value={manualEmails}
+                      onChange={(e) => setManualEmails(e.target.value)}
+                      required
+                      rows={4}
+                      className="w-full px-4 py-3 rounded-2xl bg-base-200 border border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-xs font-semibold"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2">
+                    <button type="button" onClick={() => setSyncStep("fallback")} className="text-xs text-base-content/65 hover:underline font-semibold flex items-center gap-1">
+                      <ArrowLeft size={14} /> Back
+                    </button>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => { setShowSyncModal(false); setSyncStep("ask"); }} className="btn btn-sm btn-ghost rounded-full px-4 text-xs font-bold">Cancel</button>
+                      <button type="submit" className="btn btn-sm btn-primary rounded-full px-6 text-xs font-bold">Sync</button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {/* Step 4: Matched Users List */}
+              {syncStep === "matched" && (
+                <div className="space-y-5">
+                  <div className="text-center space-y-1">
+                    <h4 className="text-sm font-bold text-base-content">
+                      {matchedContacts.length > 0 
+                        ? `Found ${matchedContacts.length} matched users!` 
+                        : "No contacts found yet"}
+                    </h4>
+                    <p className="text-xs text-base-content/50">
+                      {matchedContacts.length > 0 
+                        ? "These users are registered on ChatZone and have been added to your friends list." 
+                        : "None of your synced contacts are currently registered on ChatZone."}
+                    </p>
+                  </div>
+
+                  {matchedContacts.length > 0 ? (
+                    <div className="max-h-60 overflow-y-auto custom-scrollbar border border-base-200 dark:border-base-800 rounded-2xl p-2 space-y-1 bg-base-200/20">
+                      {matchedContacts.map((contact) => (
+                        <div key={contact._id} className="p-2.5 flex items-center gap-3 hover:bg-base-200/50 rounded-xl transition-colors">
+                          {contact.profilePic ? (
+                            <img src={contact.profilePic} className="w-9 h-9 rounded-full object-cover" alt="" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                              {getInitials(contact.fullName)}
+                            </div>
+                          )}
+                          <div className="text-left flex-1 min-w-0">
+                            <h5 className="text-xs font-bold text-base-content truncate">{contact.fullName}</h5>
+                            <p className="text-[10px] text-base-content/50 truncate">@{contact.username}</p>
+                          </div>
+                          <span className="text-[10px] px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-full font-bold">Added</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 bg-base-200/30 rounded-2xl border border-dashed border-base-300 text-center space-y-3">
+                      <p className="text-xs text-base-content/60 font-medium">Invite your contacts by sharing the ChatZone web link!</p>
+                      <button onClick={handleInviteFriends} className="btn btn-xs btn-primary rounded-xl px-4 font-bold shadow-sm">Copy Invitation Link</button>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={() => {
+                        setShowSyncModal(false);
+                        setSyncStep("ask");
+                      }}
+                      className="btn btn-sm btn-primary rounded-full px-8 text-xs font-bold shadow-sm"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
           </div>
         </div>
       )}

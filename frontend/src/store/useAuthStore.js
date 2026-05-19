@@ -56,6 +56,22 @@ export const useAuthStore = create((set,get) => ({
     }
   },
 
+  googleLogin: async (credential) => {
+    set({ isLoggingIn: true });
+    try {
+      const res = await axiosInstance.post("/auth/google", { credential });
+      set({ authUser: res.data });
+      get().connectSocket();
+      get().setupPushNotifications();
+      return { success: true, user: res.data };
+    } catch (error) {
+      console.error("Google Auth error:", error);
+      return { success: false, error: error?.response?.data?.message || "Google Authentication failed" };
+    } finally {
+      set({ isLoggingIn: false });
+    }
+  },
+
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout");
