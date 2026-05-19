@@ -504,7 +504,7 @@ const Sidebar = () => {
 
   // Active chats are the users we've exchanged messages with, filtered by search query
   const chatUsers = users.filter(user => 
-    activeConversations.includes(user._id) && 
+    (user.lastMessage || activeConversations.includes(user._id)) && 
     user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

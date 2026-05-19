@@ -38,6 +38,25 @@ export const useChatstore = create((set,get) => ({
       const res = await axiosInstance.get("/messages/users");
       set({ users: res.data });
       
+      // Auto-populate activeConversations for users with lastMessage
+      const authUser = useAuthStore.getState().authUser;
+      if (authUser) {
+        const activeKey = `active_conversations_${authUser._id}`;
+        const { activeConversations } = get();
+        let updated = [...activeConversations];
+        let changed = false;
+        res.data.forEach(u => {
+          if (u.lastMessage && !updated.includes(u._id)) {
+            updated.push(u._id);
+            changed = true;
+          }
+        });
+        if (changed) {
+          localStorage.setItem(activeKey, JSON.stringify(updated));
+          set({ activeConversations: updated });
+        }
+      }
+      
       // Auto-select user if we have a persisted ID
       const { selectedUserId, selectedUser, getMessages } = get();
       if (selectedUserId && !selectedUser) {

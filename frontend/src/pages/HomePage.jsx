@@ -1,5 +1,6 @@
 import { useChatstore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
+import { useAuthStore } from "../store/useAuthStore";
 import { useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
@@ -9,11 +10,14 @@ import { MessageSquare, Phone, Image as ImageIcon, Users, Layers } from "lucide-
 const HomePage = () => {
   const { selectedUser, setSelectedUser, activeTab, setActiveTab, subscribeToMessages, unsubscribeFromMessages } = useChatstore();
   const { selectedGroup, setSelectedGroup } = useGroupStore();
+  const { socket } = useAuthStore();
 
   useEffect(() => {
-    subscribeToMessages();
-    return () => unsubscribeFromMessages();
-  }, [subscribeToMessages, unsubscribeFromMessages]);
+    if (socket) {
+      subscribeToMessages();
+      return () => unsubscribeFromMessages();
+    }
+  }, [socket, subscribeToMessages, unsubscribeFromMessages]);
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] w-full bg-base-100 flex flex-col overflow-hidden text-base-content">
