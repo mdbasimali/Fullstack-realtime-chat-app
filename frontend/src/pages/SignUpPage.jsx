@@ -78,7 +78,7 @@ const SignUpPage = () => {
 
         if (isStandalone) {
           initOptions.ux_mode = "redirect";
-          initOptions.login_uri = `${axiosInstance.defaults.baseURL}/auth/google-redirect?redirect_to=${encodeURIComponent(window.location.origin)}`;
+          initOptions.login_uri = `${axiosInstance.defaults.baseURL}/auth/google-redirect`;
         } else {
           initOptions.callback = handleGoogleCredentialResponse;
         }

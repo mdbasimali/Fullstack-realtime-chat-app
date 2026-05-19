@@ -276,7 +276,14 @@ export const getGoogleClientId = (req, res) => {
 
 export const googleRedirect = async (req, res) => {
   const { credential } = req.body;
-  const redirectTo = req.query.redirect_to || "https://chatzone.cloudnexis.in";
+  
+  // Resolve frontend URL dynamically based on request host to avoid query params in login_uri
+  const host = req.get("host") || "";
+  let redirectTo = "https://chatzone.cloudnexis.in";
+  if (host.includes("localhost") || host.includes("127.0.0.1") || /^[0-9.x]+/.test(host)) {
+    const hostname = host.split(":")[0];
+    redirectTo = `http://${hostname}:5173`;
+  }
   
   try {
     if (!credential) {
