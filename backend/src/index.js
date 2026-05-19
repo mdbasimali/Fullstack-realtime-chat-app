@@ -2,8 +2,10 @@ import express from "express";
 import dotenv from "dotenv"
 import cookieParser from "cookie-parser";
 import cors from "cors";
-
 import path from "path";
+import compression from "compression";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 import { connectDB } from "./lib/db.js";
 
@@ -16,6 +18,23 @@ import webpush from "web-push";
 
 app.set("trust proxy", 1); // Required for secure cookies on Render/Vercel
 
+// Security Headers
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
+
+// Payload Compression
+app.use(compression());
+
+// Rate Limiter
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 150,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later." }
+});
+app.use("/api/", apiLimiter);
 
 dotenv.config()
 

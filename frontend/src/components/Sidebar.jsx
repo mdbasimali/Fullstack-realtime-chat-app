@@ -4,7 +4,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useCallStore } from "../store/useCallStore";
 import { useStoryStore } from "../store/useStoryStore";
 import { 
-  Search, MoreVertical, Camera, Pencil, Users, Mail, X, 
+  Search, MoreVertical, Camera, UserPlus, Users, Mail, X, 
   MessageSquare, Phone, Plus, Check, User, Settings, 
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
   Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban
@@ -1253,13 +1253,13 @@ const Sidebar = () => {
           <Camera size={22} />
         </button>
 
-        {/* Pencil FAB (Active Contacts modal selector) */}
+        {/* Add Friend FAB (Active Contacts modal selector) */}
         <button 
           onClick={() => setShowContactsModal(true)}
           className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/70 hover:brightness-95 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95"
-          title="New Message"
+          title="Add Friend"
         >
-          <Pencil size={21} />
+          <UserPlus size={21} />
         </button>
       </div>
 

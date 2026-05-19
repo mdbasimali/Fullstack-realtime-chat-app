@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .env
+
+# Local Git Portable binaries
+git_portable/

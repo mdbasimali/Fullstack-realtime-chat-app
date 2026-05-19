@@ -24,7 +24,7 @@ const NoChatSelected = () => {
                   ChatZone Desktop
                 </h2>
                 <p className='text-sm text-base-content/60 max-w-[280px] mx-auto leading-relaxed'>
-                  Select a contact from the sidebar or click the pencil icon to begin a secure chat session.
+                  Select a contact from the sidebar or click the +friend icon to begin a secure chat session.
                 </p>
             </div>
     
