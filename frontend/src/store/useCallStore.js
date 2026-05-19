@@ -109,6 +109,46 @@ const logMissedIfRinging = (get) => {
   }
 };
 
+const createDummyStream = () => {
+  let audioTrack;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const dst = oscillator.connect(ctx.createMediaStreamDestination());
+    oscillator.start();
+    audioTrack = dst.stream.getAudioTracks()[0];
+  } catch (e) {
+    console.error("Failed to create dummy audio track:", e);
+  }
+
+  let videoTrack;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx2d = canvas.getContext("2d");
+    if (ctx2d) {
+      ctx2d.fillStyle = "black";
+      ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    const videoStream = canvas.captureStream ? canvas.captureStream(10) : (canvas.webkitCaptureStream ? canvas.webkitCaptureStream(10) : null);
+    if (videoStream) {
+      videoTrack = videoStream.getVideoTracks()[0];
+    }
+  } catch (e) {
+    console.error("Failed to create dummy video track:", e);
+  }
+
+  const tracks = [];
+  if (audioTrack) {
+    tracks.push(audioTrack);
+  }
+  if (videoTrack) {
+    tracks.push(videoTrack);
+  }
+  return new MediaStream(tracks);
+};
+
 export const useCallStore = create((set, get) => ({
   isInCall: false,
   isIncomingCall: false,
@@ -180,20 +220,50 @@ export const useCallStore = create((set, get) => ({
         localStream.getTracks().forEach((track) => track.stop());
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: type === "video" ? { 
-          facingMode: facingMode || "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } : false,
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: type === "video" ? { 
+            facingMode: facingMode || "user",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          } : false,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+        set({ isVideoOff: type !== "video" });
+      } catch (err) {
+        console.warn("setupMediaStream: video/audio constraints failed, trying fallback...", err);
+        if (type === "video") {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: false,
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+              },
+            });
+            set({ isVideoOff: true });
+          } catch (audioErr) {
+            console.error("setupMediaStream: audio failed too, using dummy stream...", audioErr);
+            stream = createDummyStream();
+            set({ isVideoOff: true, isMuted: true });
+          }
+        } else {
+          try {
+            stream = createDummyStream();
+            set({ isVideoOff: true, isMuted: true });
+          } catch (dummyErr) {
+            console.error("Dummy stream setup failed:", dummyErr);
+          }
+        }
+      }
 
-      set({ localStream: stream, isVideoOff: type !== "video" });
+      set({ localStream: stream });
       return stream;
     } catch (error) {
       console.error("Error setting up media stream:", error);
@@ -278,10 +348,35 @@ export const useCallStore = create((set, get) => ({
     if (!socket) return;
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: type === "video",
-        audio: true,
-      });
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: type === "video",
+          audio: true,
+        });
+      } catch (err) {
+        console.warn("initiateCall constraints failed, trying fallback...", err);
+        if (type === "video") {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: false,
+              audio: true,
+            });
+            set({ isVideoOff: true });
+          } catch (audioErr) {
+            console.error("initiateCall audio failed, using dummy stream...", audioErr);
+            stream = createDummyStream();
+            set({ isVideoOff: true, isMuted: true });
+          }
+        } else {
+          try {
+            stream = createDummyStream();
+            set({ isVideoOff: true, isMuted: true });
+          } catch (dummyErr) {
+            console.error("Dummy stream failed in initiateCall:", dummyErr);
+          }
+        }
+      }
 
       const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
@@ -359,10 +454,35 @@ export const useCallStore = create((set, get) => ({
     if (!socket) return;
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: callType === "video",
-        audio: true,
-      });
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: callType === "video",
+          audio: true,
+        });
+      } catch (err) {
+        console.warn("acceptCall constraints failed, trying fallback...", err);
+        if (callType === "video") {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: false,
+              audio: true,
+            });
+            set({ isVideoOff: true });
+          } catch (audioErr) {
+            console.error("acceptCall audio failed, using dummy stream...", audioErr);
+            stream = createDummyStream();
+            set({ isVideoOff: true, isMuted: true });
+          }
+        } else {
+          try {
+            stream = createDummyStream();
+            set({ isVideoOff: true, isMuted: true });
+          } catch (dummyErr) {
+            console.error("Dummy stream failed in acceptCall:", dummyErr);
+          }
+        }
+      }
 
       const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
