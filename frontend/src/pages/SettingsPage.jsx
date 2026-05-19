@@ -329,33 +329,6 @@ const SettingsPage = () => {
             )}
           </div>
 
-          {/* ================= PRIVACY ================= */}
-          <div className="border border-transparent rounded-2xl overflow-hidden">
-            <button 
-              onClick={() => toggleSection("privacy")}
-              className={`w-full p-4 flex items-center justify-between rounded-2xl hover:bg-base-200 transition-colors ${expandedSection === "privacy" ? "bg-base-200" : ""}`}
-            >
-              <div className="flex items-center gap-4">
-                <Lock size={22} className="text-base-content/70" />
-                <span className="font-semibold text-sm md:text-base text-base-content">Privacy</span>
-              </div>
-            </button>
-            
-            {expandedSection === "privacy" && (
-              <div className="p-4 bg-base-200/50 rounded-2xl mx-1 mt-1 border border-base-300 text-left space-y-2 animate-fade-in">
-                <p className="text-xs font-bold text-base-content/50 uppercase">Encryption Details</p>
-                <div className="p-3 bg-base-100 border border-base-300 rounded-xl space-y-1">
-                  <p className="text-sm font-semibold flex items-center gap-1.5 text-green-500">
-                    <Lock size={15} /> End-to-End Encrypted
-                  </p>
-                  <p className="text-xxs text-base-content/60">
-                    ChatZone utilizes high-grade AES-256 and WebRTC encryption protocols to secure all messages, documents, and real-time audio/video media feeds. No middle servers can decrypt your logs.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* ================= BACKUPS ================= */}
           <div className="border border-transparent rounded-2xl overflow-hidden">
             <button 
@@ -397,6 +370,22 @@ const SettingsPage = () => {
             )}
           </div>
 
+        </div>
+
+        {/* ================= ENCRYPTION DETAILS CARD ================= */}
+        <div className="bg-base-200/40 border border-base-300 rounded-[24px] p-5 text-left space-y-3.5">
+          <h3 className="text-xs font-bold text-base-content/50 uppercase tracking-wider">
+            Encryption Details
+          </h3>
+          <div className="p-4 bg-base-100 border border-base-300 rounded-2xl space-y-2">
+            <div className="flex items-center gap-2 text-green-500 font-semibold">
+              <Lock size={18} className="stroke-[2.5]" />
+              <span className="text-sm font-semibold">End-to-End Encrypted</span>
+            </div>
+            <p className="text-xs text-base-content/60 leading-relaxed">
+              ChatZone utilizes high-grade AES-256 and WebRTC encryption protocols to secure all messages, documents, and real-time audio/video media feeds. No middle servers can decrypt your logs.
+            </p>
+          </div>
         </div>
 
       </div>
