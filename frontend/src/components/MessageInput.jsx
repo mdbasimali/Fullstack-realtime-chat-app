@@ -44,7 +44,26 @@ const MessageInput = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
       
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      // Detect supported mimeType dynamically to support iOS/Safari and various mobile browsers
+      const options = {};
+      const mimeTypes = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/ogg",
+        "audio/mp4",
+        "audio/aac",
+        "audio/wav"
+      ];
+
+      for (const type of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          options.mimeType = type;
+          break;
+        }
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
