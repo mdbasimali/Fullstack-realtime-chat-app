@@ -244,5 +244,36 @@ export const useGroupStore = create((set, get) => ({
     socket.off("newGroupMessage");
     socket.off("groupMemberJoined");
     socket.off("groupMemberLeft");
+  },
+
+  addMemberToGroup: async (groupId, identifier) => {
+    try {
+      const payload = {};
+      if (identifier.includes("@")) {
+        payload.email = identifier.trim();
+      } else {
+        payload.username = identifier.trim();
+      }
+
+      const res = await axiosInstance.post(`/groups/${groupId}/add-member`, payload);
+      const updatedGroup = res.data.group;
+
+      // Update in our groups list
+      const updatedGroups = get().groups.map(g => g._id === groupId ? { ...g, membersCount: updatedGroup.membersCount } : g);
+      set({ groups: updatedGroups });
+
+      // Update active selectedGroup details
+      const selected = get().selectedGroup;
+      if (selected && selected._id === groupId) {
+        set({ selectedGroup: { ...selected, membersCount: updatedGroup.membersCount } });
+      }
+
+      toast.success(res.data.message || "Member added successfully! 🎉");
+      return true;
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to add member.";
+      toast.error(errorMsg);
+      return false;
+    }
   }
 }));

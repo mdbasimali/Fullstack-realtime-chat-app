@@ -8,6 +8,7 @@ import {
   leaveGroup,
   getGroupMessages,
   sendGroupMessage,
+  addMember,
 } from "../controllers/group.controller.js";
 
 const router = express.Router();
@@ -22,6 +23,7 @@ router.get("/explore", protectRoute, getExploreGroups);
 // Join / Leave group operations
 router.post("/join/:groupId", protectRoute, joinGroup);
 router.post("/leave/:groupId", protectRoute, leaveGroup);
+router.post("/:groupId/add-member", protectRoute, addMember);
 
 // Group messaging endpoints
 router.get("/:groupId/messages", protectRoute, getGroupMessages);

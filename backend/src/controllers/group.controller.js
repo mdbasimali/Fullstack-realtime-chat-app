@@ -300,3 +300,88 @@ export const sendGroupMessage = async (req, res) => {
     res.status(500).json({ message: "Server error sending group message." });
   }
 };
+
+/**
+ * Add a member to the group directly
+ */
+export const addMember = async (req, res) => {
+  const { groupId } = req.params;
+  const { userId, email, username } = req.body;
+  const currentUserId = req.user._id;
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found." });
+    }
+
+    // Verify requesting user is a member
+    if (!group.members.includes(currentUserId)) {
+      return res.status(403).json({ message: "Only group members can add new users." });
+    }
+
+    let targetUserId = userId;
+
+    // If userId not provided, lookup by email or username
+    if (!targetUserId) {
+      let query = {};
+      if (email) query.email = email.trim().toLowerCase();
+      else if (username) query.username = username.trim();
+      else {
+        return res.status(400).json({ message: "User ID, email, or username is required." });
+      }
+
+      const foundUser = await User.findOne(query);
+      if (!foundUser) {
+        return res.status(404).json({ message: "User not found." });
+      }
+      targetUserId = foundUser._id;
+    }
+
+    // Check limit and duplicate membership atomically
+    const updatedGroup = await Group.findOneAndUpdate(
+      {
+        _id: groupId,
+        members: { $ne: targetUserId },
+        $expr: { $lt: [{ $size: "$members" }, "$maxMembers"] }
+      },
+      { $addToSet: { members: targetUserId } },
+      { new: true }
+    );
+
+    if (updatedGroup) {
+      // Notify via socket
+      io.to(`group_${groupId}`).emit("groupMemberJoined", {
+        groupId,
+        userId: targetUserId,
+        membersCount: updatedGroup.members.length
+      });
+
+      return res.status(200).json({
+        message: "User added successfully.",
+        group: {
+          _id: updatedGroup._id,
+          name: updatedGroup.name,
+          description: updatedGroup.description,
+          creatorId: updatedGroup.creatorId,
+          membersCount: updatedGroup.members.length,
+          isMember: true
+        }
+      });
+    }
+
+    if (group.members.includes(targetUserId)) {
+      return res.status(400).json({ message: "User is already a member of this group." });
+    }
+
+    if (group.members.length >= group.maxMembers) {
+      return res.status(400).json({ message: "Group is full (max 100 members)." });
+    }
+
+    res.status(400).json({ message: "Failed to add member to the group." });
+  } catch (error) {
+    console.error("Error in addMember:", error);
+    res.status(500).json({ message: "Server error adding group member." });
+  }
+};
+
