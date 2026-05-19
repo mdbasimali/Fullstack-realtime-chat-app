@@ -224,74 +224,85 @@ const ChatContainer = () => {
                     )}
 
                     {/* Glassmorphism/premium style message card */}
-                    <div className={`p-3.5 px-4 rounded-[22px] shadow-xs relative flex flex-col group transition-all ${
-                      isMyMessage 
-                        ? "bg-primary text-primary-content rounded-tr-[4px]" 
-                        : "bg-base-200 text-base-content rounded-tl-[4px]"
-                    }`}>
-                      {message.image && message.messageType !== "audio" && (
-                        <img
-                          src={message.image}
-                          alt="Attachment"
-                          className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover"
-                        />
-                      )}
-                      {message.messageType === "audio" && message.image && (
-                        <VoicePlayer url={message.image} isMyMessage={isMyMessage} />
-                      )}
-                      {message.text && message.messageType === "text" && (
-                        <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed">
-                          {message.text}
-                        </p>
-                      )}
+                    {(() => {
+                      const isTextOnly = message.messageType === "text" && !message.image;
+                      return (
+                        <div className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all ${
+                          isTextOnly ? "p-2 pb-0.5 px-3.5 pr-[54px]" : "p-3.5 px-4"
+                        } ${
+                          isMyMessage 
+                            ? "bg-primary text-primary-content rounded-tr-[4px]" 
+                            : "bg-base-200 text-base-content rounded-tl-[4px]"
+                        }`}>
+                          {message.image && message.messageType !== "audio" && (
+                            <img
+                              src={message.image}
+                              alt="Attachment"
+                              className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover"
+                            />
+                          )}
+                          {message.messageType === "audio" && message.image && (
+                            <VoicePlayer url={message.image} isMyMessage={isMyMessage} />
+                          )}
+                          {message.text && message.messageType === "text" && (
+                            <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed break-words">
+                              {message.text}
+                            </p>
+                          )}
 
-                      {/* Call Log render */}
-                      {(message.messageType === "voice_call" || message.messageType === "video_call") && (
-                        <div 
-                          onClick={() => initiateCall(selectedUser, message.messageType === "video_call" ? "video" : "audio")}
-                          className={`flex items-center gap-3 py-1 cursor-pointer hover:opacity-80 active:scale-95 transition-all p-2 rounded-xl ${isMyMessage ? "hover:bg-white/10" : "hover:bg-base-300/30"}`}
-                        >
-                          <div className={`p-2.5 rounded-full ${isMyMessage ? "bg-white/20" : "bg-base-300/50"}`}>
-                            {message.messageType === "video_call" ? <Video size={20} /> : <Phone size={20} />}
-                          </div>
-                          <div className="flex flex-col">
-                            <p className="text-sm md:text-base font-bold">
-                              {message.messageType === "video_call" ? "Video call" : "Voice call"}
-                            </p>
-                            <p className="text-[11px] opacity-80 font-semibold flex items-center gap-1">
-                              {message.callStatus === "rejected" || message.callStatus === "missed" ? (
-                                <>
-                                  <PhoneMissed size={12} className="text-error" />
-                                  <span>{isMyMessage ? "No answer" : "Missed call"}</span>
-                                </>
-                              ) : (
-                                <>
-                                  {isMyMessage ? <PhoneOutgoing size={12} /> : <PhoneIncoming size={12} />}
-                                  <span>{message.callDuration ? `${Math.floor(message.callDuration / 60)}m ${message.callDuration % 60}s` : "No answer"}</span>
-                                </>
-                              )}
-                            </p>
+                          {/* Call Log render */}
+                          {(message.messageType === "voice_call" || message.messageType === "video_call") && (
+                            <div 
+                              onClick={() => initiateCall(selectedUser, message.messageType === "video_call" ? "video" : "audio")}
+                              className={`flex items-center gap-3 py-1 cursor-pointer hover:opacity-80 active:scale-95 transition-all p-2 rounded-xl ${isMyMessage ? "hover:bg-white/10" : "hover:bg-base-300/30"}`}
+                            >
+                              <div className={`p-2.5 rounded-full ${isMyMessage ? "bg-white/20" : "bg-base-300/50"}`}>
+                                {message.messageType === "video_call" ? <Video size={20} /> : <Phone size={20} />}
+                              </div>
+                              <div className="flex flex-col">
+                                <p className="text-sm md:text-base font-bold">
+                                  {message.messageType === "video_call" ? "Video call" : "Voice call"}
+                                </p>
+                                <p className="text-[11px] opacity-80 font-semibold flex items-center gap-1">
+                                  {message.callStatus === "rejected" || message.callStatus === "missed" ? (
+                                    <>
+                                      <PhoneMissed size={12} className="text-error" />
+                                      <span>{isMyMessage ? "No answer" : "Missed call"}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {isMyMessage ? <PhoneOutgoing size={12} /> : <PhoneIncoming size={12} />}
+                                      <span>{message.callDuration ? `${Math.floor(message.callDuration / 60)}m ${message.callDuration % 60}s` : "No answer"}</span>
+                                    </>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Bubble timestamp & status indicator */}
+                          <div className={`${
+                            isTextOnly 
+                              ? "absolute bottom-1 right-2 flex items-center gap-1 text-[9px] font-semibold opacity-70"
+                              : "flex items-center gap-1 mt-1.5 text-[10px] self-end font-semibold opacity-75"
+                          }`}>
+                            <span>{formatMessageTime(message.createdAt)}</span>
+                            {isMyMessage && (
+                              <span className="inline-flex items-center ml-0.5">
+                                {message.isRead ? (
+                                  <div className="flex -space-x-1 text-sky-400 dark:text-sky-300">
+                                    <Check size={11} className="stroke-[3.5]" />
+                                    <Check size={11} className="stroke-[3.5]" />
+                                  </div>
+                                ) : (
+                                  <Check size={11} className="stroke-[3] text-white/50" />
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
-                      )}
-
-                      {/* Bubble timestamp & status indicator */}
-                      <div className="flex items-center gap-1 mt-1.5 text-[10px] self-end font-semibold opacity-75">
-                        <span>{formatMessageTime(message.createdAt)}</span>
-                        {isMyMessage && (
-                          <span className="inline-flex items-center ml-0.5">
-                            {message.isRead ? (
-                              <div className="flex -space-x-1 text-sky-400 dark:text-sky-300">
-                                <Check size={12} className="stroke-[3.5]" />
-                                <Check size={12} className="stroke-[3.5]" />
-                              </div>
-                            ) : (
-                              <Check size={12} className="stroke-[3] text-white/50" />
-                            )}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                      );
+                    })()}
 
                   </div>
                 </div>
