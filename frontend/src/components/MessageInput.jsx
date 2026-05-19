@@ -72,7 +72,7 @@ const MessageInput = () => {
         }
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(250); // Request chunks every 250ms (critical for iOS Safari compatibility)
       setIsRecording(true);
       setRecordingDuration(0);
 
