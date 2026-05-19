@@ -3,7 +3,15 @@ import { axiosInstance } from "../lib/axios";
 import {io} from "socket.io-client";
 // import { Users } from "lucide-react";
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001" : "https://chatzone-backend-c0mn.onrender.com";
+const getBaseURL = () => {
+  if (import.meta.env.MODE !== "development") {
+    return "https://chatzone-backend-c0mn.onrender.com";
+  }
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "localhost";
+  return `http://${hostname}:5001`;
+};
+
+const BASE_URL = getBaseURL();
 
 export const useAuthStore = create((set,get) => ({
   authUser: null,

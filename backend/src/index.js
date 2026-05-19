@@ -58,9 +58,28 @@ app.use(express.json({ limit: "50mb" }));//main image ka high quality se upload 
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 app.use(cookieParser());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://fullstack-realtime-chat-app-sooty.vercel.app",
+  "https://chatzone.cloudnexis.in"
+];
+
 app.use(cors({
-     origin: ["http://localhost:5173", "http://localhost:5174", "https://fullstack-realtime-chat-app-sooty.vercel.app", "https://chatzone.cloudnexis.in"],
-     credentials: true,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.indexOf(origin) !== -1 ||
+      origin.startsWith("http://192.168.") ||
+      origin.startsWith("http://10.") ||
+      origin.startsWith("http://172.") ||
+      origin.includes("localhost")
+    ) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
 }));
 
 app.use("/api/auth", authRoutes);
