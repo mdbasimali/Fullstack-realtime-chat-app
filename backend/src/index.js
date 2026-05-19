@@ -66,22 +66,27 @@ const allowedOrigins = [
   "https://accounts.google.com"
 ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (
-      allowedOrigins.indexOf(origin) !== -1 ||
-      origin.startsWith("http://192.168.") ||
-      origin.startsWith("http://10.") ||
-      origin.startsWith("http://172.") ||
-      origin.includes("localhost")
-    ) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-}));
+app.use((req, res, next) => {
+  if (req.path === "/api/auth/google-redirect") {
+    return next();
+  }
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        origin.startsWith("http://192.168.") ||
+        origin.startsWith("http://10.") ||
+        origin.startsWith("http://172.") ||
+        origin.includes("localhost")
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })(req, res, next);
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
