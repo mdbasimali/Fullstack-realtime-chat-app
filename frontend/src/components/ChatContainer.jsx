@@ -1,6 +1,6 @@
+import React, { useEffect, useRef } from "react";
 import { useChatstore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
-import { useEffect, useRef } from "react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -13,6 +13,26 @@ import {
   PhoneOutgoing, PhoneIncoming, X, Calendar, Crown, Loader2
 } from "lucide-react";
 import VoicePlayer from "./VoicePlayer";
+
+const getSenderColor = (senderId) => {
+  const colors = [
+    "text-indigo-500 dark:text-indigo-400",
+    "text-rose-500 dark:text-rose-400",
+    "text-emerald-500 dark:text-emerald-400",
+    "text-amber-500 dark:text-amber-400",
+    "text-sky-500 dark:text-sky-400",
+    "text-fuchsia-500 dark:text-fuchsia-400",
+    "text-teal-500 dark:text-teal-400"
+  ];
+  if (!senderId) return colors[0];
+  const idStr = typeof senderId === "object" ? senderId._id : senderId;
+  let hash = 0;
+  for (let i = 0; i < idStr.length; i++) {
+    hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+};
 
 const ChatContainer = () => {
   const {
@@ -60,7 +80,7 @@ const ChatContainer = () => {
 
   if (isMessagesLoading) {
     return (
-      <div className="flex-1 flex flex-col overflow-auto">
+      <div className="flex-1 flex flex-col overflow-auto bg-base-100">
         <ChatHeader />
         <MessageSkeleton />
         <MessageInput />
@@ -75,7 +95,7 @@ const ChatContainer = () => {
         <ChatHeader />
 
         {/* Messages Stream View */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-1">
           
           {/* Large, Beautiful Profile Onboarding Card */}
           {selectedUser && (
@@ -144,103 +164,137 @@ const ChatContainer = () => {
             </div>
           )}
 
-          {/* Centered Date Separator */}
-          <div className="flex items-center justify-center">
-            <span className="px-3 py-1 bg-base-200/50 text-[11px] font-bold text-base-content/50 rounded-full tracking-wide">
-              Today
-            </span>
-          </div>
-
           {/* Message bubbles */}
           {messages.map((message, idx) => {
-            const isMyMessage = message.senderId === authUser._id;
+            const isMyMessage = message.senderId === authUser._id || message.senderId?._id === authUser._id;
+            const prevMessage = idx > 0 ? messages[idx - 1] : null;
+            
+            const currentDate = new Date(message.createdAt).toDateString();
+            const prevDate = prevMessage ? new Date(prevMessage.createdAt).toDateString() : null;
+            const isSameDay = currentDate === prevDate;
+
+            const isSameSender = isSameDay && prevMessage && (
+              (prevMessage.senderId === message.senderId || prevMessage.senderId?._id === message.senderId?._id)
+            );
+
             return (
-              <div
-                key={message._id}
-                className={`flex w-full ${isMyMessage ? "justify-end" : "justify-start"}`}
-                ref={idx === messages.length - 1 ? messageEndRef : null}
-              >
-                <div className={`flex flex-col max-w-[75%] sm:max-w-[65%] ${isMyMessage ? "items-end" : "items-start"} space-y-1`}>
-                  
-                  {/* Group Sender Name */}
-                  {selectedGroup && !isMyMessage && (
-                    <span className="text-[11px] font-bold text-base-content/50 px-1">
-                      {message.senderId?.fullName || "Group Member"}
+              <React.Fragment key={message._id}>
+                {/* Dynamic Date Separator */}
+                {!isSameDay && (
+                  <div className="flex items-center justify-center py-4 animate-fade-in w-full">
+                    <span className="px-3 py-1 bg-base-200/60 dark:bg-base-900/60 border border-base-300/40 text-[10px] font-bold text-base-content/60 rounded-full tracking-wide uppercase">
+                      {currentDate === new Date().toDateString() 
+                        ? "Today" 
+                        : currentDate === new Date(Date.now() - 86400000).toDateString() 
+                          ? "Yesterday" 
+                          : new Date(message.createdAt).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}
                     </span>
+                  </div>
+                )}
+
+                <div
+                  className={`flex w-full items-end gap-2.5 ${isMyMessage ? "justify-end" : "justify-start"} ${
+                    isSameSender ? "mt-1" : "mt-3.5"
+                  }`}
+                  ref={idx === messages.length - 1 ? messageEndRef : null}
+                >
+                  {/* Left Avatar for other users in group */}
+                  {selectedGroup && !isMyMessage && (
+                    <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+                      {!isSameSender ? (
+                        <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-xs border border-base-300 shadow-xs">
+                          {message.senderId?.profilePic ? (
+                            <img src={message.senderId.profilePic} alt={message.senderId.fullName} className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            (message.senderId?.fullName || "G").charAt(0).toUpperCase()
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
                   )}
 
-                  {/* Beautiful custom styled message card */}
-                  <div className={`p-3.5 px-4 rounded-[22px] shadow-xs relative flex flex-col group transition-all ${
-                    isMyMessage 
-                      ? "bg-primary text-primary-content rounded-tr-[4px]" 
-                      : "bg-base-200 text-base-content rounded-tl-[4px]"
-                  }`}>
-                    {message.image && message.messageType !== "audio" && (
-                      <img
-                        src={message.image}
-                        alt="Attachment"
-                        className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover"
-                      />
-                    )}
-                    {message.messageType === "audio" && message.image && (
-                      <VoicePlayer url={message.image} isMyMessage={isMyMessage} />
-                    )}
-                    {message.text && message.messageType === "text" && (
-                      <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed">
-                        {message.text}
-                      </p>
+                  <div className={`flex flex-col max-w-[75%] sm:max-w-[65%] ${isMyMessage ? "items-end" : "items-start"} space-y-1`}>
+                    
+                    {/* Sender Name above message bubble */}
+                    {selectedGroup && !isMyMessage && !isSameSender && (
+                      <span className={`text-[11px] font-bold px-1.5 ${getSenderColor(message.senderId)}`}>
+                        {message.senderId?.fullName || "Group Member"}
+                      </span>
                     )}
 
-                    {/* Render Call Logs */}
-                    {(message.messageType === "voice_call" || message.messageType === "video_call") && (
-                      <div 
-                        onClick={() => initiateCall(selectedUser, message.messageType === "video_call" ? "video" : "audio")}
-                        className={`flex items-center gap-3 py-1 cursor-pointer hover:opacity-80 active:scale-95 transition-all p-2 rounded-xl ${isMyMessage ? "hover:bg-white/10" : "hover:bg-base-300/30"}`}
-                      >
-                        <div className={`p-2.5 rounded-full ${isMyMessage ? "bg-white/20" : "bg-base-300/50"}`}>
-                          {message.messageType === "video_call" ? <Video size={20} /> : <Phone size={20} />}
-                        </div>
-                        <div className="flex flex-col">
-                          <p className="text-sm md:text-base font-bold">
-                            {message.messageType === "video_call" ? "Video call" : "Voice call"}
-                          </p>
-                          <p className="text-[11px] opacity-80 font-semibold flex items-center gap-1">
-                            {message.callStatus === "rejected" || message.callStatus === "missed" ? (
-                              <>
-                                <PhoneMissed size={12} className="text-error" />
-                                <span>{isMyMessage ? "No answer" : "Missed call"}</span>
-                              </>
-                            ) : (
-                              <>
-                                {isMyMessage ? <PhoneOutgoing size={12} /> : <PhoneIncoming size={12} />}
-                                <span>{message.callDuration ? `${Math.floor(message.callDuration / 60)}m ${message.callDuration % 60}s` : "No answer"}</span>
-                              </>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Bubble timestamp & status indicator */}
-                    <div className={`flex items-center gap-1 mt-1.5 text-[10px] self-end font-semibold opacity-75`}>
-                      <span>{formatMessageTime(message.createdAt)}</span>
-                      {isMyMessage && (
-                        <span className="inline-flex items-center ml-0.5">
-                          {message.isRead ? (
-                            <div className="flex -space-x-1 text-sky-400 dark:text-sky-300">
-                              <Check size={12} className="stroke-[3.5]" />
-                              <Check size={12} className="stroke-[3.5]" />
-                            </div>
-                          ) : (
-                            <Check size={12} className="stroke-[3] text-white/50" />
-                          )}
-                        </span>
+                    {/* Glassmorphism/premium style message card */}
+                    <div className={`p-3.5 px-4 rounded-[22px] shadow-xs relative flex flex-col group transition-all ${
+                      isMyMessage 
+                        ? "bg-primary text-primary-content rounded-tr-[4px]" 
+                        : "bg-base-200 text-base-content rounded-tl-[4px]"
+                    }`}>
+                      {message.image && message.messageType !== "audio" && (
+                        <img
+                          src={message.image}
+                          alt="Attachment"
+                          className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover"
+                        />
                       )}
-                    </div>
-                  </div>
+                      {message.messageType === "audio" && message.image && (
+                        <VoicePlayer url={message.image} isMyMessage={isMyMessage} />
+                      )}
+                      {message.text && message.messageType === "text" && (
+                        <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed">
+                          {message.text}
+                        </p>
+                      )}
 
+                      {/* Call Log render */}
+                      {(message.messageType === "voice_call" || message.messageType === "video_call") && (
+                        <div 
+                          onClick={() => initiateCall(selectedUser, message.messageType === "video_call" ? "video" : "audio")}
+                          className={`flex items-center gap-3 py-1 cursor-pointer hover:opacity-80 active:scale-95 transition-all p-2 rounded-xl ${isMyMessage ? "hover:bg-white/10" : "hover:bg-base-300/30"}`}
+                        >
+                          <div className={`p-2.5 rounded-full ${isMyMessage ? "bg-white/20" : "bg-base-300/50"}`}>
+                            {message.messageType === "video_call" ? <Video size={20} /> : <Phone size={20} />}
+                          </div>
+                          <div className="flex flex-col">
+                            <p className="text-sm md:text-base font-bold">
+                              {message.messageType === "video_call" ? "Video call" : "Voice call"}
+                            </p>
+                            <p className="text-[11px] opacity-80 font-semibold flex items-center gap-1">
+                              {message.callStatus === "rejected" || message.callStatus === "missed" ? (
+                                <>
+                                  <PhoneMissed size={12} className="text-error" />
+                                  <span>{isMyMessage ? "No answer" : "Missed call"}</span>
+                                </>
+                              ) : (
+                                <>
+                                  {isMyMessage ? <PhoneOutgoing size={12} /> : <PhoneIncoming size={12} />}
+                                  <span>{message.callDuration ? `${Math.floor(message.callDuration / 60)}m ${message.callDuration % 60}s` : "No answer"}</span>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Bubble timestamp & status indicator */}
+                      <div className="flex items-center gap-1 mt-1.5 text-[10px] self-end font-semibold opacity-75">
+                        <span>{formatMessageTime(message.createdAt)}</span>
+                        {isMyMessage && (
+                          <span className="inline-flex items-center ml-0.5">
+                            {message.isRead ? (
+                              <div className="flex -space-x-1 text-sky-400 dark:text-sky-300">
+                                <Check size={12} className="stroke-[3.5]" />
+                                <Check size={12} className="stroke-[3.5]" />
+                              </div>
+                            ) : (
+                              <Check size={12} className="stroke-[3] text-white/50" />
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
-              </div>
+              </React.Fragment>
             );
           })}
         </div>

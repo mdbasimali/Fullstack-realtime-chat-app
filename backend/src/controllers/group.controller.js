@@ -289,6 +289,7 @@ export const getGroupMessages = async (req, res) => {
 
     // Lightweight paginated lookup
     const messages = await Message.find({ groupId })
+      .populate("senderId", "fullName username profilePic")
       .sort({ createdAt: -1 })
       .limit(30)
       .lean();
@@ -337,10 +338,13 @@ export const sendGroupMessage = async (req, res) => {
 
     await newMessage.save();
 
-    // Broadcast message to all active room subscribers
-    io.to(`group_${groupId}`).emit("newGroupMessage", newMessage);
+    // Populate sender details for socket broadcast
+    const populatedMessage = await Message.findById(newMessage._id).populate("senderId", "fullName username profilePic");
 
-    res.status(201).json(newMessage);
+    // Broadcast message to all active room subscribers
+    io.to(`group_${groupId}`).emit("newGroupMessage", populatedMessage);
+
+    res.status(201).json(populatedMessage);
   } catch (error) {
     console.error("Error in sendGroupMessage:", error);
     res.status(500).json({ message: "Server error sending group message." });
