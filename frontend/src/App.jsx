@@ -26,6 +26,13 @@ const App = () => {
   const navigate = useNavigate();
   const { selectedUser, setSelectedUser } = useChatstore();
 
+  // Extract Google redirect token synchronously on initial load to avoid race conditions
+  const queryParams = new URLSearchParams(window.location.search);
+  const redirectToken = queryParams.get("token");
+  if (redirectToken) {
+    localStorage.setItem("token", redirectToken);
+  }
+
   console.log({onlineUsers});
 
   // Handle native Android hardware back button & system navigation gesture swipes
