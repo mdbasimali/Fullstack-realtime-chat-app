@@ -195,6 +195,7 @@ export const useGroupStore = create((set, get) => ({
     socket.off("newGroupMessage");
     socket.off("groupMemberJoined");
     socket.off("groupMemberLeft");
+    socket.off("groupMessageDeleted");
 
     // Make sure socket is subbed to this room channel
     socket.emit("group:join-room", groupId);
@@ -243,6 +244,11 @@ export const useGroupStore = create((set, get) => ({
         set({ selectedGroup: { ...selectedGroup, membersCount } });
       }
     });
+
+    socket.on("groupMessageDeleted", ({ messageId }) => {
+      const { messages } = get();
+      set({ messages: messages.filter((msg) => msg._id !== messageId) });
+    });
   },
 
   unsubscribeFromGroupMessages: () => {
@@ -257,6 +263,7 @@ export const useGroupStore = create((set, get) => ({
     socket.off("newGroupMessage");
     socket.off("groupMemberJoined");
     socket.off("groupMemberLeft");
+    socket.off("groupMessageDeleted");
   },
 
   addMemberToGroup: async (groupId, identifier) => {
@@ -300,6 +307,17 @@ export const useGroupStore = create((set, get) => ({
       toast.error("Failed to load group details.");
     } finally {
       set({ isFetchingGroupDetails: false });
+    }
+  },
+
+  deleteGroupMessage: async (messageId) => {
+    try {
+      await axiosInstance.delete(`/messages/message/${messageId}`);
+      const { messages } = get();
+      set({ messages: messages.filter((msg) => msg._id !== messageId) });
+    } catch (error) {
+      console.error("deleteGroupMessage error:", error);
+      toast.error("Failed to delete message");
     }
   }
 }));

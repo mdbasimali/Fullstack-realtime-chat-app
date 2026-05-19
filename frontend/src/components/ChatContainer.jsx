@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useChatstore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
 
@@ -10,7 +10,8 @@ import { useCallStore } from "../store/useCallStore";
 import { formatMessageTime } from "../lib/utils";
 import { 
   User, Phone, Users, Check, Video, PhoneMissed, 
-  PhoneOutgoing, PhoneIncoming, X, Calendar, Crown, Loader2
+  PhoneOutgoing, PhoneIncoming, X, Calendar, Crown, Loader2,
+  Copy, Download, Trash2
 } from "lucide-react";
 import VoicePlayer from "./VoicePlayer";
 import toast from "react-hot-toast";
@@ -60,6 +61,99 @@ const ChatContainer = () => {
   const { initiateCall } = useCallStore();
   const { authUser, onlineUsers } = useAuthStore();
   const messageEndRef = useRef(null);
+
+  const [contextMenu, setContextMenu] = useState(null); // { message, x, y, isMobile }
+  const touchTimeoutRef = useRef(null);
+  const touchStartPosRef = useRef({ x: 0, y: 0 });
+  const hasTriggeredLongPressRef = useRef(false);
+
+  const handleContextMenu = (e, message) => {
+    e.preventDefault();
+    setContextMenu({
+      message,
+      x: e.clientX,
+      y: e.clientY,
+      isMobile: false,
+    });
+  };
+
+  const handleTouchStart = (e, message) => {
+    hasTriggeredLongPressRef.current = false;
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+
+    touchTimeoutRef.current = setTimeout(() => {
+      hasTriggeredLongPressRef.current = true;
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+      setContextMenu({
+        message,
+        x: touch.clientX,
+        y: touch.clientY,
+        isMobile: true,
+      });
+    }, 600); // 600ms long press delay
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchTimeoutRef.current) {
+      clearTimeout(touchTimeoutRef.current);
+    }
+    if (hasTriggeredLongPressRef.current) {
+      e.preventDefault();
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    const touch = e.touches[0];
+    const diffX = Math.abs(touch.clientX - touchStartPosRef.current.x);
+    const diffY = Math.abs(touch.clientY - touchStartPosRef.current.y);
+    if (diffX > 10 || diffY > 10) {
+      if (touchTimeoutRef.current) {
+        clearTimeout(touchTimeoutRef.current);
+      }
+    }
+  };
+
+  const handleCopyText = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Text copied to clipboard!");
+    setContextMenu(null);
+  };
+
+  const handleDownloadImage = async (imageUrl) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `chat-image-${Date.now()}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast.success("Image downloaded successfully!");
+    } catch (error) {
+      console.error("Download failed:", error);
+      window.open(imageUrl, "_blank");
+      toast.success("Opening image in new window to save");
+    }
+    setContextMenu(null);
+  };
+
+  const handleDeleteMessage = async (message) => {
+    if (!message) return;
+    if (window.confirm("Are you sure you want to delete this message?")) {
+      if (selectedGroup) {
+        await useGroupStore.getState().deleteGroupMessage(message._id);
+      } else {
+        await useChatstore.getState().deleteMessage(message._id);
+      }
+      setContextMenu(null);
+    }
+  };
 
   useEffect(() => {
     if (selectedUser) {
@@ -227,13 +321,19 @@ const ChatContainer = () => {
                     {(() => {
                       const isTextOnly = message.messageType === "text" && !message.image;
                       return (
-                        <div className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all ${
-                          isTextOnly ? "p-2 pb-0.5 px-3.5 pr-[54px]" : "p-3.5 px-4"
-                        } ${
-                          isMyMessage 
-                            ? "bg-primary text-primary-content rounded-tr-[4px]" 
-                            : "bg-base-200 text-base-content rounded-tl-[4px]"
-                        }`}>
+                        <div
+                          onContextMenu={(e) => handleContextMenu(e, message)}
+                          onTouchStart={(e) => handleTouchStart(e, message)}
+                          onTouchEnd={handleTouchEnd}
+                          onTouchMove={handleTouchMove}
+                          className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all cursor-pointer select-none active:opacity-95 ${
+                            isTextOnly ? "p-2 pb-0.5 px-3.5 pr-[54px]" : "p-3.5 px-4"
+                          } ${
+                            isMyMessage 
+                              ? "bg-primary text-primary-content rounded-tr-[4px]" 
+                              : "bg-base-200 text-base-content rounded-tl-[4px]"
+                          }`}
+                        >
                           {message.image && message.messageType !== "audio" && (
                             <img
                               src={message.image}
@@ -312,6 +412,111 @@ const ChatContainer = () => {
         </div>
 
         <MessageInput />
+
+        {/* Custom Context Menu / Mobile Bottom Sheet Overlay */}
+        {contextMenu && (
+          <>
+            {/* Backdrop to close the menu on click */}
+            <div 
+              className="fixed inset-0 z-50 bg-black/25 dark:bg-black/45 animate-fade-in"
+              onClick={() => setContextMenu(null)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setContextMenu(null);
+              }}
+            />
+
+            {contextMenu.isMobile ? (
+              /* Mobile Bottom Sheet Drawer */
+              <div className="fixed inset-x-0 bottom-0 z-55 bg-base-100 rounded-t-[28px] p-5 pb-8 shadow-[0_-8px_30px_rgb(0,0,0,0.18)] border-t border-base-300 animate-slide-up max-w-md mx-auto">
+                {/* Drag Handle indicator */}
+                <div className="w-12 h-1 bg-base-300 rounded-full mx-auto mb-5" />
+                
+                <div className="space-y-1">
+                  {contextMenu.message.text && (
+                    <button 
+                      onClick={() => handleCopyText(contextMenu.message.text)}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-base-200 rounded-xl text-left text-base font-semibold transition-all active:scale-[0.98] text-base-content"
+                    >
+                      <Copy size={20} className="opacity-70" />
+                      <span>Copy Text</span>
+                    </button>
+                  )}
+                  
+                  {contextMenu.message.image && (
+                    <button 
+                      onClick={() => handleDownloadImage(contextMenu.message.image)}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-base-200 rounded-xl text-left text-base font-semibold transition-all active:scale-[0.98] text-base-content"
+                    >
+                      <Download size={20} className="opacity-70" />
+                      <span>Save Image to Gallery</span>
+                    </button>
+                  )}
+                  
+                  {(contextMenu.message.senderId === authUser._id || 
+                    contextMenu.message.senderId?._id === authUser._id || 
+                    (selectedGroup && selectedGroup.creatorId === authUser._id)) && (
+                    <button 
+                      onClick={() => handleDeleteMessage(contextMenu.message)}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-error/10 text-error rounded-xl text-left text-base font-bold transition-all active:scale-[0.98]"
+                    >
+                      <Trash2 size={20} className="text-error" />
+                      <span>Delete Message</span>
+                    </button>
+                  )}
+                  
+                  <button 
+                    onClick={() => setContextMenu(null)}
+                    className="w-full flex items-center justify-center py-3.5 mt-2 bg-base-200 hover:bg-base-300 rounded-xl text-base font-semibold transition-all active:scale-[0.98] text-base-content"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Desktop/Laptop Context Menu at Cursor Position */
+              <div 
+                style={{ 
+                  top: `${Math.min(contextMenu.y, window.innerHeight - 150)}px`, 
+                  left: `${Math.min(contextMenu.x, window.innerWidth - 200)}px` 
+                }}
+                className="fixed z-55 w-48 bg-base-100 border border-base-300 rounded-2xl shadow-xl p-1.5 animate-fade-in text-base-content"
+              >
+                {contextMenu.message.text && (
+                  <button 
+                    onClick={() => handleCopyText(contextMenu.message.text)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl hover:bg-base-200 text-left transition-colors"
+                  >
+                    <Copy size={16} className="opacity-70" />
+                    <span>Copy Text</span>
+                  </button>
+                )}
+                
+                {contextMenu.message.image && (
+                  <button 
+                    onClick={() => handleDownloadImage(contextMenu.message.image)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl hover:bg-base-200 text-left transition-colors"
+                  >
+                    <Download size={16} className="opacity-70" />
+                    <span>Download Image</span>
+                  </button>
+                )}
+                
+                {(contextMenu.message.senderId === authUser._id || 
+                  contextMenu.message.senderId?._id === authUser._id || 
+                  (selectedGroup && selectedGroup.creatorId === authUser._id)) && (
+                  <button 
+                    onClick={() => handleDeleteMessage(contextMenu.message)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-bold text-error rounded-xl hover:bg-error/10 text-left transition-colors"
+                  >
+                    <Trash2 size={16} className="text-error" />
+                    <span>Delete Message</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Group Details Sidebar */}

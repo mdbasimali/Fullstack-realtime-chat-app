@@ -2,6 +2,7 @@ import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
+import Group from "../models/group.model.js";
 
 export const getUsersForSidebar = async(req,res)=>{
     try{
@@ -270,13 +271,36 @@ export const deleteMessage = async (req, res) => {
     const { id } = req.params;
     const myId = req.user._id;
 
-    const message = await Message.findOneAndDelete({ 
-      _id: id, 
-      $or: [{ senderId: myId }, { receiverId: myId }] 
-    });
-
+    const message = await Message.findById(id);
     if (!message) {
       return res.status(404).json({ message: "Message not found" });
+    }
+
+    let canDelete = false;
+    if (message.senderId.toString() === myId.toString() || message.receiverId?.toString() === myId.toString()) {
+      canDelete = true;
+    } else if (message.groupId) {
+      const group = await Group.findById(message.groupId);
+      if (group && group.creatorId.toString() === myId.toString()) {
+        canDelete = true;
+      }
+    }
+
+    if (!canDelete) {
+      return res.status(403).json({ message: "Unauthorized to delete this message" });
+    }
+
+    await Message.findByIdAndDelete(id);
+
+    // Notify other clients in real-time via Socket.io
+    if (message.groupId) {
+      io.to(`group_${message.groupId}`).emit("groupMessageDeleted", { messageId: id, groupId: message.groupId });
+    } else {
+      const targetUserId = message.senderId.toString() === myId.toString() ? message.receiverId : message.senderId;
+      const receiverSocketId = getReceiverSocketId(targetUserId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("messageDeleted", id);
+      }
     }
 
     res.status(200).json({ message: "Message deleted successfully" });

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
+import toast from "react-hot-toast";
 import { useGroupStore } from "./useGroupStore";
 
 export const useChatstore = create((set,get) => ({
@@ -171,6 +172,7 @@ export const useChatstore = create((set,get) => ({
 
     socket.off("newMessage");
     socket.off("messagesRead");
+    socket.off("messageDeleted");
 
     socket.on("newMessage", (newMessage) => {
       const { selectedUser, messages, getUsers } = get();
@@ -199,6 +201,13 @@ export const useChatstore = create((set,get) => ({
       }
     });
 
+    socket.on("messageDeleted", (messageId) => {
+      set({
+        messages: get().messages.filter((msg) => msg._id !== messageId),
+      });
+      get().getUsers();
+    });
+
     // Handle real-time read notifications from the recipient
     socket.on("messagesRead", ({ readBy }) => {
       const { selectedUser, messages, getUsers } = get();
@@ -222,6 +231,7 @@ export const useChatstore = create((set,get) => ({
     if (socket) {
       socket.off("newMessage");
       socket.off("messagesRead");
+      socket.off("messageDeleted");
     }
   },
 
@@ -257,8 +267,10 @@ export const useChatstore = create((set,get) => ({
       await axiosInstance.delete(`/messages/message/${messageId}`);
       const { messages } = get();
       set({ messages: messages.filter(m => m._id !== messageId) });
+      get().getUsers();
     } catch (error) {
       console.error("DeleteMessage error:", error);
+      toast.error("Failed to delete message");
     }
   },
 
