@@ -62,7 +62,8 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "https://fullstack-realtime-chat-app-sooty.vercel.app",
-  "https://chatzone.cloudnexis.in"
+  "https://chatzone.cloudnexis.in",
+  "https://accounts.google.com"
 ];
 
 app.use(cors({
