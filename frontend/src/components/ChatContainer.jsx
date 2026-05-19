@@ -71,11 +71,13 @@ const ChatContainer = () => {
 
   const handleContextMenu = (e, message) => {
     e.preventDefault();
+    e.stopPropagation();
+    const isMobile = window.innerWidth < 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
     setContextMenu({
       message,
-      x: e.clientX,
-      y: e.clientY,
-      isMobile: false,
+      x: e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0),
+      y: e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0),
+      isMobile,
     });
   };
 
@@ -83,6 +85,10 @@ const ChatContainer = () => {
     hasTriggeredLongPressRef.current = false;
     const touch = e.touches[0];
     touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+
+    if (touchTimeoutRef.current) {
+      clearTimeout(touchTimeoutRef.current);
+    }
 
     touchTimeoutRef.current = setTimeout(() => {
       hasTriggeredLongPressRef.current = true;
@@ -95,7 +101,7 @@ const ChatContainer = () => {
         y: touch.clientY,
         isMobile: true,
       });
-    }, 600); // 600ms long press delay
+    }, 450); // 450ms long press delay
   };
 
   const handleTouchEnd = (e) => {
@@ -104,14 +110,16 @@ const ChatContainer = () => {
     }
     if (hasTriggeredLongPressRef.current) {
       e.preventDefault();
+      e.stopPropagation();
     }
   };
 
   const handleTouchMove = (e) => {
+    if (!touchStartPosRef.current) return;
     const touch = e.touches[0];
     const diffX = Math.abs(touch.clientX - touchStartPosRef.current.x);
     const diffY = Math.abs(touch.clientY - touchStartPosRef.current.y);
-    if (diffX > 10 || diffY > 10) {
+    if (diffX > 20 || diffY > 20) {
       if (touchTimeoutRef.current) {
         clearTimeout(touchTimeoutRef.current);
       }
@@ -124,7 +132,7 @@ const ChatContainer = () => {
     setContextMenu(null);
   };
 
-  const handleDownloadImage = (imageUrl) => {
+  const handleDownloadImage = async (imageUrl) => {
     try {
       const token = localStorage.getItem("token") || "";
       const isDev = import.meta.env.MODE === "development";
@@ -135,13 +143,34 @@ const ChatContainer = () => {
         
       const downloadUrl = `${apiBase}/messages/download?url=${encodeURIComponent(imageUrl)}&token=${token}`;
       
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = `chat-image-${Date.now()}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast.success("Downloading image...");
+      const toastId = toast.loading("Preparing download...");
+      
+      try {
+        const res = await fetch(downloadUrl);
+        if (!res.ok) throw new Error("Fetch failed");
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        
+        let filename = `chat-image-${Date.now()}.jpg`;
+        if (imageUrl.toLowerCase().includes(".png")) filename = `chat-image-${Date.now()}.png`;
+        else if (imageUrl.toLowerCase().includes(".gif")) filename = `chat-image-${Date.now()}.gif`;
+        else if (imageUrl.toLowerCase().includes(".webp")) filename = `chat-image-${Date.now()}.webp`;
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 200);
+        toast.success("Image saved to gallery!", { id: toastId });
+      } catch (err) {
+        console.warn("Blob download failed, trying tab-open fallback...", err);
+        window.open(downloadUrl, "_blank");
+        toast.success("Downloading image...", { id: toastId });
+      }
     } catch (error) {
       console.error("Download failed:", error);
       toast.error("Failed to download image");
@@ -152,10 +181,15 @@ const ChatContainer = () => {
   const handleDeleteMessage = async (message) => {
     if (!message) return;
     if (window.confirm("Are you sure you want to delete this message?")) {
-      if (selectedGroup) {
-        await deleteGroupMessage(message._id);
-      } else {
-        await deleteMessage(message._id);
+      try {
+        if (selectedGroup) {
+          await deleteGroupMessage(message._id);
+        } else {
+          await deleteMessage(message._id);
+        }
+        toast.success("Message deleted");
+      } catch (err) {
+        toast.error("Failed to delete message");
       }
       setContextMenu(null);
     }
@@ -332,6 +366,14 @@ const ChatContainer = () => {
                           onTouchStart={(e) => handleTouchStart(e, message)}
                           onTouchEnd={handleTouchEnd}
                           onTouchMove={handleTouchMove}
+                          style={{
+                            WebkitTouchCallout: "none",
+                            WebkitUserSelect: "none",
+                            KhtmlUserSelect: "none",
+                            MozUserSelect: "none",
+                            msUserSelect: "none",
+                            userSelect: "none"
+                          }}
                           className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all cursor-pointer select-none active:opacity-95 ${
                             isTextOnly ? "p-2 pb-0.5 px-3.5 pr-[54px]" : "p-3.5 px-4"
                           } ${
@@ -344,14 +386,14 @@ const ChatContainer = () => {
                             <img
                               src={message.image}
                               alt="Attachment"
-                              className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover"
+                              className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover pointer-events-none select-none"
                             />
                           )}
                           {message.messageType === "audio" && message.image && (
                             <VoicePlayer url={message.image} isMyMessage={isMyMessage} />
                           )}
                           {message.text && message.messageType === "text" && (
-                            <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed break-words">
+                            <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed break-words select-none">
                               {message.text}
                             </p>
                           )}
