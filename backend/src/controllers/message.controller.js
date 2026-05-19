@@ -14,15 +14,15 @@ export const getUsersForSidebar = async(req,res)=>{
        const messageUserIds2 = await Message.distinct("receiverId", { senderId: loggedInUserId });
        
        // Merge unique IDs
-       const interactedUserIds = [...new Set([...messageUserIds, ...messageUserIds2])];
+       const interactedUserIds = [...new Set([...messageUserIds, ...messageUserIds2])].filter(id => id != null);
 
        const loggedInUser = await User.findById(loggedInUserId);
        const contactIds = loggedInUser.contacts || [];
        const blockedIds = loggedInUser.blockedUsers || [];
 
        // Merge contacts and interacted user IDs
-       const allTargetUserIds = [...new Set([...contactIds.map(id => id.toString()), ...interactedUserIds.map(id => id.toString())])]
-         .filter(id => !blockedIds.map(bid => bid.toString()).includes(id));
+       const allTargetUserIds = [...new Set([...contactIds.filter(id => id != null).map(id => id.toString()), ...interactedUserIds.filter(id => id != null).map(id => id.toString())])]
+         .filter(id => !blockedIds.filter(bid => bid != null).map(bid => bid.toString()).includes(id));
 
        const filteredUsers = await User.find({
          _id: { $in: allTargetUserIds, $ne: loggedInUserId }

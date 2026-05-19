@@ -25,7 +25,7 @@ const App = () => {
   const { theme } = useThemeStore();
   const location = useLocation();
   const navigate = useNavigate();
-  const { selectedUser, setSelectedUser } = useChatstore();
+  const { selectedUser, setSelectedUser, subscribeToMessages, unsubscribeFromMessages } = useChatstore();
 
   // Extract Google redirect token synchronously on initial load to avoid race conditions
   const queryParams = new URLSearchParams(window.location.search);
@@ -144,6 +144,14 @@ const App = () => {
       socket.off("groupCreated", handleGroupCreated);
     };
   }, [socket]);
+
+  // Subscribe to message events globally
+  useEffect(() => {
+    if (socket) {
+      subscribeToMessages();
+      return () => unsubscribeFromMessages();
+    }
+  }, [socket, subscribeToMessages, unsubscribeFromMessages]);
 
   // Warn user before refresh during a call
   useEffect(() => {

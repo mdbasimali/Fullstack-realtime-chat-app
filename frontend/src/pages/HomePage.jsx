@@ -8,16 +8,11 @@ import ChatContainer from "../components/ChatContainer";
 import { MessageSquare, Phone, Image as ImageIcon, Users, Layers } from "lucide-react";
 
 const HomePage = () => {
-  const { selectedUser, setSelectedUser, activeTab, setActiveTab, subscribeToMessages, unsubscribeFromMessages } = useChatstore();
+  const { selectedUser, setSelectedUser, activeTab, setActiveTab, users } = useChatstore();
   const { selectedGroup, setSelectedGroup } = useGroupStore();
-  const { socket } = useAuthStore();
+  const { socket, authUser } = useAuthStore();
 
-  useEffect(() => {
-    if (socket) {
-      subscribeToMessages();
-      return () => unsubscribeFromMessages();
-    }
-  }, [socket, subscribeToMessages, unsubscribeFromMessages]);
+  const unreadChatsCount = users.filter(u => u.lastMessage && !u.lastMessage.isRead && u.lastMessage.senderId !== authUser?._id).length;
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] w-full bg-base-100 flex flex-col overflow-hidden text-base-content">
@@ -64,12 +59,17 @@ const HomePage = () => {
               }}
               className="flex flex-col items-center gap-1 text-center group cursor-pointer"
             >
-              <div className={`px-5 py-1 rounded-full transition-all ${
+              <div className={`px-5 py-1 rounded-full transition-all relative ${
                 activeTab === "chats" 
                   ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
                   : "text-base-content/60 group-hover:text-base-content"
               }`}>
                 <MessageSquare size={20} className={activeTab === "chats" ? "fill-primary text-primary" : "text-base-content/60"} />
+                {unreadChatsCount > 0 && (
+                  <span className="absolute top-0.5 right-2 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-[9px] font-extrabold shadow-sm border border-base-100 animate-pulse">
+                    {unreadChatsCount}
+                  </span>
+                )}
               </div>
               <span className={`text-[10px] font-bold tracking-wide transition-all ${
                 activeTab === "chats" ? "text-primary" : "text-base-content/60"

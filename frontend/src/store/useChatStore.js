@@ -4,6 +4,29 @@ import { useAuthStore } from "./useAuthStore";
 import toast from "react-hot-toast";
 import { useGroupStore } from "./useGroupStore";
 
+const playNotificationSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, audioContext.currentTime);
+    osc.frequency.setValueAtTime(880, audioContext.currentTime + 0.08);
+    
+    gain.gain.setValueAtTime(0.06, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.22);
+    
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    
+    osc.start();
+    osc.stop(audioContext.currentTime + 0.22);
+  } catch (e) {
+    console.error("Failed to play notification sound:", e);
+  }
+};
+
 export const useChatstore = create((set,get) => ({
   messages: [],
   users: [],
@@ -186,6 +209,15 @@ export const useChatstore = create((set,get) => ({
 
         // Emit messageSeen over socket since we are actively in this user's chat window
         socket.emit("messageSeen", { senderId: selectedUser._id });
+      } else if (newMessage.senderId !== authUser._id) {
+        // Play notification sound & show toast when receiving a message in background/another chat
+        playNotificationSound();
+        const sender = get().users.find(u => u._id === newMessage.senderId);
+        const senderName = sender ? sender.fullName : "New Contact";
+        toast(`New message from ${senderName}: "${newMessage.text || "📷 Photo"}"`, {
+          icon: "💬",
+          duration: 3500,
+        });
       }
 
       // Automatically register the sender as an active conversation

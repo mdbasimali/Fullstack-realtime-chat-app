@@ -47,6 +47,8 @@ const Sidebar = () => {
   const { authUser, onlineUsers, logout } = useAuthStore();
   const { initiateCall } = useCallStore();
 
+  const unreadChatsCount = users.filter(u => u.lastMessage && !u.lastMessage.isRead && u.lastMessage.senderId !== authUser?._id).length;
+
   // Contact Sync local state
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [syncStep, setSyncStep] = useState("ask"); // "ask" | "syncing" | "matched" | "fallback"
@@ -806,7 +808,11 @@ const Sidebar = () => {
                           </div>
                           
                           <div className="flex items-center justify-between mt-0.5 min-w-0 gap-1">
-                            <p className="text-xs text-base-content/50 truncate flex-1 min-w-0 font-medium leading-relaxed">
+                            <p className={`text-xs truncate flex-1 min-w-0 font-medium leading-relaxed ${
+                              user.lastMessage && !user.lastMessage.isRead && user.lastMessage.senderId !== authUser._id
+                                ? "text-base-content font-bold"
+                                : "text-base-content/50"
+                            }`}>
                               {user.lastMessage ? (
                                 <>
                                   {user.lastMessage.senderId === authUser._id ? (
@@ -838,6 +844,10 @@ const Sidebar = () => {
                                 <span className="text-base-content/30 italic">No messages yet</span>
                               )}
                             </p>
+                            
+                            {user.lastMessage && !user.lastMessage.isRead && user.lastMessage.senderId !== authUser._id && (
+                              <span className="w-2.5 h-2.5 bg-primary rounded-full flex-shrink-0 ml-2 shadow-[0_0_8px_rgba(99,102,241,0.6)] animate-pulse" />
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1621,8 +1631,13 @@ const Sidebar = () => {
           onClick={() => { setActiveTab("chats"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
           className="flex flex-col items-center gap-1 text-center group cursor-pointer"
         >
-          <div className={`px-5 py-1 rounded-full transition-all ${activeTab === "chats" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
+          <div className={`px-5 py-1 rounded-full transition-all relative ${activeTab === "chats" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
             <MessageSquare size={21} className={activeTab === "chats" ? "fill-primary" : ""} />
+            {unreadChatsCount > 0 && (
+              <span className="absolute top-0.5 right-2 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-[9px] font-extrabold shadow-sm border border-base-100 animate-pulse">
+                {unreadChatsCount}
+              </span>
+            )}
           </div>
           <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "chats" ? "text-primary font-bold" : "text-base-content/60"}`}>Chats</span>
         </button>
