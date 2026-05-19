@@ -157,6 +157,202 @@ const ParticipantVideoTile = React.memo(({
 
 ParticipantVideoTile.displayName = "ParticipantVideoTile";
 
+const DraggableSelfPreview = React.memo(({ 
+  localStream, 
+  isVideoOff, 
+  isMirrored
+}) => {
+  const containerRef = useRef(null);
+  const videoRef = useRef(null);
+
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const startOffset = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (videoRef.current && localStream) {
+      if (videoRef.current.srcObject !== localStream) {
+        videoRef.current.srcObject = localStream;
+      }
+      videoRef.current.play().catch((err) => console.log("Draggable video play error:", err));
+    }
+  }, [localStream]);
+
+  // Adjust/clamp position on window resize to ensure preview doesn't float offscreen
+  useEffect(() => {
+    const handleResize = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const initialLeft = rect.left - offset.x;
+      const initialTop = rect.top - offset.y;
+
+      const minX = 16 - initialLeft;
+      const maxX = (window.innerWidth - rect.width - 16) - initialLeft;
+      const minY = 96 - initialTop;
+      const maxY = (window.innerHeight - rect.height - 110) - initialTop;
+
+      setOffset(prev => ({
+        x: Math.max(minX, Math.min(maxX, prev.x)),
+        y: Math.max(minY, Math.min(maxY, prev.y))
+      }));
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [offset]);
+
+  if (isVideoOff || !localStream) return null;
+
+  const onStart = (clientX, clientY) => {
+    setIsDragging(true);
+    dragStart.current = { x: clientX, y: clientY };
+    startOffset.current = { x: offset.x, y: offset.y };
+  };
+
+  const onMove = (clientX, clientY) => {
+    if (!dragStart.current.x) return; // Not active dragging
+    const dx = clientX - dragStart.current.x;
+    const dy = clientY - dragStart.current.y;
+    
+    let newX = startOffset.current.x + dx;
+    let newY = startOffset.current.y + dy;
+
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const initialLeft = rect.left - offset.x;
+      const initialTop = rect.top - offset.y;
+
+      const minX = 16 - initialLeft;
+      const maxX = (window.innerWidth - rect.width - 16) - initialLeft;
+      const minY = 96 - initialTop;
+      const maxY = (window.innerHeight - rect.height - 110) - initialTop;
+
+      newX = Math.max(minX, Math.min(maxX, newX));
+      newY = Math.max(minY, Math.min(maxY, newY));
+    }
+
+    setOffset({ x: newX, y: newY });
+  };
+
+  const onEnd = () => {
+    setIsDragging(false);
+    dragStart.current = { x: 0, y: 0 };
+
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const initialLeft = rect.left - offset.x;
+      const initialTop = rect.top - offset.y;
+
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const elementWidth = rect.width;
+      const elementHeight = rect.height;
+
+      const paddingX = 16;
+      const paddingTop = 96;
+      const paddingBottom = 110;
+
+      const minX = paddingX;
+      const maxX = screenWidth - elementWidth - paddingX;
+      const minY = paddingTop;
+      const maxY = screenHeight - elementHeight - paddingBottom;
+
+      const targets = [
+        { x: minX, y: minY },
+        { x: maxX, y: minY },
+        { x: minX, y: maxY },
+        { x: maxX, y: maxY }
+      ];
+
+      let closestTarget = targets[0];
+      let minDistance = Infinity;
+
+      targets.forEach(target => {
+        const dist = Math.hypot(rect.left - target.x, rect.top - target.y);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestTarget = target;
+        }
+      });
+
+      const finalX = closestTarget.x - initialLeft;
+      const finalY = closestTarget.y - initialTop;
+
+      setOffset({ x: finalX, y: finalY });
+    }
+  };
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    onStart(e.clientX, e.clientY);
+    
+    const handleMouseMove = (moveEvent) => {
+      onMove(moveEvent.clientX, moveEvent.clientY);
+    };
+
+    const handleMouseUp = () => {
+      onEnd();
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      onStart(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 1) {
+      onMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    onEnd();
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${isDragging ? 1.05 : 1})`,
+        transition: isDragging ? "none" : "transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
+        touchAction: "none"
+      }}
+      className={`fixed z-[80] w-[110px] md:w-[140px] aspect-[3/4] rounded-2xl overflow-hidden border-2 shadow-2xl cursor-grab active:cursor-grabbing top-28 right-6 select-none bg-[#1c1f26] ${
+        isDragging 
+          ? "border-purple-500 shadow-[0_0_25px_rgba(168,85,247,0.6)]" 
+          : "border-white/20 hover:border-purple-500/50 shadow-black/80"
+      }`}
+    >
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className={`w-full h-full object-cover pointer-events-none ${isMirrored ? "scale-x-[-1]" : ""}`}
+      />
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.localStream === nextProps.localStream &&
+    prevProps.isVideoOff === nextProps.isVideoOff &&
+    prevProps.isMirrored === nextProps.isMirrored
+  );
+});
+
+DraggableSelfPreview.displayName = "DraggableSelfPreview";
+
 const CallModal = () => {
   const { authUser } = useAuthStore();
   const {
@@ -457,7 +653,15 @@ const CallModal = () => {
   // Group Call View with responsive mesh video/audio grid
   if (isGroupCall) {
     // Collect all participants (including local user "self")
-    const participantsList = [
+    const participantsList = Object.entries(groupPeers).map(([socketId, peer]) => ({
+      id: socketId,
+      fullName: peer.fullName,
+      profilePic: peer.profilePic,
+      stream: peer.stream,
+      isVideoOff: false,
+      isMuted: false,
+    }));
+    /* const ignoredList = [
       {
         id: "self",
         fullName: "You",
@@ -474,7 +678,7 @@ const CallModal = () => {
         isVideoOff: false,
         isMuted: false,
       }))
-    ];
+    ]; */
 
     return (
       <div className="fixed inset-0 z-[999] flex flex-col bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
@@ -508,7 +712,14 @@ const CallModal = () => {
 
         {/* Dynamic Video Grid - Spanning Full Height with safe paddings */}
         <div className="absolute inset-0 px-4 pt-28 pb-28 flex items-center justify-center overflow-y-auto">
-          <div className={`grid gap-4 w-full h-full max-w-6xl mx-auto items-center justify-center ${
+          {participantsList.length === 0 ? (
+            <div className="text-center p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md max-w-sm animate-pulse">
+              <Loader2 className="w-10 h-10 text-purple-500 mx-auto mb-4 animate-spin" />
+              <h3 className="text-lg font-bold text-white mb-1">Waiting for others</h3>
+              <p className="text-xs text-white/55">The call will automatically start as soon as participants join.</p>
+            </div>
+          ) : (
+            <div className={`grid gap-4 w-full h-full max-w-6xl mx-auto items-center justify-center ${
             participantsList.length === 1 ? "grid-cols-1 max-h-[80vh]" :
             participantsList.length === 2 ? "grid-cols-1 md:grid-cols-2 max-h-[80vh]" :
             participantsList.length <= 4 ? "grid-cols-2 max-h-[85vh]" :
@@ -524,11 +735,12 @@ const CallModal = () => {
                 isVideoOff={participant.isVideoOff}
                 isMuted={participant.isMuted}
                 isActiveSpeaker={activeSpeakerId === participant.id}
-                isLocal={participant.id === "self"}
+                isLocal={false}
                 callType={callType}
               />
             ))}
           </div>
+          )}
         </div>
 
         {/* Floating Capsule Control Panel */}
@@ -646,6 +858,12 @@ const CallModal = () => {
             </div>
           </div>
         )}
+        {/* Floating Draggable Self Video Preview */}
+        <DraggableSelfPreview 
+          localStream={localStream}
+          isVideoOff={isVideoOff}
+          isMirrored={isMirrored}
+        />
       </div>
     );
   }
@@ -725,8 +943,9 @@ const CallModal = () => {
           )}
 
           {/* Local View (Floating PIP) */}
-          {callStatus === "ongoing" && remoteStream && localStream && !isVideoOff && (
-            <div className={`absolute z-30 transition-all duration-500 ease-in-out rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl top-24 right-6 ${
+          {callStatus === "ongoing" && remoteStream && (
+            <DraggableSelfPreview localStream={localStream} isVideoOff={isVideoOff} isMirrored={isMirrored} />
+            /* <div className={`absolute z-30 transition-all duration-500 ease-in-out rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl top-24 right-6 ${
               manualFullView ? "w-[85px]" : "w-[100px] md:w-[140px]"
             } aspect-[3/4]`}>
               <video
@@ -736,7 +955,7 @@ const CallModal = () => {
                 muted
                 className={`w-full h-full object-cover ${isMirrored ? "scale-x-[-1]" : ""}`}
               />
-            </div>
+            </div> */
           )}
         </div>
       )}
