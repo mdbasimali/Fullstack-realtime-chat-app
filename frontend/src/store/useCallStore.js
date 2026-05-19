@@ -393,12 +393,13 @@ export const useCallStore = create((set, get) => ({
         console.log("ontrack: received track", event.track.kind);
         const [stream] = event.streams;
         if (stream) {
-          set({ remoteStream: stream });
+          set({ remoteStream: new MediaStream(stream.getTracks()) });
         } else {
           const { remoteStream } = get();
-          const currentStream = remoteStream || new MediaStream();
-          currentStream.addTrack(event.track);
-          set({ remoteStream: currentStream });
+          const tracks = remoteStream ? remoteStream.getTracks() : [];
+          if (!tracks.some(t => t.id === event.track.id)) {
+            set({ remoteStream: new MediaStream([...tracks, event.track]) });
+          }
         }
       };
 
@@ -507,12 +508,13 @@ export const useCallStore = create((set, get) => ({
         console.log("ontrack: received track", event.track.kind);
         const [stream] = event.streams;
         if (stream) {
-          set({ remoteStream: stream });
+          set({ remoteStream: new MediaStream(stream.getTracks()) });
         } else {
           const { remoteStream } = get();
-          const currentStream = remoteStream || new MediaStream();
-          currentStream.addTrack(event.track);
-          set({ remoteStream: currentStream });
+          const tracks = remoteStream ? remoteStream.getTracks() : [];
+          if (!tracks.some(t => t.id === event.track.id)) {
+            set({ remoteStream: new MediaStream([...tracks, event.track]) });
+          }
         }
       };
 

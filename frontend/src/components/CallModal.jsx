@@ -108,6 +108,7 @@ const CallModal = () => {
             ref={remoteVideoRef}
             autoPlay
             playsInline
+            muted
             className="w-full h-full object-cover"
           />
         ) : (
@@ -267,6 +268,7 @@ const CallModal = () => {
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
+                muted
                 className={`w-full h-full transition-all duration-500 ${manualFullView ? "object-contain bg-black shadow-2xl" : "object-cover"}`}
               />
             </div>
