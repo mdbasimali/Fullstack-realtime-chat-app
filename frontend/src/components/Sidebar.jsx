@@ -48,6 +48,8 @@ const Sidebar = () => {
   // Navigation states
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showThreeDotMenu, setShowThreeDotMenu] = useState(false);
   const [addContactInput, setAddContactInput] = useState("");
@@ -367,12 +369,34 @@ const Sidebar = () => {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-0 focus:w-40 sm:focus:w-48 px-0 focus:px-3 py-1 text-sm bg-base-200 border border-transparent focus:border-base-300 rounded-full transition-all duration-300 opacity-0 focus:opacity-100 outline-none"
+              onBlur={() => {
+                if (!searchQuery.trim()) {
+                  setIsSearchOpen(false);
+                }
+              }}
+              ref={searchInputRef}
+              className={`transition-all duration-300 text-sm bg-base-200 border border-transparent focus:border-base-300 rounded-full outline-none ${
+                isSearchOpen 
+                  ? "w-36 sm:w-44 px-3 py-1 opacity-100" 
+                  : "w-0 px-0 py-0 opacity-0 pointer-events-none"
+              }`}
               id="search-input"
             />
             <button 
-              onClick={() => document.getElementById("search-input")?.focus()}
-              className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
+              onClick={() => {
+                setIsSearchOpen((prev) => {
+                  const next = !prev;
+                  if (next) {
+                    setTimeout(() => searchInputRef.current?.focus(), 100);
+                  } else {
+                    setSearchQuery("");
+                  }
+                  return next;
+                });
+              }}
+              className={`p-2 rounded-full transition-colors cursor-pointer ${
+                isSearchOpen ? "bg-base-300 text-primary" : "hover:bg-base-200 text-base-content/80"
+              }`}
               title="Search"
             >
               <Search size={21} />
