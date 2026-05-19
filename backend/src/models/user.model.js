@@ -60,6 +60,13 @@ const userSchema = new mongoose.Schema(
       },
     },
   ],
+  syncedContacts: [
+    {
+      name: String,
+      email: { type: String, lowercase: true, trim: true },
+      phoneNumber: { type: String, trim: true }
+    }
+  ],
 
 },
 {timestamps:true}

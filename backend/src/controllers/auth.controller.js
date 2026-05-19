@@ -3,6 +3,44 @@ import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js"
 import bcrypt from "bcryptjs"
 
+const autoLinkMatchedContacts = async (newUser) => {
+  try {
+    const userEmail = newUser.email ? newUser.email.trim().toLowerCase() : "";
+    const userPhone = newUser.phoneNumber ? newUser.phoneNumber.trim().replace(/[^a-zA-Z0-9+]/g, "") : "";
+
+    if (!userEmail && !userPhone) return;
+
+    const searchConditions = [];
+    if (userEmail) {
+      searchConditions.push({ "syncedContacts.email": userEmail });
+    }
+    if (userPhone) {
+      searchConditions.push({ "syncedContacts.phoneNumber": userPhone });
+    }
+
+    if (searchConditions.length === 0) return;
+
+    // Find all users who have the new user in their syncedContacts and do not have them in contacts
+    const usersToUpdate = await User.find({
+      _id: { $ne: newUser._id },
+      $or: searchConditions
+    });
+
+    if (usersToUpdate.length > 0) {
+      await Promise.all(
+        usersToUpdate.map(async (u) => {
+          if (!u.contacts.some(cid => cid.toString() === newUser._id.toString())) {
+            u.contacts.push(newUser._id);
+            await u.save();
+          }
+        })
+      );
+    }
+  } catch (err) {
+    console.error("Error in autoLinkMatchedContacts:", err);
+  }
+};
+
 
 export const signup = async (req, res) => {
   const { fullName, email, password, username } = req.body;
@@ -35,6 +73,7 @@ export const signup = async (req, res) => {
       // generate jwt token here
       generateToken(newUser._id, res);
       await newUser.save();
+      await autoLinkMatchedContacts(newUser);
 
       res.status(201).json({
         _id: newUser._id,
@@ -137,6 +176,10 @@ export const updateProfile = async (req, res) => {
       { new: true }
     ).select("-password");
 
+    if (updateData.email || updateData.phoneNumber) {
+      await autoLinkMatchedContacts(updatedUser);
+    }
+
     res.status(200).json(updatedUser);
   } catch (error) {
     console.log("error in update profile:", error);
@@ -202,6 +245,7 @@ export const googleAuth = async (req, res) => {
         profilePic: picture || "",
       });
       await user.save();
+      await autoLinkMatchedContacts(user);
     }
 
     // Generate JWT token

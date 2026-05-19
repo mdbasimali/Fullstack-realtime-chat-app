@@ -315,13 +315,20 @@ export const syncContacts = async (req, res) => {
       return res.status(400).json({ message: "Contacts list must be an array" });
     }
 
-    // Clean emails and phone numbers
-    const emails = contacts
-      .map(c => c.email && c.email.trim().toLowerCase())
-      .filter(Boolean);
-    const phoneNumbers = contacts
-      .map(c => c.phoneNumber && c.phoneNumber.trim().replace(/[^a-zA-Z0-9+]/g, ""))
-      .filter(Boolean);
+    // Format contacts for saving
+    const formattedSyncedContacts = contacts.map(c => ({
+      name: c.name || "",
+      email: c.email ? c.email.trim().toLowerCase() : "",
+      phoneNumber: c.phoneNumber ? c.phoneNumber.trim().replace(/[^a-zA-Z0-9+]/g, "") : ""
+    })).filter(c => c.email || c.phoneNumber);
+
+    // Save the synced contacts list to the current user
+    await User.findByIdAndUpdate(loggedInUserId, {
+      $set: { syncedContacts: formattedSyncedContacts }
+    });
+
+    const emails = formattedSyncedContacts.map(c => c.email).filter(Boolean);
+    const phoneNumbers = formattedSyncedContacts.map(c => c.phoneNumber).filter(Boolean);
 
     // Find registered users matching any of the emails or phone numbers
     // Excluding the current logged-in user!
