@@ -57,7 +57,20 @@ const LoginPage = () => {
       window.recaptchaVerifier = null;
     }
     const container = document.getElementById("recaptcha-container");
-    if (container) container.innerHTML = "";
+    if (container) {
+      try {
+        const parent = container.parentNode;
+        if (parent) {
+          container.remove();
+          const newContainer = document.createElement("div");
+          newContainer.id = "recaptcha-container";
+          parent.appendChild(newContainer);
+        }
+      } catch (domErr) {
+        console.error("Error recreating recaptcha container:", domErr);
+        container.innerHTML = "";
+      }
+    }
   };
 
   // Google credential login
