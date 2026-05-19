@@ -158,8 +158,14 @@ export const useGroupStore = create((set, get) => ({
     try {
       const res = await axiosInstance.post(`/groups/${selectedGroup._id}/send`, messageData);
       
-      // Swap optimistic message with the database stored object
-      const updated = get().messages.map(m => m._id === optimisticMessage._id ? res.data : m);
+      // Swap optimistic message with the database stored object (or filter out if already appended by socket)
+      const currentMessages = get().messages;
+      const isAlreadyAppended = currentMessages.some(m => m._id === res.data._id);
+      
+      const updated = isAlreadyAppended
+        ? currentMessages.filter(m => m._id !== optimisticMessage._id)
+        : currentMessages.map(m => m._id === optimisticMessage._id ? res.data : m);
+
       set({ messages: updated });
     } catch (error) {
       // Revert if request fails
@@ -199,12 +205,15 @@ export const useGroupStore = create((set, get) => ({
         const senderIdStr = typeof message.senderId === "object" ? message.senderId._id : message.senderId;
 
         // Check if this message is a duplicate of a local optimistic message
-        const isDuplicateOfOptimistic = messages.some(m => 
-          m.isOptimistic && 
-          m.senderId === senderIdStr && 
-          m.text === message.text && 
-          m.image === message.image
-        );
+        const isDuplicateOfOptimistic = messages.some(m => {
+          if (!m.isOptimistic || m.senderId !== senderIdStr) return false;
+          if (message.messageType === "text") {
+            return m.text === message.text;
+          }
+          const mImage = m.image || "";
+          const msgImage = message.image || "";
+          return mImage === msgImage;
+        });
 
         if (isDuplicateOfOptimistic) return;
 
