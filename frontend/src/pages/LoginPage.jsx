@@ -239,6 +239,9 @@ const LoginPage = () => {
 
   // Setup Firebase Recaptcha
   const initializeRecaptcha = () => {
+    if (!auth) {
+      throw new Error("Firebase auth client is not initialized.");
+    }
     cleanRecaptcha();
     window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
       size: "invisible",
@@ -255,6 +258,11 @@ const LoginPage = () => {
   // Send Firebase OTP
   const handleSendOtp = async (e) => {
     if (e) e.preventDefault();
+
+    if (!auth) {
+      toast.error("Mobile Login is not configured. Firebase keys are missing in the environment.");
+      return;
+    }
     
     // Validate Indian mobile numbers (10 digits starting with 6-9)
     const normalizedNumber = phoneNumber.trim().replace(/\s+/g, "");

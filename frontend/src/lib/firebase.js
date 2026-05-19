@@ -10,8 +10,19 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app = null;
+let auth = null;
 
-// Export Authentication service
-export const auth = getAuth(app);
+// Only initialize Firebase if a valid API Key is provided
+if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "undefined" && firebaseConfig.apiKey !== "") {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+  } catch (err) {
+    console.error("Firebase initialization failed:", err);
+  }
+} else {
+  console.warn("Firebase configuration is missing or incomplete. Mobile OTP Authentication will not function until you set the VITE_FIREBASE_* keys in your .env file.");
+}
+
+export { auth };
