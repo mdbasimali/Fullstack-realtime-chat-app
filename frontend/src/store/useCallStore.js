@@ -835,19 +835,34 @@ export const useCallStore = create((set, get) => ({
 
   handleGroupCallUserJoined: async ({ userId, socketId }) => {
     const socket = useAuthStore.getState().socket;
-    const { localStream, groupPeers } = get();
+    const { localStream } = get();
     if (!socket) return;
 
     try {
       const pc = new RTCPeerConnection(ICE_SERVERS);
 
-      if (localStream) {
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      }
-
       const { useChatstore } = await import("./useChatStore");
       const users = useChatstore.getState().users;
       const user = users.find(u => u._id === userId) || { fullName: "Group Member" };
+
+      // Initialize peer structure first to avoid ontrack race conditions
+      set((state) => ({
+        groupPeers: {
+          ...state.groupPeers,
+          [socketId]: {
+            userId,
+            socketId,
+            pc,
+            fullName: user.fullName,
+            profilePic: user.profilePic,
+            stream: null
+          }
+        }
+      }));
+
+      if (localStream) {
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      }
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
@@ -857,15 +872,19 @@ export const useCallStore = create((set, get) => ({
 
       pc.ontrack = (event) => {
         const stream = event.streams[0] || new MediaStream([event.track]);
-        set((state) => ({
-          groupPeers: {
-            ...state.groupPeers,
-            [socketId]: {
-              ...(state.groupPeers[socketId] || {}),
-              stream
+        set((state) => {
+          const currentPeer = state.groupPeers[socketId];
+          if (!currentPeer) return {};
+          return {
+            groupPeers: {
+              ...state.groupPeers,
+              [socketId]: {
+                ...currentPeer,
+                stream
+              }
             }
-          }
-        }));
+          };
+        });
 
         // Speaker detection on the peer stream
         get().setupActiveSpeakerDetection(stream, socketId);
@@ -881,19 +900,6 @@ export const useCallStore = create((set, get) => ({
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       socket.emit("group-call:offer", { toSocketId: socketId, offer });
-
-      set((state) => ({
-        groupPeers: {
-          ...state.groupPeers,
-          [socketId]: {
-            userId,
-            socketId,
-            pc,
-            fullName: user.fullName,
-            profilePic: user.profilePic,
-          }
-        }
-      }));
     } catch (error) {
       console.error("Error setting up peer for joined user:", error);
     }
@@ -907,13 +913,28 @@ export const useCallStore = create((set, get) => ({
     try {
       const pc = new RTCPeerConnection(ICE_SERVERS);
 
-      if (localStream) {
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      }
-
       const { useChatstore } = await import("./useChatStore");
       const users = useChatstore.getState().users;
       const user = users.find(u => u._id === fromUserId) || { fullName: "Group Member" };
+
+      // Initialize peer structure first to avoid ontrack race conditions
+      set((state) => ({
+        groupPeers: {
+          ...state.groupPeers,
+          [fromSocketId]: {
+            userId: fromUserId,
+            socketId: fromSocketId,
+            pc,
+            fullName: user.fullName,
+            profilePic: user.profilePic,
+            stream: null
+          }
+        }
+      }));
+
+      if (localStream) {
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      }
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
@@ -923,15 +944,19 @@ export const useCallStore = create((set, get) => ({
 
       pc.ontrack = (event) => {
         const stream = event.streams[0] || new MediaStream([event.track]);
-        set((state) => ({
-          groupPeers: {
-            ...state.groupPeers,
-            [fromSocketId]: {
-              ...(state.groupPeers[fromSocketId] || {}),
-              stream
+        set((state) => {
+          const currentPeer = state.groupPeers[fromSocketId];
+          if (!currentPeer) return {};
+          return {
+            groupPeers: {
+              ...state.groupPeers,
+              [fromSocketId]: {
+                ...currentPeer,
+                stream
+              }
             }
-          }
-        }));
+          };
+        });
 
         // Speaker detection on the peer stream
         get().setupActiveSpeakerDetection(stream, fromSocketId);
@@ -948,19 +973,6 @@ export const useCallStore = create((set, get) => ({
       await pc.setLocalDescription(answer);
 
       socket.emit("group-call:answer", { toSocketId: fromSocketId, answer });
-
-      set((state) => ({
-        groupPeers: {
-          ...state.groupPeers,
-          [fromSocketId]: {
-            userId: fromUserId,
-            socketId: fromSocketId,
-            pc,
-            fullName: user.fullName,
-            profilePic: user.profilePic,
-          }
-        }
-      }));
     } catch (error) {
       console.error("Error handling group call offer:", error);
     }

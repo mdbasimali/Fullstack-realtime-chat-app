@@ -66,7 +66,7 @@ const ParticipantVideoTile = React.memo(({
           : "border-white/10"
       }`}
     >
-      {/* Video rendering */}
+      {/* Video rendering or connecting state */}
       {callType === "video" && stream && !isVideoOff ? (
         <video
           ref={videoRef}
@@ -76,25 +76,48 @@ const ParticipantVideoTile = React.memo(({
           className={`w-full h-full object-cover transition-opacity duration-300 ${isLocal ? "scale-x-[-1]" : ""}`}
         />
       ) : (
-        /* Avatar View */
+        /* Avatar / Connecting View */
         <div className="flex flex-col items-center gap-3">
           <div className="relative">
-            {isActiveSpeaker && (
-              <div className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping"></div>
-            )}
-            {profilePic ? (
-              <img 
-                src={profilePic} 
-                alt={fullName} 
-                className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/10 shadow-lg animate-fade-in"
-              />
-            ) : (
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-2xl border-2 border-purple-500/20 shadow-lg">
-                {fullName.slice(0, 2).toUpperCase()}
+            {!isLocal && !stream ? (
+              // Connecting Spinner
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border border-purple-500/30 flex items-center justify-center bg-purple-500/5 relative">
+                <div className="absolute inset-0 rounded-full border-t-2 border-purple-500 animate-spin"></div>
+                {profilePic ? (
+                  <img 
+                    src={profilePic} 
+                    alt={fullName} 
+                    className="w-16 h-16 rounded-full object-cover opacity-60"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-purple-400 opacity-60">
+                    {fullName.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
               </div>
+            ) : (
+              // Normal Avatar
+              <>
+                {isActiveSpeaker && (
+                  <div className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping"></div>
+                )}
+                {profilePic ? (
+                  <img 
+                    src={profilePic} 
+                    alt={fullName} 
+                    className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/10 shadow-lg animate-fade-in"
+                  />
+                ) : (
+                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-2xl border-2 border-purple-500/20 shadow-lg">
+                    {fullName.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+              </>
             )}
           </div>
-          <span className="text-sm font-semibold text-white/80">{fullName}</span>
+          <span className="text-sm font-semibold text-white/80">
+            {!isLocal && !stream ? "Connecting..." : fullName}
+          </span>
         </div>
       )}
 
