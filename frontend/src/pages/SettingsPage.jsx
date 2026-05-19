@@ -163,18 +163,16 @@ const SettingsPage = () => {
             
             {expandedSection === "devices" && (
               <div className="p-4 bg-base-200/50 rounded-2xl mx-1 mt-1 border border-base-300 text-left space-y-3 animate-fade-in">
-                <p className="text-xs font-bold text-base-content/50 uppercase">Current Session</p>
-                <div className="p-3 bg-base-100 border border-base-300 rounded-xl flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Laptop size={18} className="text-primary" />
-                    <div>
-                      <p className="text-sm font-semibold">Web Client (Chrome / Windows)</p>
-                      <p className="text-xxs text-base-content/50">Last active: Just now</p>
-                    </div>
-                  </div>
-                  <span className="badge badge-success text-white badge-sm font-semibold px-2 py-1 h-auto text-xxs">Active</span>
-                </div>
-                <p className="text-xxs text-base-content/50">Your communication is synced end-to-end between all registered endpoints.</p>
+                <p className="text-xs text-base-content/75 leading-relaxed">
+                  Link your desktop, laptop, or other web browsers to ChatZone to access chats seamlessly.
+                </p>
+                <Link
+                  to="/settings/devices"
+                  className="btn btn-primary btn-sm rounded-full w-full font-bold flex items-center justify-center gap-2"
+                >
+                  <Laptop size={15} />
+                  Manage Linked Devices
+                </Link>
               </div>
             )}
           </div>

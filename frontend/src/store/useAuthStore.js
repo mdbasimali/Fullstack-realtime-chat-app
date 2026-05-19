@@ -21,6 +21,8 @@ export const useAuthStore = create((set,get) => ({
   isCheckingAuth: true,
   onlineUsers:[],
   socket:null,
+  linkedDevices: [],
+  isFetchingDevices: false,
 
   checkAuth: async () => {
     try {
@@ -106,6 +108,61 @@ export const useAuthStore = create((set,get) => ({
     }
   },
 
+  getLinkedDevices: async () => {
+    set({ isFetchingDevices: true });
+    try {
+      const res = await axiosInstance.get("/auth/linked-devices");
+      set({ linkedDevices: res.data });
+    } catch (error) {
+      console.error("Error fetching linked devices:", error);
+    } finally {
+      set({ isFetchingDevices: false });
+    }
+  },
+
+  revokeDevice: async (sessionId) => {
+    try {
+      await axiosInstance.delete(`/auth/linked-devices/${sessionId}`);
+      const { linkedDevices } = get();
+      set({ linkedDevices: linkedDevices.filter(d => d.sessionId !== sessionId) });
+      return { success: true };
+    } catch (error) {
+      console.error("Error revoking device:", error);
+      return { success: false, error: error?.response?.data?.message || "Failed to revoke session" };
+    }
+  },
+
+  linkDevice: async (sessionId) => {
+    try {
+      const userAgent = navigator.userAgent;
+      let os = "Unknown OS";
+      if (userAgent.indexOf("Win") !== -1) os = "Windows";
+      if (userAgent.indexOf("Mac") !== -1) os = "macOS";
+      if (userAgent.indexOf("Linux") !== -1) os = "Linux";
+      if (userAgent.indexOf("Android") !== -1) os = "Android";
+      if (userAgent.indexOf("like Mac") !== -1) os = "iOS";
+
+      let browser = "Unknown Browser";
+      if (userAgent.indexOf("Chrome") !== -1) browser = "Chrome";
+      if (userAgent.indexOf("Safari") !== -1 && userAgent.indexOf("Chrome") === -1) browser = "Safari";
+      if (userAgent.indexOf("Firefox") !== -1) browser = "Firefox";
+      if (userAgent.indexOf("Edge") !== -1) browser = "Edge";
+
+      const deviceName = `${browser} on ${os}`;
+
+      const res = await axiosInstance.post("/auth/link-device", {
+        sessionId,
+        deviceName,
+        browser,
+        os
+      });
+      return res.data;
+    } catch (error) {
+      console.error("Error in linkDevice:", error);
+      throw error?.response?.data?.message || "Failed to link device";
+    }
+  },
+
 
   connectSocket:()=>{
     const {authUser}=get()
@@ -121,6 +178,23 @@ export const useAuthStore = create((set,get) => ({
     set({socket:socket});
     socket.on("getOnlineUsers", (userIds)=>{
       set({onlineUsers:userIds})
+    });
+
+    socket.on("session:revoked", ({ sessionId }) => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload && payload.sessionId === sessionId) {
+            localStorage.removeItem("token");
+            set({ authUser: null });
+            socket.disconnect();
+            window.location.reload();
+          }
+        } catch (e) {
+          console.error("Error parsing JWT for session check:", e);
+        }
+      }
     });
   },
 

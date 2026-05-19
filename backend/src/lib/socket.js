@@ -17,6 +17,7 @@ const io =new Server(server,{
 const userSocketMap = {}; // {userId: socketId}
 export const activeCalls = new Map(); // {userId: {partnerId, type, startTime}}
 const pendingCalls = new Map(); // {userId: {from, offer, type, timestamp}}
+export const qrSessions = new Map(); // { sessionId: { socketId, createdAt } }
 
 export function getReceiverSocketId(userId){
     return userSocketMap[userId]
@@ -101,6 +102,15 @@ io.on("connection", (socket) =>{
    }
 
     io.emit("getOnlineUsers",Object.keys(userSocketMap));
+
+     socket.on("qr:request-session", () => {
+       const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+       qrSessions.set(sessionId, {
+         socketId: socket.id,
+         createdAt: Date.now()
+       });
+       socket.emit("qr:session", sessionId);
+     });
 
   // Video Call Signaling Logic
   socket.on("call:user", async ({ to, offer, type }) => {
@@ -227,6 +237,11 @@ io.on("connection", (socket) =>{
   });
 
    socket.on("disconnect", ()=>{
+      for (const [sessionId, session] of qrSessions.entries()) {
+        if (session.socketId === socket.id) {
+          qrSessions.delete(sessionId);
+        }
+      }
      console.log("A user disconnected", socket.id);
      delete userSocketMap[userId];
      io.emit("getOnlineUsers", Object.keys(userSocketMap));

@@ -67,6 +67,16 @@ const userSchema = new mongoose.Schema(
       phoneNumber: { type: String, trim: true }
     }
   ],
+  linkedDevices: [
+    {
+      sessionId: { type: String, required: true },
+      deviceName: { type: String, required: true },
+      browser: String,
+      os: String,
+      ip: String,
+      lastActive: { type: Date, default: Date.now }
+    }
+  ]
 
 },
 {timestamps:true}

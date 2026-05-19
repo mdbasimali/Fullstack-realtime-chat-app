@@ -17,6 +17,7 @@ const SignUpPage = React.lazy(() => import("./pages/SignUpPage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const SettingsPage = React.lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
+const LinkedDevicesPage = React.lazy(() => import("./pages/LinkedDevicesPage"));
 // import axios from "axios";
 
 const App = () => {
@@ -199,7 +200,7 @@ const App = () => {
     </div>
   );
 
-  const showNavbar = !["/", "/settings", "/profile", "/join-group"].includes(location.pathname);
+  const showNavbar = !["/", "/settings", "/settings/devices", "/profile", "/join-group"].includes(location.pathname);
 
   return (
     <div data-theme={theme} className="h-screen overflow-hidden flex flex-col">
@@ -216,6 +217,7 @@ const App = () => {
             <Route path="/signup" element={!authUser ? <SignUpPage />:<Navigate to="/" />} />
             <Route path="/login" element={!authUser ? <LoginPage />:<Navigate to="/" />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/devices" element={authUser ? <LinkedDevicesPage /> : <Navigate to="/login" />} />
             <Route path="/profile" element={authUser ? <ProfilePage />:<Navigate to="/login" />} />
           </Routes>
         </React.Suspense>

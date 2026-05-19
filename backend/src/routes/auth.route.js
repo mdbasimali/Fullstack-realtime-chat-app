@@ -1,5 +1,5 @@
 import express from "express";
-import { checkAuth, login, logout, signup, updateProfile, googleAuth, getGoogleClientId, googleRedirect } from "../controllers/auth.controller.js";
+import { checkAuth, login, logout, signup, updateProfile, googleAuth, getGoogleClientId, googleRedirect, linkDevice, getLinkedDevices, revokeLinkedDevice } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router =express.Router()
@@ -13,5 +13,9 @@ router.get("/google-client-id", getGoogleClientId);
 
 router.put("/update-profile", protectRoute, updateProfile);
 router.get("/check", protectRoute, checkAuth)
+
+router.post("/link-device", protectRoute, linkDevice);
+router.get("/linked-devices", protectRoute, getLinkedDevices);
+router.delete("/linked-devices/:sessionId", protectRoute, revokeLinkedDevice);
 
 export default router

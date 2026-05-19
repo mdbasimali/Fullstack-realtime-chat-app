@@ -21,6 +21,20 @@ export const protectRoute = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    if (decoded.sessionId) {
+      const isSessionActive = user.linkedDevices.some(
+        (device) => device.sessionId === decoded.sessionId
+      );
+      if (!isSessionActive) {
+        return res.status(401).json({ message: "Unauthorized - Session has been revoked" });
+      }
+      // Update last active timestamp asynchronously
+      User.updateOne(
+        { _id: user._id, "linkedDevices.sessionId": decoded.sessionId },
+        { $set: { "linkedDevices.$.lastActive": new Date() } }
+      ).catch((err) => console.error("Error updating session lastActive:", err));
+    }
+
     req.user = user;
 
     next();

@@ -351,3 +351,94 @@ export const googleRedirect = async (req, res) => {
 
 
 
+
+
+import jwt from "jsonwebtoken";
+import { qrSessions, io } from "../lib/socket.js";
+
+export const linkDevice = async (req, res) => {
+  try {
+    const { sessionId, deviceName, browser, os } = req.body;
+    const myId = req.user._id;
+
+    if (!sessionId) {
+      return res.status(400).json({ message: "Session ID is required" });
+    }
+
+    const session = qrSessions.get(sessionId);
+    if (!session) {
+      return res.status(400).json({ message: "QR Code session expired or invalid" });
+    }
+
+    const ip = req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+    // Save linked device details to database
+    const newDevice = {
+      sessionId,
+      deviceName: deviceName || `${browser || "Unknown"} on ${os || "Device"}`,
+      browser: browser || "Unknown",
+      os: os || "Unknown",
+      ip: ip || "Unknown",
+      lastActive: new Date()
+    };
+
+    // Prevent duplicate session id
+    await User.findByIdAndUpdate(myId, {
+      $pull: { linkedDevices: { sessionId } }
+    });
+
+    const user = await User.findByIdAndUpdate(myId, {
+      $push: { linkedDevices: newDevice }
+    }, { new: true });
+
+    // Generate JWT session token for linked device
+    const token = jwt.sign({ userId: myId, sessionId }, process.env.JWT_SECRET, {
+      expiresIn: "30d"
+    });
+
+    // Notify the desktop client via Socket.io
+    io.to(session.socketId).emit("qr:linked", { token, user });
+
+    // Clean up pending session
+    qrSessions.delete(sessionId);
+
+    res.status(200).json({ message: "Device linked successfully", device: newDevice });
+  } catch (error) {
+    console.error("Error in linkDevice:", error);
+    res.status(500).json({ message: "Server error linking device" });
+  }
+};
+
+export const getLinkedDevices = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("linkedDevices");
+    res.status(200).json(user.linkedDevices || []);
+  } catch (error) {
+    console.error("Error in getLinkedDevices:", error);
+    res.status(500).json({ message: "Server error fetching linked devices" });
+  }
+};
+
+export const revokeLinkedDevice = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const myId = req.user._id;
+
+    if (!sessionId) {
+      return res.status(400).json({ message: "Session ID is required" });
+    }
+
+    // Remove from database
+    await User.findByIdAndUpdate(myId, {
+      $pull: { linkedDevices: { sessionId } }
+    });
+
+    // Notify linked device client to logout instantly
+    io.emit("session:revoked", { sessionId });
+
+    res.status(200).json({ message: "Device session revoked successfully" });
+  } catch (error) {
+    console.error("Error in revokeLinkedDevice:", error);
+    res.status(500).json({ message: "Server error revoking device session" });
+  }
+};
