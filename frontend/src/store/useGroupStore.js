@@ -196,6 +196,18 @@ export const useGroupStore = create((set, get) => ({
     socket.on("newGroupMessage", (message) => {
       const { selectedGroup, messages } = get();
       if (selectedGroup && message.groupId === selectedGroup._id) {
+        const senderIdStr = typeof message.senderId === "object" ? message.senderId._id : message.senderId;
+
+        // Check if this message is a duplicate of a local optimistic message
+        const isDuplicateOfOptimistic = messages.some(m => 
+          m.isOptimistic && 
+          m.senderId === senderIdStr && 
+          m.text === message.text && 
+          m.image === message.image
+        );
+
+        if (isDuplicateOfOptimistic) return;
+
         // Prevent duplicate insertions
         if (!messages.some(m => m._id === message._id)) {
           set({ messages: [...messages, message] });
