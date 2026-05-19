@@ -189,7 +189,31 @@ const CallModal = () => {
     groupCallInviteData,
     acceptGroupCallInvite,
     rejectGroupCallInvite,
+    groupId,
   } = useCallStore();
+
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [memberIdentifier, setMemberIdentifier] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleAddMemberSubmit = async (e) => {
+    e.preventDefault();
+    if (!memberIdentifier.trim() || !groupId) return;
+
+    setIsSubmitting(true);
+    try {
+      const { useGroupStore } = await import("../store/useGroupStore");
+      const success = await useGroupStore.getState().addMemberToGroup(groupId, memberIdentifier.trim());
+      if (success) {
+        setMemberIdentifier("");
+        setShowAddMemberModal(false);
+      }
+    } catch (err) {
+      console.error("Failed to add participant:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const localVideoRef = React.useCallback((el) => {
     if (el && localStream) {
@@ -453,7 +477,7 @@ const CallModal = () => {
     ];
 
     return (
-      <div className="fixed inset-0 z-[999] flex flex-col justify-between bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
+      <div className="fixed inset-0 z-[999] flex flex-col bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
         {/* Hidden audio elements for all group participants */}
         {Object.entries(groupPeers).map(([socketId, peer]) => (
           peer.stream && (
@@ -461,9 +485,9 @@ const CallModal = () => {
           )
         ))}
 
-        {/* Top Header */}
-        <div className="z-10 flex items-center justify-between w-full px-6 pt-12 pb-4 bg-gradient-to-b from-black/60 to-transparent">
-          <div className="flex items-center gap-4">
+        {/* Top Header Overlay */}
+        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between w-full px-6 pt-12 pb-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+          <div className="flex items-center gap-4 pointer-events-auto">
             <button 
               onClick={() => setIsMinimized(true)} 
               className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
@@ -482,13 +506,13 @@ const CallModal = () => {
           </div>
         </div>
 
-        {/* Dynamic Video Grid */}
-        <div className="flex-1 w-full max-w-6xl mx-auto px-4 py-2 flex items-center justify-center overflow-y-auto">
-          <div className={`grid gap-4 w-full h-full max-h-[70vh] ${
-            participantsList.length === 1 ? "grid-cols-1" :
-            participantsList.length === 2 ? "grid-cols-1 md:grid-cols-2" :
-            participantsList.length <= 4 ? "grid-cols-2" :
-            "grid-cols-2 md:grid-cols-3"
+        {/* Dynamic Video Grid - Spanning Full Height with safe paddings */}
+        <div className="absolute inset-0 px-4 pt-28 pb-28 flex items-center justify-center overflow-y-auto">
+          <div className={`grid gap-4 w-full h-full max-w-6xl mx-auto items-center justify-center ${
+            participantsList.length === 1 ? "grid-cols-1 max-h-[80vh]" :
+            participantsList.length === 2 ? "grid-cols-1 md:grid-cols-2 max-h-[80vh]" :
+            participantsList.length <= 4 ? "grid-cols-2 max-h-[85vh]" :
+            "grid-cols-2 md:grid-cols-3 max-h-[85vh]"
           }`}>
             {participantsList.map((participant) => (
               <ParticipantVideoTile 
@@ -507,54 +531,127 @@ const CallModal = () => {
           </div>
         </div>
 
-        {/* Bottom Drawer Control Panel */}
-        <div className="z-20 bg-[#1c1f26]/95 backdrop-blur-2xl rounded-t-[2.5rem] border-t border-white/10 shadow-[0_-8px_40px_rgba(0,0,0,0.6)] w-full flex flex-col pt-3 pb-6 px-10">
-          <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6"></div>
+        {/* Floating Capsule Control Panel */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg bg-[#1c1f26]/80 backdrop-blur-xl border border-white/10 rounded-full py-3 px-6 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-around z-30 transition-all duration-300">
+          {/* Video Toggle Button */}
+          <button
+            onClick={toggleVideo}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+              isVideoOff 
+                ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
+                : "bg-white/10 hover:bg-white/20 text-white"
+            }`}
+            title={isVideoOff ? "Turn video on" : "Turn video off"}
+          >
+            {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
+          </button>
 
-          <div className="flex items-center justify-around w-full mb-4">
-            {/* Video Toggle Button */}
-            <button
-              onClick={toggleVideo}
-              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
-                isVideoOff 
-                  ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
-                  : "bg-[#2f313d] hover:bg-[#3d4052] text-white"
-              }`}
-              title={isVideoOff ? "Turn video on" : "Turn video off"}
-            >
-              {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
-            </button>
+          {/* Microphone Toggle Button */}
+          <button
+            onClick={toggleMic}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+              isMuted 
+                ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
+                : "bg-white/10 hover:bg-white/20 text-white"
+            }`}
+            title={isMuted ? "Unmute mic" : "Mute mic"}
+          >
+            {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+          </button>
 
-            {/* Microphone Toggle Button */}
-            <button
-              onClick={toggleMic}
-              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
-                isMuted 
-                  ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
-                  : "bg-[#2f313d] hover:bg-[#3d4052] text-white"
-              }`}
-              title={isMuted ? "Unmute mic" : "Mute mic"}
-            >
-              {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
-            </button>
+          {/* Camera Switch (Flip) for Mobile */}
+          <button
+            onClick={switchCamera}
+            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
+            title="Switch Camera"
+          >
+            <RefreshCw size={18} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
+          </button>
 
-            {/* Leave / Hang Up Button */}
-            <button
-              onClick={leaveGroupCall}
-              className="w-14 h-14 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-red-600 text-white transition-all duration-300 active:scale-95 shadow-lg shadow-red-500/20"
-              title="Leave Call"
-            >
-              <Phone size={26} className="rotate-[135deg]" />
-            </button>
-          </div>
-          <div className="w-32 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-1"></div>
+          {/* Add Participant Button */}
+          <button
+            onClick={() => setShowAddMemberModal(true)}
+            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
+            title="Add Participant"
+          >
+            <UserPlus size={18} />
+          </button>
+
+          {/* Leave / Hang Up Button */}
+          <button
+            onClick={leaveGroupCall}
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-red-600 text-white transition-all duration-300 active:scale-95 shadow-lg shadow-red-500/20"
+            title="Leave Call"
+          >
+            <Phone size={20} className="rotate-[135deg]" />
+          </button>
         </div>
+
+        {/* Add Participant Modal Overlay */}
+        {showAddMemberModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in pointer-events-auto">
+            <div className="bg-[#1c1f26] border border-white/10 w-full max-w-sm rounded-[28px] overflow-hidden shadow-2xl animate-scale-up">
+              <header className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-black/20">
+                <div className="text-left">
+                  <h3 className="text-base font-extrabold text-white tracking-tight">Add Call Participant</h3>
+                  <p className="text-xs text-white/50 mt-0.5 font-light">Invite by email or username</p>
+                </div>
+                <button 
+                  onClick={() => { setShowAddMemberModal(false); setMemberIdentifier(""); }}
+                  className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </header>
+
+              <form onSubmit={handleAddMemberSubmit} className="p-6 space-y-4">
+                <div className="space-y-1.5 text-left">
+                  <label className="text-xs font-bold text-white/70 tracking-wide uppercase px-1">Colleague Identifier</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. john@example.com or john_doe" 
+                    value={memberIdentifier}
+                    onChange={(e) => setMemberIdentifier(e.target.value)}
+                    required
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm text-white placeholder-white/30"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddMemberModal(false); setMemberIdentifier(""); }}
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-white/5 text-white/70 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !memberIdentifier.trim()}
+                    className="px-6 py-2.5 rounded-full text-sm font-semibold bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Inviting...</span>
+                      </>
+                    ) : (
+                      <span>Invite</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[999] flex flex-col justify-between bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
+    <div className="fixed inset-0 z-[999] flex flex-col bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
       
       {/* Hidden audio element to play remote stream audio in all call types */}
       {remoteStream && (
@@ -594,22 +691,22 @@ const CallModal = () => {
             /* Ongoing call: Remote stream */
             <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
               {/* Overlay info and toggle */}
-              <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50">
+              <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50">
                 <button 
                   onClick={() => setManualFullView(!manualFullView)}
-                  className="px-4 py-2 rounded-full bg-black/30 backdrop-blur-xl flex items-center gap-2 text-white border border-white/10 shadow-2xl active:scale-95 transition-all group"
+                  className="px-4 py-2 rounded-full bg-black/35 backdrop-blur-xl flex items-center gap-2 text-white border border-white/10 shadow-2xl active:scale-95 transition-all group text-xs font-semibold uppercase tracking-wider"
                 >
                   {manualFullView ? (
-                    <><Minimize2 size={16} className="text-primary" /> <span className="text-[11px] font-medium uppercase tracking-wider">Fit to Screen</span></>
+                    <><Minimize2 size={14} className="text-primary" /> <span>Fit to Screen</span></>
                   ) : (
-                    <><Maximize2 size={16} className="text-white/70" /> <span className="text-[11px] font-medium uppercase tracking-wider text-white/70">Zoom to Fill</span></>
+                    <><Maximize2 size={14} className="text-white/70" /> <span>Zoom to Fill</span></>
                   )}
                 </button>
               </div>
 
               {isRemoteSharingScreen && (
-                <div className="absolute top-16 left-0 right-0 z-30 flex justify-center pointer-events-none">
-                  <div className="bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-b-2xl border-x border-b border-white/10 flex items-center gap-2">
+                <div className="absolute top-36 left-0 right-0 z-30 flex justify-center pointer-events-none">
+                  <div className="bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
                     <span className="text-xs font-medium text-white/90">
                       {remoteUser?.fullName}'s screen
@@ -629,7 +726,7 @@ const CallModal = () => {
 
           {/* Local View (Floating PIP) */}
           {callStatus === "ongoing" && remoteStream && localStream && !isVideoOff && (
-            <div className={`absolute z-[60] transition-all duration-500 ease-in-out rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl top-24 right-6 ${
+            <div className={`absolute z-30 transition-all duration-500 ease-in-out rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl top-24 right-6 ${
               manualFullView ? "w-[85px]" : "w-[100px] md:w-[140px]"
             } aspect-[3/4]`}>
               <video
@@ -658,8 +755,8 @@ const CallModal = () => {
       )}
 
       {/* Top Header Overlay */}
-      <div className="z-10 flex items-center justify-between w-full px-6 pt-12 pb-4 bg-gradient-to-b from-black/60 to-transparent pointer-events-auto">
-        <div className="flex items-center gap-4">
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between w-full px-6 pt-12 pb-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+        <div className="flex items-center gap-4 pointer-events-auto">
           <button 
             onClick={() => setIsMinimized(true)} 
             className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
@@ -671,7 +768,7 @@ const CallModal = () => {
             <h2 className="text-xl font-semibold tracking-wide text-white drop-shadow-md">
               {remoteUser?.fullName || "Chat User"}
             </h2>
-            <span className="text-sm font-light text-white/80 drop-shadow-sm">
+            <span className="text-sm font-light text-white/85 drop-shadow-sm">
               {callStatus === "ongoing" 
                 ? formatDuration(duration) 
                 : callStatus === "calling" 
@@ -683,88 +780,73 @@ const CallModal = () => {
           </div>
         </div>
         
-        <button className="p-2 rounded-full hover:bg-white/10 transition-colors">
+        <button className="p-2 rounded-full hover:bg-white/10 transition-colors pointer-events-auto">
           <Info className="w-6 h-6 text-white" />
         </button>
       </div>
 
-      {/* Overlay Video Action Buttons (Over mid-bottom section, but above the bottom drawer) */}
-      {callType === "video" && (
-        <div className="z-10 flex justify-between items-end w-full px-8 mb-6 pointer-events-auto mt-auto">
-          {/* Left Side: Screen Share toggle button */}
-          {navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? (
-            <button 
-              onClick={toggleScreenShare}
-              className={`w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center border border-white/10 transition-all active:scale-95 shadow-lg ${
-                isSharingScreen ? "bg-primary text-primary-content" : "bg-black/40 text-white hover:bg-black/60"
-              }`}
-              title={isSharingScreen ? "Stop Screen Share" : "Share Screen"}
-            >
-              <Monitor size={22} />
-            </button>
-          ) : (
-            <div className="w-12" />
-          )}
+      {/* Floating Capsule Control Panel */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg bg-[#1c1f26]/80 backdrop-blur-xl border border-white/10 rounded-full py-3 px-6 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-around z-30 transition-all duration-300">
+        {/* Video Toggle Button */}
+        <button
+          onClick={toggleVideo}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+            isVideoOff 
+              ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
+              : "bg-white/10 hover:bg-white/20 text-white"
+          }`}
+          title={isVideoOff ? "Turn video on" : "Turn video off"}
+        >
+          {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
+        </button>
 
-          {/* Right Side: Camera Switch */}
-          <div className="flex flex-col gap-3">
-            {/* Switch camera button */}
-            <button 
-              onClick={switchCamera} 
-              className="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white border border-white/10 transition-all active:scale-95 shadow-lg"
-              title="Switch Camera"
-            >
-              <RefreshCw size={20} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
-            </button>
-          </div>
-        </div>
-      )}
+        {/* Microphone Toggle Button */}
+        <button
+          onClick={toggleMic}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+            isMuted 
+              ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
+              : "bg-white/10 hover:bg-white/20 text-white"
+          }`}
+          title={isMuted ? "Unmute mic" : "Mute mic"}
+        >
+          {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+        </button>
 
-      {/* Bottom Control Drawer/Panel */}
-      <div className="z-20 bg-[#1c1f26]/95 backdrop-blur-2xl rounded-t-[2.5rem] border-t border-white/10 shadow-[0_-8px_40px_rgba(0,0,0,0.6)] animate-in slide-in-from-bottom duration-500 w-full flex flex-col pt-3 pb-6 px-10">
-        {/* Drawer Drag Handle Pill */}
-        <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6"></div>
-
-        {/* Buttons Row */}
-        <div className="flex items-center justify-around w-full mb-4">
-          {/* Video Toggle Button */}
+        {/* Camera Switch (Flip) for Mobile */}
+        {callType === "video" && (
           <button
-            onClick={toggleVideo}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
-              isVideoOff 
-                ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
-                : "bg-[#2f313d] hover:bg-[#3d4052] text-white"
+            onClick={switchCamera}
+            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
+            title="Switch Camera"
+          >
+            <RefreshCw size={18} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
+          </button>
+        )}
+
+        {/* Screen Share (Desktop only) */}
+        {callType === "video" && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia && (
+          <button 
+            onClick={toggleScreenShare}
+            className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all active:scale-95 shadow-lg ${
+              isSharingScreen 
+                ? "bg-primary text-primary-content border-primary" 
+                : "bg-white/10 border-white/10 text-white hover:bg-white/20"
             }`}
-            title={isVideoOff ? "Turn video on" : "Turn video off"}
+            title={isSharingScreen ? "Stop Screen Share" : "Share Screen"}
           >
-            {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
+            <Monitor size={18} />
           </button>
+        )}
 
-          {/* Microphone Toggle Button */}
-          <button
-            onClick={toggleMic}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
-              isMuted 
-                ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
-                : "bg-[#2f313d] hover:bg-[#3d4052] text-white"
-            }`}
-            title={isMuted ? "Unmute mic" : "Mute mic"}
-          >
-            {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
-          </button>
-
-          {/* End Call / Hang Up Button */}
-          <button
-            onClick={endCall}
-            className="w-14 h-14 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-red-600 text-white transition-all duration-300 active:scale-95 shadow-lg shadow-red-500/20"
-            title="End Call"
-          >
-            <Phone size={26} className="rotate-[135deg]" />
-          </button>
-        </div>
-
-        {/* Modern OS Gesture Bar Indicator */}
-        <div className="w-32 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-1"></div>
+        {/* End Call / Hang Up Button */}
+        <button
+          onClick={endCall}
+          className="w-12 h-12 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-red-600 text-white transition-all duration-300 active:scale-95 shadow-lg shadow-red-500/20"
+          title="End Call"
+        >
+          <Phone size={20} className="rotate-[135deg]" />
+        </button>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

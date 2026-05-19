@@ -138,40 +138,40 @@ const ChatHeader = () => {
             {activeGroupCalls[selectedGroup._id] && (
               <button 
                 onClick={() => joinGroupCall(selectedGroup._id, "video")}
-                className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 animate-pulse transition-all duration-300 mr-2"
+                className="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-lg shadow-emerald-600/25 animate-pulse transition-all duration-300 mr-1"
                 title="Join Active Group Call"
               >
-                <Phone size={14} />
-                <span>Join Active Call</span>
+                <Phone size={13} />
+                <span className="hidden xs:inline sm:inline">Join</span>
               </button>
             )}
             <button 
               onClick={() => handleGroupCallClick("video")}
-              className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
+              className="p-2 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
               title="Group Video Call"
             >
-              <Video size={20} />
+              <Video size={19} />
             </button>
             <button 
               onClick={() => handleGroupCallClick("audio")}
-              className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
+              className="p-2 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
               title="Group Voice Call"
             >
-              <Phone size={20} />
+              <Phone size={19} />
             </button>
             <button 
               onClick={() => setShowAddMemberModal(true)}
-              className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
+              className="p-2 rounded-full hover:bg-base-200 text-base-content/85 transition-colors hidden sm:inline-flex"
               title="Add Member"
             >
-              <UserPlus size={20} />
+              <UserPlus size={19} />
             </button>
             <button 
               onClick={() => setShowGroupDetailsSidebar(!showGroupDetailsSidebar)}
-              className={`p-2.5 rounded-full hover:bg-base-200 transition-colors ${showGroupDetailsSidebar ? "text-primary bg-primary/10 hover:bg-primary/20" : "text-base-content/85"}`}
+              className={`p-2 rounded-full hover:bg-base-200 transition-colors hidden sm:inline-flex ${showGroupDetailsSidebar ? "text-primary bg-primary/10 hover:bg-primary/20" : "text-base-content/85"}`}
               title="Group Details"
             >
-              <Info size={20} />
+              <Info size={19} />
             </button>
           </>
         )}
@@ -183,20 +183,40 @@ const ChatHeader = () => {
           </label>
           <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 w-52 z-30 mt-1">
             {selectedGroup ? (
-              <li>
-                <button 
-                  onClick={async () => {
-                    const confirmLeave = window.confirm(`Are you sure you want to leave ${selectedGroup.name}?`);
-                    if (confirmLeave) {
-                      await leaveGroup(selectedGroup._id);
-                    }
-                  }}
-                  className="text-error hover:bg-error/10 active:bg-error/20 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
-                >
-                  <Trash2 size={16} />
-                  Leave Group
-                </button>
-              </li>
+              <>
+                <li className="sm:hidden">
+                  <button 
+                    onClick={() => setShowAddMemberModal(true)}
+                    className="hover:bg-base-200 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
+                  >
+                    <UserPlus size={16} className="text-base-content/60" />
+                    Add Member
+                  </button>
+                </li>
+                <li className="sm:hidden">
+                  <button 
+                    onClick={() => setShowGroupDetailsSidebar(!showGroupDetailsSidebar)}
+                    className="hover:bg-base-200 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
+                  >
+                    <Info size={16} className="text-base-content/60" />
+                    Group Details
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={async () => {
+                      const confirmLeave = window.confirm(`Are you sure you want to leave ${selectedGroup.name}?`);
+                      if (confirmLeave) {
+                        await leaveGroup(selectedGroup._id);
+                      }
+                    }}
+                    className="text-error hover:bg-error/10 active:bg-error/20 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
+                  >
+                    <Trash2 size={16} />
+                    Leave Group
+                  </button>
+                </li>
+              </>
             ) : (
               <>
                 <li>
