@@ -45,8 +45,10 @@ export const useAuthStore = create((set,get) => ({
       if (res.data?.token) localStorage.setItem("token", res.data.token);
       set({ authUser: res.data });
       get().connectSocket();
+      return { success: true, user: res.data };
     } catch (error) {
       console.error("Signup error:", error);
+      return { success: false, error: error?.response?.data?.message || "Signup failed" };
     } finally {
       set({ isSigningUp: false });
     }
@@ -58,11 +60,11 @@ export const useAuthStore = create((set,get) => ({
       const res = await axiosInstance.post("/auth/login", data);
       if (res.data?.token) localStorage.setItem("token", res.data.token);
       set({ authUser: res.data });
-
       get().connectSocket();
-
+      return { success: true, user: res.data };
     } catch (error) {
       console.error("Login error:", error);
+      return { success: false, error: error?.response?.data?.message || "Login failed" };
     } finally {
       set({ isLoggingIn: false });
     }

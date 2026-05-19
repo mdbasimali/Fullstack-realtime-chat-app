@@ -1,20 +1,21 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { MessageSquare, Loader2, ArrowLeft, Phone, ShieldCheck, ChevronRight, RefreshCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { MessageSquare, Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
 import { axiosInstance } from "../lib/axios";
 import { io } from "socket.io-client";
 import QRCode from "qrcode";
 import toast from "react-hot-toast";
 
-// Firebase imports
-import { auth } from "../lib/firebase";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-
 const LoginPage = () => {
-  const { googleLogin, firebaseLogin, isLoggingIn } = useAuthStore();
+  const { login, googleLogin, isLoggingIn } = useAuthStore();
   const navigate = useNavigate();
   
+  // Email/Password states
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   // Google sign in states
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [googleClientId, setGoogleClientId] = useState("");
@@ -27,49 +28,20 @@ const LoginPage = () => {
   const [linkingStatus, setLinkingStatus] = useState("idle"); // "idle" | "success"
   const qrSocketRef = useRef(null);
 
-  // Firebase Phone Auth states
-  const [loginStep, setLoginStep] = useState("phone"); // "phone" | "otp"
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [resendTimer, setResendTimer] = useState(0);
-  const otpRefs = useRef([]);
-
-  // Auto resend timer effect
-  useEffect(() => {
-    if (resendTimer <= 0) return;
-    const timer = setInterval(() => {
-      setResendTimer((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [resendTimer]);
-
-  // Clean recaptcha verifier helper
-  const cleanRecaptcha = () => {
-    if (window.recaptchaVerifier) {
-      try {
-        window.recaptchaVerifier.clear();
-      } catch (err) {
-        console.error("Error clearing recaptcha:", err);
-      }
-      window.recaptchaVerifier = null;
+  // Email login
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Please fill in all fields");
+      return;
     }
-    const container = document.getElementById("recaptcha-container");
-    if (container) {
-      try {
-        const parent = container.parentNode;
-        if (parent) {
-          container.remove();
-          const newContainer = document.createElement("div");
-          newContainer.id = "recaptcha-container";
-          parent.appendChild(newContainer);
-        }
-      } catch (domErr) {
-        console.error("Error recreating recaptcha container:", domErr);
-        container.innerHTML = "";
-      }
+    const res = await login({ email, password });
+    if (res.success) {
+      toast.success("Welcome back to ChatZone!");
+      localStorage.setItem("trigger_contact_sync", "true");
+      navigate("/");
+    } else {
+      toast.error(res.error || "Failed to login");
     }
   };
 
@@ -98,7 +70,6 @@ const LoginPage = () => {
       }
     };
     fetchClientId();
-    return () => cleanRecaptcha();
   }, []);
 
   // Fetch error query params
@@ -173,7 +144,7 @@ const LoginPage = () => {
         console.error("Error rendering Google Sign-In button:", err);
       }
     }
-  }, [scriptLoaded, googleClientId, loginStep]); // Re-render when loginStep toggles back to phone screen
+  }, [scriptLoaded, googleClientId]);
 
   // Desktop QR socket listener
   useEffect(() => {
@@ -250,145 +221,18 @@ const LoginPage = () => {
     }
   };
 
-  // Setup Firebase Recaptcha
-  const initializeRecaptcha = () => {
-    if (!auth) {
-      throw new Error("Firebase auth client is not initialized.");
-    }
-    cleanRecaptcha();
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-      size: "invisible",
-      callback: () => {
-        // Recaptcha resolved
-      },
-      "expired-callback": () => {
-        toast.error("reCAPTCHA verification expired. Please try again.");
-        cleanRecaptcha();
-      }
-    });
-  };
-
-  // Send Firebase OTP
-  const handleSendOtp = async (e) => {
-    if (e) e.preventDefault();
-
-    if (!auth) {
-      toast.error("Mobile Login is not configured. Firebase keys are missing in the environment.");
-      return;
-    }
-    
-    // Validate Indian mobile numbers (10 digits starting with 6-9)
-    const normalizedNumber = phoneNumber.trim().replace(/\s+/g, "");
-    if (!/^[6-9]\d{9}$/.test(normalizedNumber)) {
-      toast.error("Please enter a valid 10-digit Indian phone number.");
-      return;
-    }
-
-    const fullPhoneNumber = `+91${normalizedNumber}`;
-    setIsSendingOtp(true);
-
-    try {
-      initializeRecaptcha();
-      const appVerifier = window.recaptchaVerifier;
-      const result = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
-      
-      setConfirmationResult(result);
-      setLoginStep("otp");
-      setOtp(["", "", "", "", "", ""]);
-      setResendTimer(60); // 60 seconds resend cooldown
-      toast.success(`OTP sent to +91 ${normalizedNumber.slice(0, 5)} ${normalizedNumber.slice(5)}`);
-      
-      // Auto focus first OTP input box
-      setTimeout(() => {
-        if (otpRefs.current[0]) otpRefs.current[0].focus();
-      }, 300);
-    } catch (err) {
-      console.error("Firebase send OTP error:", err);
-      cleanRecaptcha();
-      toast.error(err.message || "Failed to send verification SMS");
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  // Auto trigger verification when all 6 digits entered
-  const verifyOtp = async (otpCode) => {
-    if (!confirmationResult) return;
-    setIsVerifyingOtp(true);
-    const toastId = toast.loading("Verifying code...");
-
-    try {
-      const result = await confirmationResult.confirm(otpCode);
-      const idToken = await result.user.getIdToken();
-      
-      // Post to backend login route
-      const res = await firebaseLogin(idToken);
-      if (res.success) {
-        toast.success("Welcome to ChatZone!", { id: toastId });
-        localStorage.setItem("trigger_contact_sync", "true");
-        navigate("/");
-      } else {
-        toast.error(res.error || "Authentication failed", { id: toastId });
-      }
-    } catch (err) {
-      console.error("OTP verification error:", err);
-      toast.error("Invalid verification code. Please check and try again.", { id: toastId });
-    } finally {
-      setIsVerifyingOtp(false);
-    }
-  };
-
-  // OTP inputs keyboard handlers
-  const handleOtpChange = (value, index) => {
-    if (isNaN(value)) return;
-    
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto focus next box
-    if (value !== "" && index < 5) {
-      otpRefs.current[index + 1].focus();
-    }
-
-    // Auto verify when fully filled
-    if (newOtp.join("").length === 6) {
-      verifyOtp(newOtp.join(""));
-    }
-  };
-
-  const handleOtpKeyDown = (e, index) => {
-    if (e.key === "Backspace") {
-      if (otp[index] === "" && index > 0) {
-        otpRefs.current[index - 1].focus();
-      }
-    }
-  };
-
-  const handleOtpPaste = (e) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").trim();
-    if (pastedData.length === 6 && !isNaN(pastedData)) {
-      const newOtp = pastedData.split("");
-      setOtp(newOtp);
-      verifyOtp(pastedData);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-center items-center p-4 relative overflow-hidden text-white">
-      {/* Invisible Recaptcha Anchor */}
-      <div id="recaptcha-container"></div>
 
       {/* Glowing background auroras */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/15 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Login Card Grid */}
-      <div className="w-full max-w-4xl bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-[36px] shadow-2xl grid md:grid-cols-2 overflow-hidden animate-scale-up z-10">
+      <div className="w-full max-w-md md:max-w-4xl bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-[28px] md:rounded-[36px] shadow-2xl grid md:grid-cols-2 overflow-hidden animate-scale-up z-10">
         
-        {/* Left Side: Mobile OTP flow / Branding */}
-        <div className="p-8 md:p-12 flex flex-col justify-between space-y-8 border-r border-white/5 min-h-[520px]">
+        {/* Left Side: Google Login / Branding */}
+        <div className="px-6 py-10 md:p-12 flex flex-col justify-between space-y-8 border-r-0 md:border-r border-white/5 min-h-[460px] md:min-h-[520px]">
           
           {/* Header Branding */}
           <div className="flex items-center gap-3">
@@ -404,148 +248,94 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Form Step: Enter Phone Number */}
-          {loginStep === "phone" && (
-            <div className="space-y-6 flex-1 flex flex-col justify-center">
-              <div>
-                <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                  Verify your number <Phone size={20} className="text-primary animate-bounce" />
-                </h2>
-                <p className="text-xs text-slate-400 mt-1.5 font-medium leading-relaxed">
-                  ChatZone will verify your number. Enter your 10-digit mobile number below.
-                </p>
-              </div>
+          {/* Welcome back message and Email/Password login */}
+          <div className="space-y-4 flex-1 flex flex-col justify-center">
+            <div>
+              <h2 className="text-2xl font-black text-white tracking-tight">
+                Welcome Back
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 font-medium leading-relaxed">
+                Log in to your ChatZone account.
+              </p>
+            </div>
 
-              <form onSubmit={handleSendOtp} className="space-y-4">
-                <div className="flex gap-2">
-                  {/* Fixed Country Code for Indian Focus */}
-                  <div className="flex items-center gap-1.5 bg-slate-900 border border-white/10 rounded-2xl px-4 text-sm font-bold text-slate-300">
-                    <span className="text-base select-none">🇮🇳</span>
-                    <span>+91</span>
+            <form onSubmit={handleEmailLogin} className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    <Mail className="size-3.5" />
                   </div>
-                  
-                  {/* Phone Input Box */}
                   <input
-                    type="tel"
-                    placeholder="98765 43210"
-                    maxLength="10"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                    className="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-4 py-3.5 text-sm font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
-                    disabled={isSendingOtp}
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
+                    required
                   />
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={isSendingOtp || phoneNumber.length !== 10}
-                  className="w-full btn btn-primary rounded-2xl py-3.5 h-auto text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50"
-                >
-                  {isSendingOtp ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Sending verification SMS...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Next</span>
-                      <ChevronRight size={16} />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Native Google auth fallback */}
-              <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-white/5"></div>
-                <span className="flex-shrink mx-4 text-[10px] text-slate-500 font-bold tracking-widest uppercase">OR CONTINUE WITH</span>
-                <div className="flex-grow border-t border-white/5"></div>
               </div>
 
-              <div className="flex justify-center min-h-[50px]">
-                {isLoggingIn ? (
-                  <div className="flex items-center gap-2 py-2">
-                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                    <span className="text-xs text-slate-500 font-bold">Connecting...</span>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    <Lock className="size-3.5" />
                   </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-10 pr-10 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoggingIn}
+                className="w-full btn btn-primary rounded-2xl py-3 h-auto text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50"
+              >
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Logging in...</span>
+                  </>
                 ) : (
-                  <div id="googleBtnContainer" className="flex justify-center transition-all duration-300 active:scale-95" />
+                  <span>Log In</span>
                 )}
-              </div>
+              </button>
+            </form>
+
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-white/5"></div>
+              <span className="flex-shrink mx-3 text-[9px] text-slate-500 font-bold tracking-widest uppercase">OR</span>
+              <div className="flex-grow border-t border-white/5"></div>
             </div>
-          )}
 
-          {/* Form Step: Enter OTP Code */}
-          {loginStep === "otp" && (
-            <div className="space-y-6 flex-1 flex flex-col justify-center">
-              <div>
-                <button
-                  onClick={() => setLoginStep("phone")}
-                  className="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:underline mb-2"
-                >
-                  <ArrowLeft size={14} />
-                  <span>Change Number</span>
-                </button>
-                <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                  Enter 6-digit OTP <ShieldCheck size={20} className="text-emerald-500" />
-                </h2>
-                <p className="text-xs text-slate-400 mt-1.5 font-medium leading-relaxed">
-                  We've sent an OTP to <strong className="text-white">+91 {phoneNumber}</strong>. Type it below.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                {/* 6 Digit Verification Inputs */}
-                <div className="grid grid-cols-6 gap-2" onPaste={handleOtpPaste}>
-                  {otp.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      ref={(el) => (otpRefs.current[idx] = el)}
-                      type="text"
-                      maxLength="1"
-                      value={digit}
-                      onChange={(e) => handleOtpChange(e.target.value, idx)}
-                      onKeyDown={(e) => handleOtpKeyDown(e, idx)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl py-3 text-center text-lg font-black text-white placeholder-transparent focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-xs"
-                      disabled={isVerifyingOtp}
-                    />
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between py-2">
-                  {resendTimer > 0 ? (
-                    <span className="text-xs text-slate-500 font-semibold">
-                      Resend SMS in <strong className="text-slate-300">{resendTimer}s</strong>
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => handleSendOtp(null)}
-                      disabled={isSendingOtp}
-                      className="text-xs text-primary font-bold hover:underline flex items-center gap-1"
-                    >
-                      <RefreshCw size={12} className={isSendingOtp ? "animate-spin" : ""} />
-                      <span>Resend SMS OTP</span>
-                    </button>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => verifyOtp(otp.join(""))}
-                  disabled={isVerifyingOtp || otp.join("").length !== 6}
-                  className="w-full btn btn-success rounded-2xl py-3.5 h-auto text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50"
-                >
-                  {isVerifyingOtp ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Verifying credentials...</span>
-                    </>
-                  ) : (
-                    <span>Verify & Continue</span>
-                  )}
-                </button>
-              </div>
+            <div className="flex justify-center min-h-[50px]">
+              <div id="googleBtnContainer" className="flex justify-center transition-all duration-300 active:scale-95" />
             </div>
-          )}
+
+            <div className="text-center">
+              <p className="text-xs text-slate-400">
+                Don't have an account?{" "}
+                <Link to="/signup" className="text-primary hover:underline font-bold">
+                  Sign up
+                </Link>
+              </p>
+            </div>
+          </div>
 
           {/* Footer Terms */}
           <div className="text-[10px] text-slate-500 text-center font-medium leading-relaxed">

@@ -200,7 +200,7 @@ const App = () => {
     </div>
   );
 
-  const showNavbar = !["/", "/settings", "/settings/devices", "/profile", "/join-group"].includes(location.pathname);
+  const showNavbar = !["/", "/settings", "/settings/devices", "/profile", "/join-group", "/login", "/signup"].includes(location.pathname);
 
   return (
     <div data-theme={theme} className="h-screen overflow-hidden flex flex-col">

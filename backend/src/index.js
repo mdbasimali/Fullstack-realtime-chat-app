@@ -19,6 +19,37 @@ import webpush from "web-push";
 
 app.set("trust proxy", 1); // Required for secure cookies on Render/Vercel
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://fullstack-realtime-chat-app-sooty.vercel.app",
+  "https://chatzone.cloudnexis.in",
+  "https://accounts.google.com"
+];
+
+// CORS Middleware (Should be at the top to ensure headers are always present)
+app.use((req, res, next) => {
+  if (req.path === "/api/auth/google-redirect") {
+    return next();
+  }
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        origin.startsWith("http://192.168.") ||
+        origin.startsWith("http://10.") ||
+        origin.startsWith("http://172.") ||
+        origin.includes("localhost")
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })(req, res, next);
+});
+
 // Security Headers
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -30,7 +61,7 @@ app.use(compression());
 // Rate Limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 150,
+  max: process.env.NODE_ENV === "development" ? 5000 : 150, // Higher limit for development/testing
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later." }
@@ -58,35 +89,6 @@ app.use(express.json({ limit: "50mb" }));//main image ka high quality se upload 
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 app.use(cookieParser());
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://fullstack-realtime-chat-app-sooty.vercel.app",
-  "https://chatzone.cloudnexis.in",
-  "https://accounts.google.com"
-];
-
-app.use((req, res, next) => {
-  if (req.path === "/api/auth/google-redirect") {
-    return next();
-  }
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        origin.startsWith("http://192.168.") ||
-        origin.startsWith("http://10.") ||
-        origin.startsWith("http://172.") ||
-        origin.includes("localhost")
-      ) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })(req, res, next);
-});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
