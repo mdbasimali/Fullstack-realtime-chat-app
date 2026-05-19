@@ -45,18 +45,21 @@ const CallModal = () => {
   const localVideoRef = React.useCallback((el) => {
     if (el && localStream) {
       el.srcObject = localStream;
+      el.play().catch((err) => console.log("localVideoRef play error:", err));
     }
   }, [localStream]);
 
   const remoteVideoRef = React.useCallback((el) => {
     if (el && remoteStream) {
       el.srcObject = remoteStream;
+      el.play().catch((err) => console.log("remoteVideoRef play error:", err));
     }
   }, [remoteStream]);
 
   const remoteAudioRef = React.useCallback((el) => {
     if (el && remoteStream) {
       el.srcObject = remoteStream;
+      el.play().catch((err) => console.log("remoteAudioRef play error:", err));
     }
   }, [remoteStream]);
 

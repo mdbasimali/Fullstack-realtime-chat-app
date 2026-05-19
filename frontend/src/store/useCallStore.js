@@ -383,6 +383,24 @@ export const useCallStore = create((set, get) => ({
       const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
+      if (type === "video" && !stream.getVideoTracks().length) {
+        try {
+          pc.addTransceiver("video", { direction: "recvonly" });
+        } catch (e) {
+          console.warn("Failed to add video transceiver in initiateCall:", e);
+        }
+      }
+
+      pc.onconnectionstatechange = () => {
+        console.log("RTCPeerConnection connectionState changed:", pc.connectionState);
+      };
+      pc.oniceconnectionstatechange = () => {
+        console.log("RTCPeerConnection iceConnectionState changed:", pc.iceConnectionState);
+      };
+      pc.onsignalingstatechange = () => {
+        console.log("RTCPeerConnection signalingState changed:", pc.signalingState);
+      };
+
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit("ice:candidate", { to: receiver._id, candidate: event.candidate });
@@ -391,16 +409,18 @@ export const useCallStore = create((set, get) => ({
 
       pc.ontrack = (event) => {
         console.log("ontrack: received track", event.track.kind);
-        const [stream] = event.streams;
-        if (stream) {
-          set({ remoteStream: new MediaStream(stream.getTracks()) });
-        } else {
-          const { remoteStream } = get();
-          const tracks = remoteStream ? remoteStream.getTracks() : [];
-          if (!tracks.some(t => t.id === event.track.id)) {
-            set({ remoteStream: new MediaStream([...tracks, event.track]) });
+        const { remoteStream } = get();
+        const existingTracks = remoteStream ? remoteStream.getTracks() : [];
+        const newTracks = event.streams && event.streams[0] 
+          ? event.streams[0].getTracks() 
+          : [event.track];
+        const allTracks = [...existingTracks];
+        newTracks.forEach(track => {
+          if (!allTracks.some(t => t.id === track.id)) {
+            allTracks.push(track);
           }
-        }
+        });
+        set({ remoteStream: new MediaStream(allTracks) });
       };
 
       const offer = await pc.createOffer();
@@ -498,6 +518,16 @@ export const useCallStore = create((set, get) => ({
       const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
+      pc.onconnectionstatechange = () => {
+        console.log("RTCPeerConnection connectionState changed:", pc.connectionState);
+      };
+      pc.oniceconnectionstatechange = () => {
+        console.log("RTCPeerConnection iceConnectionState changed:", pc.iceConnectionState);
+      };
+      pc.onsignalingstatechange = () => {
+        console.log("RTCPeerConnection signalingState changed:", pc.signalingState);
+      };
+
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit("ice:candidate", { to: remoteUser._id, candidate: event.candidate });
@@ -506,16 +536,18 @@ export const useCallStore = create((set, get) => ({
 
       pc.ontrack = (event) => {
         console.log("ontrack: received track", event.track.kind);
-        const [stream] = event.streams;
-        if (stream) {
-          set({ remoteStream: new MediaStream(stream.getTracks()) });
-        } else {
-          const { remoteStream } = get();
-          const tracks = remoteStream ? remoteStream.getTracks() : [];
-          if (!tracks.some(t => t.id === event.track.id)) {
-            set({ remoteStream: new MediaStream([...tracks, event.track]) });
+        const { remoteStream } = get();
+        const existingTracks = remoteStream ? remoteStream.getTracks() : [];
+        const newTracks = event.streams && event.streams[0] 
+          ? event.streams[0].getTracks() 
+          : [event.track];
+        const allTracks = [...existingTracks];
+        newTracks.forEach(track => {
+          if (!allTracks.some(t => t.id === track.id)) {
+            allTracks.push(track);
           }
-        }
+        });
+        set({ remoteStream: new MediaStream(allTracks) });
       };
 
       await pc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
