@@ -65,17 +65,6 @@ export const useChatstore = create((set,get) => ({
     }
   },
 
-  syncContacts: async (contacts) => {
-    try {
-      const res = await axiosInstance.post("/messages/sync-contacts", { contacts });
-      get().getUsers();
-      return { success: true, matchedUsers: res.data.matchedUsers, matchedCount: res.data.matchedCount };
-    } catch (error) {
-      console.error("SyncContacts error:", error);
-      return { success: false, error: error?.response?.data?.message || "Sync failed" };
-    }
-  },
-
   removeContact: async (contactId) => {
     try {
       const res = await axiosInstance.post("/messages/remove-contact", { contactId });
