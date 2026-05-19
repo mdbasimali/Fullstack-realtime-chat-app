@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useChatstore } from "../store/useChatStore";
+import { useGroupStore } from "../store/useGroupStore";
 import { Image, Send, X, Smile, Mic, Plus, Trash2, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import EmojiPicker from "./EmojiPicker";
@@ -19,6 +20,7 @@ const MessageInput = () => {
   const recordingIntervalRef = useRef(null);
 
   const { sendMessage } = useChatstore();
+  const { selectedGroup, sendGroupMessage } = useGroupStore();
 
   useEffect(() => {
     return () => {
@@ -111,13 +113,19 @@ const MessageInput = () => {
           const base64Audio = reader.result;
           try {
             setIsUploadingAudio(true);
-            const uploadPromise = sendMessage({
-              text: `Voice note (${formatDuration(recordingDuration)})`,
-              image: base64Audio,
-              messageType: "audio",
-            });
+            const sendPromise = selectedGroup
+              ? sendGroupMessage({
+                  text: `Voice note (${formatDuration(recordingDuration)})`,
+                  image: base64Audio,
+                  messageType: "audio",
+                })
+              : sendMessage({
+                  text: `Voice note (${formatDuration(recordingDuration)})`,
+                  image: base64Audio,
+                  messageType: "audio",
+                });
 
-            await toast.promise(uploadPromise, {
+            await toast.promise(sendPromise, {
               loading: "Uploading voice note...",
               success: "Voice note sent successfully! 🎙️",
               error: "Failed to upload voice note.",
@@ -188,7 +196,11 @@ const MessageInput = () => {
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      await sendMessage(messageToSend);
+      if (selectedGroup) {
+        await sendGroupMessage(messageToSend);
+      } else {
+        await sendMessage(messageToSend);
+      }
 
       setTimeout(() => {
         textInputRef.current?.focus();

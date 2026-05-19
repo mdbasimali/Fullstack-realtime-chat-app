@@ -205,6 +205,27 @@ io.on("connection", (socket) =>{
     }
   });
 
+  // Group rooms listeners for secure, real-time message broadcasting
+  socket.on("group:join-rooms", (groupIds) => {
+    if (Array.isArray(groupIds)) {
+      groupIds.forEach((id) => {
+        socket.join(`group_${id}`);
+      });
+    }
+  });
+
+  socket.on("group:join-room", (groupId) => {
+    if (groupId) {
+      socket.join(`group_${groupId}`);
+    }
+  });
+
+  socket.on("group:leave-room", (groupId) => {
+    if (groupId) {
+      socket.leave(`group_${groupId}`);
+    }
+  });
+
    socket.on("disconnect", ()=>{
      console.log("A user disconnected", socket.id);
      delete userSocketMap[userId];

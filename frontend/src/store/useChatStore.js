@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
+import { useGroupStore } from "./useGroupStore";
 
 export const useChatstore = create((set,get) => ({
   messages: [],
@@ -248,6 +249,10 @@ export const useChatstore = create((set,get) => ({
 
   setSelectedUser: (selectedUser) => {
     set({ selectedUser });
+    if (selectedUser) {
+      // De-select group chat to prevent split screen or message blending
+      useGroupStore.getState().setSelectedGroup(null);
+    }
     const authUser = useAuthStore.getState().authUser;
     if (authUser) {
       if (selectedUser) {

@@ -1,12 +1,14 @@
 import { useChatstore } from "../store/useChatStore";
+import { useGroupStore } from "../store/useGroupStore";
 import { useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
-import { MessageSquare, Phone, Image as ImageIcon, Users } from "lucide-react";
+import { MessageSquare, Phone, Image as ImageIcon, Users, Layers } from "lucide-react";
 
 const HomePage = () => {
   const { selectedUser, setSelectedUser, activeTab, setActiveTab, subscribeToMessages, unsubscribeFromMessages } = useChatstore();
+  const { selectedGroup, setSelectedGroup } = useGroupStore();
 
   useEffect(() => {
     subscribeToMessages();
@@ -27,14 +29,14 @@ const HomePage = () => {
           </div>
           {/* Right Chat Container Pane */}
           <div className="flex-1 h-full flex flex-col bg-base-100/50 overflow-hidden">
-            {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
+            {(!selectedUser && !selectedGroup) ? <NoChatSelected /> : <ChatContainer />}
           </div>
         </div>
 
         {/* MOBILE VIEWPORT (Widths < md) */}
         <div className="flex md:hidden w-full h-full overflow-hidden">
           <div className="flex-1 h-full flex flex-col overflow-hidden">
-            {!selectedUser ? (
+            {(!selectedUser && !selectedGroup) ? (
               <Sidebar />
             ) : (
               <ChatContainer />
@@ -45,7 +47,7 @@ const HomePage = () => {
       </div>
 
       {/* 2. Sticky Mobile Bottom Navigation Footer (Only on Mobile screens, hidden inside active chats) */}
-      {!selectedUser && (
+      {(!selectedUser && !selectedGroup) && (
         <div className="block md:hidden flex-shrink-0">
           <nav className="bg-base-100/90 border-t border-base-300 p-2.5 flex justify-around items-center backdrop-blur-md z-30">
             
@@ -53,7 +55,8 @@ const HomePage = () => {
             <button 
               onClick={() => { 
                 setActiveTab("chats"); 
-                setSelectedUser(null); // clears selected user to pop back to sidebar chats list
+                setSelectedUser(null);
+                setSelectedGroup(null);
               }}
               className="flex flex-col items-center gap-1 text-center group cursor-pointer"
             >
@@ -71,11 +74,35 @@ const HomePage = () => {
               </span>
             </button>
 
+            {/* Groups Tab Button */}
+            <button 
+              onClick={() => { 
+                setActiveTab("groups"); 
+                setSelectedUser(null);
+                setSelectedGroup(null);
+              }}
+              className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+            >
+              <div className={`px-5 py-1 rounded-full transition-all ${
+                activeTab === "groups" 
+                  ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
+                  : "text-base-content/60 group-hover:text-base-content"
+              }`}>
+                <Layers size={20} className={activeTab === "groups" ? "text-primary" : "text-base-content/60"} />
+              </div>
+              <span className={`text-[10px] font-bold tracking-wide transition-all ${
+                activeTab === "groups" ? "text-primary" : "text-base-content/60"
+              }`}>
+                Groups
+              </span>
+            </button>
+
             {/* Calls Tab Button */}
             <button 
               onClick={() => { 
                 setActiveTab("calls"); 
-                setSelectedUser(null); // clears selected user to pop back to sidebar calls list
+                setSelectedUser(null);
+                setSelectedGroup(null);
               }}
               className="flex flex-col items-center gap-1 text-center group cursor-pointer"
             >
@@ -97,7 +124,8 @@ const HomePage = () => {
             <button 
               onClick={() => { 
                 setActiveTab("friends"); 
-                setSelectedUser(null); // clears selected user to pop back to sidebar friends list
+                setSelectedUser(null);
+                setSelectedGroup(null);
               }}
               className="flex flex-col items-center gap-1 text-center group cursor-pointer"
             >
@@ -119,7 +147,8 @@ const HomePage = () => {
             <button 
               onClick={() => { 
                 setActiveTab("stories"); 
-                setSelectedUser(null); // clears selected user to pop back to sidebar stories list
+                setSelectedUser(null);
+                setSelectedGroup(null);
               }}
               className="flex flex-col items-center gap-1 text-center group cursor-pointer"
             >

@@ -1,4 +1,5 @@
 import { useChatstore } from "../store/useChatStore";
+import { useGroupStore } from "../store/useGroupStore";
 import { useEffect, useRef } from "react";
 
 import ChatHeader from "./ChatHeader";
@@ -12,11 +13,20 @@ import VoicePlayer from "./VoicePlayer";
 
 const ChatContainer = () => {
   const {
-    messages,
+    messages: dmMessages,
     getMessages,
-    isMessagesLoading,
+    isMessagesLoading: isDmMessagesLoading,
     selectedUser,
   } = useChatstore();
+
+  const {
+    selectedGroup,
+    messages: groupMessages,
+    isMessagesLoading: isGroupMessagesLoading,
+  } = useGroupStore();
+
+  const messages = selectedGroup ? groupMessages : dmMessages;
+  const isMessagesLoading = selectedGroup ? isGroupMessagesLoading : isDmMessagesLoading;
   
   const { initiateCall } = useCallStore();
 
@@ -24,8 +34,10 @@ const ChatContainer = () => {
   const messageEndRef = useRef(null);
 
   useEffect(() => {
-    getMessages(selectedUser._id);
-  }, [selectedUser._id, getMessages]);
+    if (selectedUser) {
+      getMessages(selectedUser._id);
+    }
+  }, [selectedUser?._id, getMessages]);
 
   useEffect(() => {
     if (messageEndRef.current && messages) {
@@ -51,35 +63,63 @@ const ChatContainer = () => {
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6">
         
         {/* Large, Beautiful Profile Onboarding Card */}
-        <div className="flex flex-col items-center justify-center p-6 mb-8 mt-4 bg-base-200/30 dark:bg-base-950/20 border border-base-300/40 rounded-[32px] max-w-[340px] md:max-w-md mx-auto text-center space-y-4 shadow-xs animate-fade-in">
-          {selectedUser.profilePic ? (
-            <img 
-              src={selectedUser.profilePic} 
-              alt={selectedUser.fullName} 
-              className="w-20 h-20 rounded-full object-cover shadow-xs ring-2 ring-primary/10" 
-            />
-          ) : (
-            <div className="w-20 h-20 rounded-full bg-pink-100 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 flex items-center justify-center font-bold text-2xl shadow-xs">
-              {selectedUser.fullName.slice(0, 2).toLowerCase()}
-            </div>
-          )}
-          <div className="space-y-1">
-            <h3 className="font-bold text-lg flex items-center justify-center gap-1.5 text-base-content leading-tight">
-              {selectedUser.fullName}
-              <span className="p-0.5 rounded-full border border-base-300 bg-base-200/50 inline-flex items-center justify-center text-base-content/60">
-                <User size={13} />
-              </span>
-            </h3>
-            {selectedUser.phoneNumber && (
-              <p className="text-xs font-semibold text-base-content/60 flex items-center justify-center gap-1.5">
-                <Phone size={13} className="text-base-content/40" /> {selectedUser.phoneNumber}
-              </p>
+        {selectedUser && (
+          <div className="flex flex-col items-center justify-center p-6 mb-8 mt-4 bg-base-200/30 dark:bg-base-950/20 border border-base-300/40 rounded-[32px] max-w-[340px] md:max-w-md mx-auto text-center space-y-4 shadow-xs animate-fade-in">
+            {selectedUser.profilePic ? (
+              <img 
+                src={selectedUser.profilePic} 
+                alt={selectedUser.fullName} 
+                className="w-20 h-20 rounded-full object-cover shadow-xs ring-2 ring-primary/10" 
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-pink-100 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 flex items-center justify-center font-bold text-2xl shadow-xs">
+                {selectedUser.fullName.slice(0, 2).toLowerCase()}
+              </div>
             )}
-            <p className="text-xs font-semibold text-base-content/50 flex items-center justify-center gap-1.5">
-              <Users size={13} className="text-base-content/40" /> No groups in common
-            </p>
+            <div className="space-y-1">
+              <h3 className="font-bold text-lg flex items-center justify-center gap-1.5 text-base-content leading-tight">
+                {selectedUser.fullName}
+                <span className="p-0.5 rounded-full border border-base-300 bg-base-200/50 inline-flex items-center justify-center text-base-content/60">
+                  <User size={13} />
+                </span>
+              </h3>
+              {selectedUser.phoneNumber && (
+                <p className="text-xs font-semibold text-base-content/60 flex items-center justify-center gap-1.5">
+                  <Phone size={13} className="text-base-content/40" /> {selectedUser.phoneNumber}
+                </p>
+              )}
+              <p className="text-xs font-semibold text-base-content/50 flex items-center justify-center gap-1.5">
+                <Users size={13} className="text-base-content/40" /> No groups in common
+              </p>
+            </div>
           </div>
-        </div>
+        )}
+
+        {selectedGroup && (
+          <div className="flex flex-col items-center justify-center p-6 mb-8 mt-4 bg-base-200/30 dark:bg-base-950/20 border border-base-300/40 rounded-[32px] max-w-[340px] md:max-w-md mx-auto text-center space-y-4 shadow-xs animate-fade-in">
+            <div className="w-20 h-20 rounded-[24px] bg-indigo-100 dark:bg-indigo-950 text-primary flex items-center justify-center font-extrabold text-3xl shadow-md">
+              {selectedGroup.name.slice(0, 2).toLowerCase()}
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-bold text-lg flex items-center justify-center gap-1.5 text-base-content leading-tight">
+                {selectedGroup.name}
+              </h3>
+              <p className="text-xs font-semibold text-base-content/50 px-4 mt-1">
+                {selectedGroup.description || "No description provided."}
+              </p>
+              <div className="flex items-center justify-center gap-2 mt-2">
+                <span className="text-[11px] font-bold bg-primary/10 text-primary px-3 py-0.5 rounded-full">
+                  {selectedGroup.membersCount} members
+                </span>
+                {selectedGroup.creatorId === authUser?._id && (
+                  <span className="text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-3 py-0.5 rounded-full">
+                    Group Creator
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Centered Date Separator */}
         <div className="flex items-center justify-center">
@@ -99,6 +139,13 @@ const ChatContainer = () => {
             >
               <div className={`flex flex-col max-w-[75%] sm:max-w-[65%] ${isMyMessage ? "items-end" : "items-start"} space-y-1`}>
                 
+                {/* Group Sender Name */}
+                {selectedGroup && !isMyMessage && (
+                  <span className="text-[11px] font-bold text-base-content/50 px-1">
+                    {message.senderId?.fullName || "Group Member"}
+                  </span>
+                )}
+
                 {/* Beautiful custom styled message card */}
                 <div className={`p-3.5 px-4 rounded-[22px] shadow-xs relative flex flex-col group transition-all ${
                   isMyMessage 

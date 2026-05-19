@@ -3,11 +3,13 @@ import { useChatstore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useCallStore } from "../store/useCallStore";
 import { useStoryStore } from "../store/useStoryStore";
+import { useGroupStore } from "../store/useGroupStore";
 import { 
   Search, MoreVertical, Camera, UserPlus, Users, Mail, X, 
   MessageSquare, Phone, Plus, Check, User, Settings, 
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
-  Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban
+  Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban,
+  Layers, Compass, Loader2
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -44,6 +46,34 @@ const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
   const { initiateCall } = useCallStore();
+
+  // Group Store integrations
+  const {
+    groups,
+    exploreGroups,
+    selectedGroup,
+    setSelectedGroup,
+    fetchGroups,
+    fetchExploreGroups,
+    createGroup,
+    joinGroup,
+    leaveGroup,
+    isGroupsLoading,
+    isCreatingGroup
+  } = useGroupStore();
+
+  // Group Creation local state
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDesc, setNewGroupDesc] = useState("");
+
+  // Load groups when switching to groups tab
+  useEffect(() => {
+    if (activeTab === "groups") {
+      fetchGroups();
+      fetchExploreGroups();
+    }
+  }, [activeTab, fetchGroups, fetchExploreGroups]);
 
   // Navigation states
   const [showContactsModal, setShowContactsModal] = useState(false);
@@ -177,8 +207,28 @@ const Sidebar = () => {
   };
 
   const handleNewGroup = () => {
-    toast.success("Group feature: Select contacts below to initialize a group!");
-    setShowContactsModal(true);
+    setShowCreateGroupModal(true);
+  };
+
+  const handleCreateGroupSubmit = async (e) => {
+    e.preventDefault();
+    if (!newGroupName.trim()) {
+      return toast.error("Group name is required");
+    }
+    if (newGroupName.length > 50) {
+      return toast.error("Group name must be 50 characters or less");
+    }
+
+    const success = await createGroup({
+      name: newGroupName.trim(),
+      description: newGroupDesc.trim()
+    });
+
+    if (success) {
+      setNewGroupName("");
+      setNewGroupDesc("");
+      setShowCreateGroupModal(false);
+    }
   };
 
   const handleMarkAllRead = () => {
@@ -773,6 +823,151 @@ const Sidebar = () => {
           </div>
         )}
 
+        {/* ==================== TABS: GROUPS ==================== */}
+        {activeTab === "groups" && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header / Actions */}
+            <div className="flex justify-between items-center px-1">
+              <div className="text-left">
+                <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider block">Groups</span>
+                <span className="text-[11px] text-base-content/40 mt-0.5 block">
+                  {groups.length} Joined • {exploreGroups.length} Public
+                </span>
+              </div>
+              <button 
+                onClick={() => setShowCreateGroupModal(true)}
+                className="btn btn-sm btn-primary rounded-full px-4 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"
+              >
+                <Plus size={16} />
+                <span>Create Group</span>
+              </button>
+            </div>
+
+            {/* Loading Indicator */}
+            {isGroupsLoading ? (
+              <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <span className="text-xs text-base-content/50">Loading groups...</span>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                
+                {/* 1. Joined Groups */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-base-content/40 uppercase tracking-widest px-1">My Groups</span>
+                  {groups.length === 0 ? (
+                    <div className="p-4 bg-base-200/30 rounded-2xl border border-base-300/40 text-center text-xs text-base-content/50 font-medium">
+                      You haven't joined any groups yet. Create one or join an explore group below!
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {groups.map((group) => {
+                        const isSelected = selectedGroup?._id === group._id;
+                        return (
+                          <div
+                            key={group._id}
+                            onClick={() => setSelectedGroup(group)}
+                            className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none ${
+                              isSelected 
+                                ? "bg-indigo-50 dark:bg-indigo-950/20 border border-primary/20" 
+                                : "hover:bg-base-200/55 border border-transparent"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                              {/* Avatar */}
+                              <div className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950 text-primary flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+                                {group.name.slice(0, 2).toLowerCase()}
+                              </div>
+                              {/* Details */}
+                              <div className="text-left min-w-0 flex-1">
+                                <h4 className={`font-bold text-[15px] truncate group-hover:text-primary transition-colors ${isSelected ? "text-primary" : "text-base-content"}`}>
+                                  {group.name}
+                                </h4>
+                                <p className="text-[11.5px] text-base-content/50 truncate mt-0.5">
+                                  {group.description || "No description provided."}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              {/* Members Count Badge */}
+                              <span className="text-[10px] bg-base-300/60 text-base-content/70 px-2 py-0.5 rounded-full font-bold">
+                                {group.membersCount} members
+                              </span>
+                              
+                              {/* Leave Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Are you sure you want to leave ${group.name}?`)) {
+                                    leaveGroup(group._id);
+                                  }
+                                }}
+                                className="opacity-0 group-hover:opacity-100 hover:bg-base-300 p-1.5 rounded-full text-base-content/50 hover:text-error transition-all"
+                                title="Leave Group"
+                              >
+                                <LogOut size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Explore Public Groups */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-base-content/40 uppercase tracking-widest px-1">Explore Groups</span>
+                  {exploreGroups.length === 0 ? (
+                    <div className="p-4 bg-base-200/30 rounded-2xl border border-base-300/40 text-center text-xs text-base-content/50 font-medium">
+                      No new groups to explore right now.
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {exploreGroups.map((group) => (
+                        <div
+                          key={group._id}
+                          className="w-full p-3.5 flex items-center justify-between rounded-2xl bg-base-200/40 border border-base-300/40"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                            {/* Avatar */}
+                            <div className="w-11 h-11 rounded-full bg-base-300/60 text-base-content/70 flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+                              {group.name.slice(0, 2).toLowerCase()}
+                            </div>
+                            {/* Details */}
+                            <div className="text-left min-w-0 flex-1">
+                              <h4 className="font-bold text-[14px] text-base-content truncate">
+                                {group.name}
+                              </h4>
+                              <p className="text-[11px] text-base-content/50 truncate mt-0.5">
+                                {group.description || "No description provided."}
+                              </p>
+                              <span className="text-[10px] text-primary/80 font-bold block mt-1">
+                                {group.membersCount}/100 members
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Join Button */}
+                          <button
+                            onClick={() => joinGroup(group._id)}
+                            disabled={group.membersCount >= 100}
+                            className="btn btn-xs btn-primary rounded-full px-3.5 active:scale-95 transition-transform"
+                          >
+                            Join
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ==================== TABS: CALLS ==================== */}
         {activeTab === "calls" && (
           <div className="space-y-4 animate-fade-in">
@@ -1291,7 +1486,7 @@ const Sidebar = () => {
       <nav className="hidden md:flex absolute bottom-0 inset-x-0 bg-base-100/90 border-t border-base-300 p-2.5 justify-around items-center backdrop-blur-md z-10 animate-fade-in">
         {/* Chats Tab button */}
         <button 
-          onClick={() => { setActiveTab("chats"); setSearchQuery(""); }}
+          onClick={() => { setActiveTab("chats"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
           className="flex flex-col items-center gap-1 text-center group cursor-pointer"
         >
           <div className={`px-5 py-1 rounded-full transition-all ${activeTab === "chats" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
@@ -1300,9 +1495,20 @@ const Sidebar = () => {
           <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "chats" ? "text-primary font-bold" : "text-base-content/60"}`}>Chats</span>
         </button>
 
+        {/* Groups Tab button */}
+        <button 
+          onClick={() => { setActiveTab("groups"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
+          className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+        >
+          <div className={`px-5 py-1 rounded-full transition-all ${activeTab === "groups" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
+            <Layers size={21} />
+          </div>
+          <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "groups" ? "text-primary font-bold" : "text-base-content/60"}`}>Groups</span>
+        </button>
+
         {/* Calls Tab button */}
         <button 
-          onClick={() => { setActiveTab("calls"); setSearchQuery(""); }}
+          onClick={() => { setActiveTab("calls"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
           className="flex flex-col items-center gap-1 text-center group cursor-pointer"
         >
           <div className={`px-5 py-1 rounded-full transition-all ${activeTab === "calls" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
@@ -1313,7 +1519,7 @@ const Sidebar = () => {
 
         {/* Friends Tab button */}
         <button 
-          onClick={() => { setActiveTab("friends"); setSearchQuery(""); }}
+          onClick={() => { setActiveTab("friends"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
           className="flex flex-col items-center gap-1 text-center group cursor-pointer"
         >
           <div className={`px-5 py-1 rounded-full transition-all ${activeTab === "friends" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
@@ -1324,7 +1530,7 @@ const Sidebar = () => {
 
         {/* Stories Tab button */}
         <button 
-          onClick={() => { setActiveTab("stories"); setSearchQuery(""); }}
+          onClick={() => { setActiveTab("stories"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
           className="flex flex-col items-center gap-1 text-center group cursor-pointer"
         >
           <div className={`px-5 py-1 rounded-full transition-all ${activeTab === "stories" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
@@ -1551,6 +1757,79 @@ const Sidebar = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Create Group Modal */}
+      {showCreateGroupModal && (
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-base-100 border border-base-300 w-full max-w-md rounded-[28px] overflow-hidden shadow-2xl animate-scale-up">
+            <header className="px-6 py-5 border-b border-base-200 flex justify-between items-center bg-base-150">
+              <div className="text-left">
+                <h3 className="text-lg font-extrabold text-base-content tracking-tight">Create New Group</h3>
+                <p className="text-xs text-base-content/50 mt-0.5">Bring your team together in one thread</p>
+              </div>
+              <button 
+                onClick={() => { setShowCreateGroupModal(false); setNewGroupName(""); setNewGroupDesc(""); }}
+                className="p-1.5 rounded-full hover:bg-base-200 text-base-content/60 hover:text-base-content transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            <form onSubmit={handleCreateGroupSubmit} className="p-6 space-y-4">
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-bold text-base-content/70 tracking-wide uppercase px-1">Group Name</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Project Apollo" 
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  maxLength={50}
+                  required
+                  disabled={isCreatingGroup}
+                  className="w-full px-4 py-3 rounded-2xl bg-base-200 border border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-bold text-base-content/70 tracking-wide uppercase px-1">Description (Optional)</label>
+                <textarea 
+                  placeholder="Brief overview of what this group is about..."
+                  value={newGroupDesc}
+                  onChange={(e) => setNewGroupDesc(e.target.value)}
+                  maxLength={200}
+                  disabled={isCreatingGroup}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-2xl bg-base-200 border border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowCreateGroupModal(false); setNewGroupName(""); setNewGroupDesc(""); }}
+                  disabled={isCreatingGroup}
+                  className="px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-base-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingGroup || !newGroupName.trim()}
+                  className="px-6 py-2.5 rounded-full text-sm font-semibold btn-primary flex items-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
+                >
+                  {isCreatingGroup ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <span>Create Group</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
