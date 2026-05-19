@@ -34,6 +34,25 @@ const App = () => {
     isFetchingGroupDetails 
   } = useGroupStore();
   const { initiateCall } = useCallStore();
+  const [selectedMemberIds, setSelectedMemberIds] = useState(new Set());
+
+  useEffect(() => {
+    if (!showGroupCallModal) {
+      setSelectedMemberIds(new Set());
+    }
+  }, [showGroupCallModal]);
+
+  const toggleMemberSelection = (id) => {
+    setSelectedMemberIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   // Extract Google redirect token synchronously on initial load to avoid race conditions
   const queryParams = new URLSearchParams(window.location.search);
@@ -106,6 +125,13 @@ const App = () => {
     handleScreenShareStarted,
     handleScreenShareStopped,
     handleActiveSync,
+    handleGroupCallUserJoined,
+    handleGroupCallOffer,
+    handleGroupCallAnswer,
+    handleGroupCallIceCandidate,
+    handleGroupCallUserLeft,
+    handleGroupCallIncomingInvite,
+    handleGroupCallActiveState,
   } = useCallStore();
 
   useEffect(() => {
@@ -120,6 +146,14 @@ const App = () => {
     socket.on("call:screen-share-stopped", handleScreenShareStopped);
     socket.on("call:active-sync", handleActiveSync);
 
+    socket.on("group-call:user-joined", handleGroupCallUserJoined);
+    socket.on("group-call:offer", handleGroupCallOffer);
+    socket.on("group-call:answer", handleGroupCallAnswer);
+    socket.on("group-call:ice-candidate", handleGroupCallIceCandidate);
+    socket.on("group-call:user-left", handleGroupCallUserLeft);
+    socket.on("group-call:incoming-invite", handleGroupCallIncomingInvite);
+    socket.on("group-call:active-state", handleGroupCallActiveState);
+
     return () => {
       socket.off("call:incoming");
       socket.off("call:accepted");
@@ -129,8 +163,33 @@ const App = () => {
       socket.off("call:screen-share-started");
       socket.off("call:screen-share-stopped");
       socket.off("call:active-sync");
+
+      socket.off("group-call:user-joined");
+      socket.off("group-call:offer");
+      socket.off("group-call:answer");
+      socket.off("group-call:ice-candidate");
+      socket.off("group-call:user-left");
+      socket.off("group-call:incoming-invite");
+      socket.off("group-call:active-state");
     };
-  }, [socket, handleIncomingCall, handleCallAccepted, handleCallRejected, handleCallEnded, handleIceCandidate, handleScreenShareStarted, handleScreenShareStopped, handleActiveSync]);
+  }, [
+    socket, 
+    handleIncomingCall, 
+    handleCallAccepted, 
+    handleCallRejected, 
+    handleCallEnded, 
+    handleIceCandidate, 
+    handleScreenShareStarted, 
+    handleScreenShareStopped, 
+    handleActiveSync,
+    handleGroupCallUserJoined,
+    handleGroupCallOffer,
+    handleGroupCallAnswer,
+    handleGroupCallIceCandidate,
+    handleGroupCallUserLeft,
+    handleGroupCallIncomingInvite,
+    handleGroupCallActiveState,
+  ]);
 
   // Subscribe to global group events
   useEffect(() => {
@@ -277,7 +336,12 @@ const App = () => {
                   .map((member) => (
                     <div 
                       key={member._id}
-                      className="p-3 flex items-center justify-between rounded-2xl bg-base-200/40 border border-base-200/50 hover:bg-base-200 transition-all duration-200"
+                      onClick={() => toggleMemberSelection(member._id)}
+                      className={`p-3 flex items-center justify-between rounded-2xl border transition-all duration-200 cursor-pointer ${
+                        selectedMemberIds.has(member._id)
+                          ? "bg-purple-500/10 border-purple-500/30"
+                          : "bg-base-200/40 border-base-200/50 hover:bg-base-200"
+                      }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         {member.profilePic ? (
@@ -298,24 +362,53 @@ const App = () => {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => {
-                          setShowGroupCallModal(false);
-                          initiateCall(member, groupCallType);
-                        }}
-                        className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                          groupCallType === "video" 
-                            ? "bg-indigo-100 hover:bg-indigo-200 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400" 
-                            : "bg-emerald-100 hover:bg-emerald-200 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
-                        }`}
-                        title={`Call ${member.fullName}`}
-                      >
-                        {groupCallType === "video" ? <Video size={16} /> : <Phone size={16} />}
-                      </button>
+                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                        selectedMemberIds.has(member._id)
+                          ? "bg-purple-600 border-purple-600 text-white"
+                          : "border-base-content/20"
+                      }`}>
+                        {selectedMemberIds.has(member._id) && (
+                          <svg className="w-3.5 h-3.5 stroke-2 stroke-current fill-none" viewBox="0 0 24 24">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
                   ))
               )}
             </div>
+
+            {selectedMemberIds.size > 0 && (
+              <div className="p-4 border-t border-base-200 bg-base-150 animate-in slide-in-from-bottom duration-200">
+                <button
+                  onClick={() => {
+                    const idsArray = Array.from(selectedMemberIds);
+                    setShowGroupCallModal(false);
+                    
+                    // Start calling
+                    const { joinGroupCall } = useCallStore.getState();
+                    joinGroupCall(selectedGroupDetails._id, groupCallType);
+
+                    // Signal members
+                    if (socket) {
+                      socket.emit("group-call:invite", {
+                        groupId: selectedGroupDetails._id,
+                        invitedUserIds: idsArray,
+                        callType: groupCallType
+                      });
+                    }
+                  }}
+                  className={`w-full py-3 px-4 rounded-[18px] text-xs font-bold text-white shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
+                    groupCallType === "video"
+                      ? "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20"
+                      : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                  }`}
+                >
+                  {groupCallType === "video" ? <Video size={16} /> : <Phone size={16} />}
+                  <span>Start Group Call ({selectedMemberIds.size})</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

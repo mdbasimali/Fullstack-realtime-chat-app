@@ -168,6 +168,13 @@ export const useCallStore = create((set, get) => ({
   isRemoteSharingScreen: false,
   isMinimized: false,
   screenStream: null,
+  isGroupCall: false,
+  groupId: null,
+  groupPeers: {},
+  activeSpeakerId: null,
+  isGroupIncomingCall: false,
+  groupCallInviteData: null,
+  activeGroupCalls: {},
 
   toggleMic: () => {
     const { localStream, isMuted } = get();
@@ -740,6 +747,353 @@ export const useCallStore = create((set, get) => ({
     get().endCall();
   },
 
+  joinGroupCall: async (groupId, type) => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error("Camera/Mic access requires HTTPS.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: type === "video",
+        audio: true
+      });
+
+      set({
+        isGroupCall: true,
+        groupId,
+        isInCall: true,
+        callType: type,
+        localStream: stream,
+        callStatus: "ongoing",
+        callStartTime: Date.now()
+      });
+
+      // Active Speaker detection on self
+      get().setupActiveSpeakerDetection(stream, "self");
+
+      const socket = useAuthStore.getState().socket;
+      if (socket) {
+        socket.emit("group-call:join", { groupId });
+      }
+    } catch (error) {
+      console.error("Error joining group call:", error);
+    }
+  },
+
+  leaveGroupCall: () => {
+    const { groupPeers, localStream, groupId } = get();
+    const socket = useAuthStore.getState().socket;
+    if (socket && groupId) {
+      socket.emit("group-call:leave", { groupId });
+    }
+
+    // Close all peer connections
+    Object.values(groupPeers).forEach(peer => {
+      if (peer.pc) peer.pc.close();
+    });
+
+    // Close local stream
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+
+    get().resetCallState();
+  },
+
+  handleGroupCallUserJoined: async ({ userId, socketId }) => {
+    const socket = useAuthStore.getState().socket;
+    const { localStream, groupPeers } = get();
+    if (!socket) return;
+
+    try {
+      const pc = new RTCPeerConnection(ICE_SERVERS);
+
+      if (localStream) {
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      }
+
+      const { useChatstore } = await import("./useChatStore");
+      const users = useChatstore.getState().users;
+      const user = users.find(u => u._id === userId) || { fullName: "Group Member" };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit("group-call:ice-candidate", { toSocketId: socketId, candidate: event.candidate });
+        }
+      };
+
+      pc.ontrack = (event) => {
+        const stream = event.streams[0] || new MediaStream([event.track]);
+        set((state) => ({
+          groupPeers: {
+            ...state.groupPeers,
+            [socketId]: {
+              ...(state.groupPeers[socketId] || {}),
+              stream
+            }
+          }
+        }));
+
+        // Speaker detection on the peer stream
+        get().setupActiveSpeakerDetection(stream, socketId);
+      };
+
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+          console.warn(`Connection to peer ${socketId} failed. Reconnecting...`);
+          get().reconnectGroupPeer(socketId, userId);
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit("group-call:offer", { toSocketId: socketId, offer });
+
+      set((state) => ({
+        groupPeers: {
+          ...state.groupPeers,
+          [socketId]: {
+            userId,
+            socketId,
+            pc,
+            fullName: user.fullName,
+            profilePic: user.profilePic,
+          }
+        }
+      }));
+    } catch (error) {
+      console.error("Error setting up peer for joined user:", error);
+    }
+  },
+
+  handleGroupCallOffer: async ({ fromSocketId, fromUserId, offer }) => {
+    const socket = useAuthStore.getState().socket;
+    const { localStream } = get();
+    if (!socket) return;
+
+    try {
+      const pc = new RTCPeerConnection(ICE_SERVERS);
+
+      if (localStream) {
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      }
+
+      const { useChatstore } = await import("./useChatStore");
+      const users = useChatstore.getState().users;
+      const user = users.find(u => u._id === fromUserId) || { fullName: "Group Member" };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit("group-call:ice-candidate", { toSocketId: fromSocketId, candidate: event.candidate });
+        }
+      };
+
+      pc.ontrack = (event) => {
+        const stream = event.streams[0] || new MediaStream([event.track]);
+        set((state) => ({
+          groupPeers: {
+            ...state.groupPeers,
+            [fromSocketId]: {
+              ...(state.groupPeers[fromSocketId] || {}),
+              stream
+            }
+          }
+        }));
+
+        // Speaker detection on the peer stream
+        get().setupActiveSpeakerDetection(stream, fromSocketId);
+      };
+
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+          console.warn(`Connection from peer ${fromSocketId} failed.`);
+        }
+      };
+
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      socket.emit("group-call:answer", { toSocketId: fromSocketId, answer });
+
+      set((state) => ({
+        groupPeers: {
+          ...state.groupPeers,
+          [fromSocketId]: {
+            userId: fromUserId,
+            socketId: fromSocketId,
+            pc,
+            fullName: user.fullName,
+            profilePic: user.profilePic,
+          }
+        }
+      }));
+    } catch (error) {
+      console.error("Error handling group call offer:", error);
+    }
+  },
+
+  handleGroupCallAnswer: async ({ fromSocketId, answer }) => {
+    const { groupPeers } = get();
+    const peer = groupPeers[fromSocketId];
+    if (peer && peer.pc) {
+      try {
+        await peer.pc.setRemoteDescription(new RTCSessionDescription(answer));
+      } catch (error) {
+        console.error("Error handling group call answer:", error);
+      }
+    }
+  },
+
+  handleGroupCallIceCandidate: async ({ fromSocketId, candidate }) => {
+    const { groupPeers } = get();
+    const peer = groupPeers[fromSocketId];
+    if (peer && peer.pc) {
+      try {
+        await peer.pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (error) {
+        console.error("Error adding group call ice candidate:", error);
+      }
+    }
+  },
+
+  handleGroupCallUserLeft: ({ userId, socketId }) => {
+    const { groupPeers } = get();
+    const peer = groupPeers[socketId];
+    if (peer) {
+      if (peer.pc) peer.pc.close();
+      set((state) => {
+        const newPeers = { ...state.groupPeers };
+        delete newPeers[socketId];
+        return { groupPeers: newPeers };
+      });
+    }
+  },
+
+  optimizeGroupPeerBitrate: (socketId, highQuality = true) => {
+    const { groupPeers } = get();
+    const peer = groupPeers[socketId];
+    if (!peer || !peer.pc) return;
+
+    try {
+      const senders = peer.pc.getSenders();
+      const videoSender = senders.find(s => s.track && s.track.kind === "video");
+      if (videoSender) {
+        const params = videoSender.getParameters();
+        if (!params.encodings) params.encodings = [{}];
+        if (highQuality) {
+          params.encodings[0].maxBitrate = 600000; // 600kbps
+          params.encodings[0].scaleResolutionDownBy = 1.0;
+        } else {
+          params.encodings[0].maxBitrate = 100000; // 100kbps (non-active screen saver)
+          params.encodings[0].scaleResolutionDownBy = 2.0; // Half resolution
+        }
+        videoSender.setParameters(params).catch(err => console.log("Failed to adjust sender parameters", err));
+      }
+    } catch (e) {
+      console.warn("Bitrate optimization error:", e);
+    }
+  },
+
+  setupActiveSpeakerDetection: (stream, socketIdOrSelf) => {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      let speakingCounter = 0;
+      const checkVolume = () => {
+        const { isInCall, isGroupCall } = get();
+        if (!isInCall) {
+          audioContext.close();
+          return;
+        }
+
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / bufferLength;
+
+        if (average > 15) {
+          speakingCounter++;
+          if (speakingCounter > 4) { // Active for ~100ms
+            if (get().activeSpeakerId !== socketIdOrSelf) {
+              set({ activeSpeakerId: socketIdOrSelf });
+              if (isGroupCall) {
+                Object.keys(get().groupPeers).forEach(pId => {
+                  get().optimizeGroupPeerBitrate(pId, pId === socketIdOrSelf);
+                });
+              }
+            }
+          }
+        } else {
+          speakingCounter = 0;
+        }
+
+        setTimeout(checkVolume, 250);
+      };
+      
+      checkVolume();
+    } catch (e) {
+      console.log("AudioContext speaker detection error:", e);
+    }
+  },
+
+  reconnectGroupPeer: async (socketId, userId) => {
+    const { groupPeers } = get();
+    const oldPeer = groupPeers[socketId];
+    if (oldPeer) {
+      if (oldPeer.pc) oldPeer.pc.close();
+      set((state) => {
+        const newPeers = { ...state.groupPeers };
+        delete newPeers[socketId];
+        return { groupPeers: newPeers };
+      });
+    }
+    // Re-trigger peer setup
+    get().handleGroupCallUserJoined({ userId, socketId });
+  },
+
+  handleGroupCallIncomingInvite: ({ groupId, fromUserId, fromUserName, fromUserPic, callType }) => {
+    playSound("ringing");
+    set({
+      isGroupIncomingCall: true,
+      groupCallInviteData: { groupId, fromUserId, fromUserName, fromUserPic, callType },
+      callType,
+      callStatus: "ringing"
+    });
+  },
+
+  acceptGroupCallInvite: () => {
+    stopAllSounds();
+    const { groupCallInviteData } = get();
+    if (groupCallInviteData) {
+      const { groupId, callType } = groupCallInviteData;
+      set({
+        isGroupIncomingCall: false,
+        groupCallInviteData: null
+      });
+      get().joinGroupCall(groupId, callType);
+    }
+  },
+
+  rejectGroupCallInvite: () => {
+    stopAllSounds();
+    set({
+      isGroupIncomingCall: false,
+      groupCallInviteData: null,
+      callStatus: "idle"
+    });
+  },
+
   resetCallState: () => {
     set({
       isInCall: false,
@@ -756,6 +1110,25 @@ export const useCallStore = create((set, get) => ({
       isVideoOff: false,
       callStartTime: null,
       facingMode: "user",
+      isGroupCall: false,
+      groupId: null,
+      groupPeers: {},
+      activeSpeakerId: null,
+      isGroupIncomingCall: false,
+      groupCallInviteData: null,
+      activeGroupCalls: {},
+    });
+  },
+
+  handleGroupCallActiveState: ({ groupId, isActive }) => {
+    set((state) => {
+      const activeGroupCalls = { ...state.activeGroupCalls };
+      if (isActive) {
+        activeGroupCalls[groupId] = true;
+      } else {
+        delete activeGroupCalls[groupId];
+      }
+      return { activeGroupCalls };
     });
   },
 

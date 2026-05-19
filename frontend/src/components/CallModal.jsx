@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useCallStore } from "../store/useCallStore";
+import { useAuthStore } from "../store/useAuthStore";
 import { 
   Phone, 
   PhoneOff, 
@@ -14,10 +15,12 @@ import {
   Info,
   Monitor,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Loader2
 } from "lucide-react";
 
 const CallModal = () => {
+  const { authUser } = useAuthStore();
   const {
     isInCall,
     isIncomingCall,
@@ -40,6 +43,14 @@ const CallModal = () => {
     switchCamera,
     toggleScreenShare,
     facingMode,
+    isGroupCall,
+    groupPeers,
+    activeSpeakerId,
+    leaveGroupCall,
+    isGroupIncomingCall,
+    groupCallInviteData,
+    acceptGroupCallInvite,
+    rejectGroupCallInvite,
   } = useCallStore();
 
   const localVideoRef = React.useCallback((el) => {
@@ -126,6 +137,78 @@ const CallModal = () => {
     );
   }
 
+  // Incoming Group Call UI
+  if (isGroupIncomingCall) {
+    return (
+      <div className="fixed inset-0 z-[999] flex flex-col justify-between bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
+        {/* Blurred background */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-35 scale-110 pointer-events-none" 
+          style={{ backgroundImage: `url(${groupCallInviteData?.fromUserPic || "/avatar.png"})` }}
+        ></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-[#0b141a] pointer-events-none"></div>
+
+        {/* Top Info section */}
+        <div className="z-10 text-center pt-20 px-6">
+          <span className="text-sm font-semibold tracking-widest text-purple-400 uppercase animate-pulse">
+            Incoming Group {callType === "video" ? "Video" : "Voice"} Call
+          </span>
+          <h2 className="text-3xl font-bold mt-2 text-white drop-shadow-md">
+            {groupCallInviteData?.fromUserName || "Group Member"}
+          </h2>
+          <span className="text-sm text-white/60 block mt-1">Inviting you to join the call...</span>
+        </div>
+
+        {/* Pulsing Avatar */}
+        <div className="z-10 flex-1 flex items-center justify-center">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping-slow"></div>
+            <div className="absolute -inset-10 rounded-full bg-purple-500/10 animate-ping-slower"></div>
+            <div className="avatar animate-bounce-slow">
+              <div className="w-40 h-40 rounded-full ring-4 ring-purple-500 ring-offset-[#0b141a] ring-offset-4 relative z-10 overflow-hidden shadow-2xl">
+                <img 
+                  src={groupCallInviteData?.fromUserPic || "/avatar.png"} 
+                  alt="Caller" 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Actions */}
+        <div className="z-10 w-full px-10 pb-16 flex flex-col items-center">
+          <div className="flex justify-around items-center w-full max-w-sm mb-10">
+            {/* Decline */}
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={rejectGroupCallInvite}
+                className="w-16 h-16 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-red-600 shadow-lg hover:scale-110 active:scale-95 transition-all text-white"
+                title="Decline"
+              >
+                <Phone size={28} className="rotate-[135deg]" />
+              </button>
+              <span className="text-xs font-semibold text-white/70">Decline</span>
+            </div>
+
+            {/* Accept */}
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={acceptGroupCallInvite}
+                className="w-16 h-16 rounded-full flex items-center justify-center bg-purple-600 hover:bg-purple-700 shadow-lg animate-bounce hover:scale-110 active:scale-95 transition-all text-white"
+                title="Accept & Join"
+              >
+                {callType === "video" ? <Video size={28} /> : <Phone size={28} />}
+              </button>
+              <span className="text-xs font-semibold text-white/70">Join</span>
+            </div>
+          </div>
+          <div className="w-32 h-1.5 bg-white/25 rounded-full"></div>
+        </div>
+      </div>
+    );
+  }
+
   // Incoming Call UI
   if (isIncomingCall && !isInCall) {
     return (
@@ -195,6 +278,193 @@ const CallModal = () => {
 
           {/* Modern OS Gesture Bar Indicator */}
           <div className="w-32 h-1.5 bg-white/25 rounded-full"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Group Call View with responsive mesh video/audio grid
+  if (isGroupCall) {
+    // Collect all participants (including local user "self")
+    const participantsList = [
+      {
+        id: "self",
+        fullName: "You",
+        profilePic: authUser?.profilePic,
+        stream: localStream,
+        isVideoOff: isVideoOff,
+        isMuted: isMuted,
+      },
+      ...Object.entries(groupPeers).map(([socketId, peer]) => ({
+        id: socketId,
+        fullName: peer.fullName,
+        profilePic: peer.profilePic,
+        stream: peer.stream,
+        isVideoOff: false,
+        isMuted: false,
+      }))
+    ];
+
+    return (
+      <div className="fixed inset-0 z-[999] flex flex-col justify-between bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
+        {/* Hidden audio elements for all group participants */}
+        {Object.entries(groupPeers).map(([socketId, peer]) => (
+          peer.stream && (
+            <audio
+              key={socketId}
+              ref={(el) => {
+                if (el && peer.stream) {
+                  el.srcObject = peer.stream;
+                }
+              }}
+              autoPlay
+              playsInline
+            />
+          )
+        ))}
+
+        {/* Top Header */}
+        <div className="z-10 flex items-center justify-between w-full px-6 pt-12 pb-4 bg-gradient-to-b from-black/60 to-transparent">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsMinimized(true)} 
+              className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
+              title="Minimize call"
+            >
+              <ArrowLeft className="w-6 h-6 text-white" />
+            </button>
+            <div className="flex flex-col">
+              <h2 className="text-xl font-semibold tracking-wide text-white drop-shadow-md">
+                Group Chat Call
+              </h2>
+              <span className="text-sm font-light text-white/80">
+                {formatDuration(duration)} • {participantsList.length} participant{participantsList.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Video Grid */}
+        <div className="flex-1 w-full max-w-6xl mx-auto px-4 py-2 flex items-center justify-center overflow-y-auto">
+          <div className={`grid gap-4 w-full h-full max-h-[70vh] ${
+            participantsList.length === 1 ? "grid-cols-1" :
+            participantsList.length === 2 ? "grid-cols-1 md:grid-cols-2" :
+            participantsList.length <= 4 ? "grid-cols-2" :
+            "grid-cols-2 md:grid-cols-3"
+          }`}>
+            {participantsList.map((participant) => {
+              const isActiveSpeaker = activeSpeakerId === participant.id;
+              
+              return (
+                <div 
+                  key={participant.id} 
+                  className={`relative rounded-3xl overflow-hidden bg-[#1c1f26] border-2 shadow-xl transition-all duration-300 flex items-center justify-center aspect-video md:aspect-[4/3] ${
+                    isActiveSpeaker 
+                      ? "border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)] scale-[1.01]" 
+                      : "border-white/10"
+                  }`}
+                >
+                  {/* Video rendering */}
+                  {callType === "video" && participant.stream && !participant.isVideoOff ? (
+                    <video
+                      ref={(el) => {
+                        if (el && participant.stream) {
+                          el.srcObject = participant.stream;
+                        }
+                      }}
+                      autoPlay
+                      playsInline
+                      muted={participant.id === "self"}
+                      className={`w-full h-full object-cover ${participant.id === "self" ? "scale-x-[-1]" : ""}`}
+                    />
+                  ) : (
+                    /* Avatar View */
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="relative">
+                        {isActiveSpeaker && (
+                          <div className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping"></div>
+                        )}
+                        {participant.profilePic ? (
+                          <img 
+                            src={participant.profilePic} 
+                            alt={participant.fullName} 
+                            className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/10 shadow-lg animate-fade-in"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-2xl border-2 border-purple-500/20 shadow-lg">
+                            {participant.fullName.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-sm font-semibold text-white/80">{participant.fullName}</span>
+                    </div>
+                  )}
+
+                  {/* Status Overlay Indicators */}
+                  <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-1.5 border border-white/5">
+                    {participant.id === "self" && <span className="text-[10px] text-purple-400 font-bold uppercase mr-0.5">You</span>}
+                    <span className="truncate max-w-[80px]">{participant.fullName}</span>
+                  </div>
+
+                  <div className="absolute top-3 right-3 flex gap-2">
+                    {participant.isMuted && (
+                      <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
+                        <MicOff size={12} />
+                      </div>
+                    )}
+                    {participant.isVideoOff && (
+                      <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
+                        <VideoOff size={12} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Bottom Drawer Control Panel */}
+        <div className="z-20 bg-[#1c1f26]/95 backdrop-blur-2xl rounded-t-[2.5rem] border-t border-white/10 shadow-[0_-8px_40px_rgba(0,0,0,0.6)] w-full flex flex-col pt-3 pb-6 px-10">
+          <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6"></div>
+
+          <div className="flex items-center justify-around w-full mb-4">
+            {/* Video Toggle Button */}
+            <button
+              onClick={toggleVideo}
+              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+                isVideoOff 
+                  ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
+                  : "bg-[#2f313d] hover:bg-[#3d4052] text-white"
+              }`}
+              title={isVideoOff ? "Turn video on" : "Turn video off"}
+            >
+              {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
+            </button>
+
+            {/* Microphone Toggle Button */}
+            <button
+              onClick={toggleMic}
+              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+                isMuted 
+                  ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
+                  : "bg-[#2f313d] hover:bg-[#3d4052] text-white"
+              }`}
+              title={isMuted ? "Unmute mic" : "Mute mic"}
+            >
+              {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
+            </button>
+
+            {/* Leave / Hang Up Button */}
+            <button
+              onClick={leaveGroupCall}
+              className="w-14 h-14 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-red-600 text-white transition-all duration-300 active:scale-95 shadow-lg shadow-red-500/20"
+              title="Leave Call"
+            >
+              <Phone size={26} className="rotate-[135deg]" />
+            </button>
+          </div>
+          <div className="w-32 h-1 bg-white/20 rounded-full mx-auto mt-4 mb-1"></div>
         </div>
       </div>
     );

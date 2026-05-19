@@ -236,6 +236,114 @@ io.on("connection", (socket) =>{
     }
   });
 
+  // Group calling WebRTC Mesh Signaling events
+  const checkGroupCallRoomEmpty = (gId) => {
+    setTimeout(() => {
+      const callRoom = io.sockets.adapter.rooms.get(`group_call_${gId}`);
+      const size = callRoom ? callRoom.size : 0;
+      if (size === 0) {
+        io.to(`group_${gId}`).emit("group-call:active-state", {
+          groupId: gId,
+          isActive: false
+        });
+      }
+    }, 200);
+  };
+
+  // Group calling WebRTC Mesh Signaling events
+  socket.on("group-call:join", ({ groupId }) => {
+    socket.join(`group_call_${groupId}`);
+    // Broadcast active status to the general group room
+    io.to(`group_${groupId}`).emit("group-call:active-state", {
+      groupId,
+      isActive: true
+    });
+    // Notify others in the room
+    socket.to(`group_call_${groupId}`).emit("group-call:user-joined", {
+      userId,
+      socketId: socket.id
+    });
+  });
+
+  socket.on("group-call:invite", async ({ groupId, invitedUserIds, callType }) => {
+    try {
+      const sender = await User.findById(userId).select("fullName profilePic");
+      invitedUserIds.forEach(uId => {
+        const targetSocketId = getReceiverSocketId(uId);
+        if (targetSocketId) {
+          io.to(targetSocketId).emit("group-call:incoming-invite", {
+            groupId,
+            fromUserId: userId,
+            fromUserName: sender?.fullName || "Someone",
+            fromUserPic: sender?.profilePic,
+            callType
+          });
+        }
+
+        sendPushNotification(uId, {
+          title: `Group ${callType} Call`,
+          body: `${sender?.fullName || "Someone"} invited you to join a call`,
+          data: {
+            type: "group_call_invite",
+            groupId,
+            callType,
+            fromUserId: userId
+          }
+        });
+      });
+    } catch (err) {
+      console.error("Error in group-call:invite handler:", err);
+    }
+  });
+
+  socket.on("group-call:offer", ({ toSocketId, offer }) => {
+    io.to(toSocketId).emit("group-call:offer", {
+      fromSocketId: socket.id,
+      fromUserId: userId,
+      offer
+    });
+  });
+
+  socket.on("group-call:answer", ({ toSocketId, answer }) => {
+    io.to(toSocketId).emit("group-call:answer", {
+      fromSocketId: socket.id,
+      answer
+    });
+  });
+
+  socket.on("group-call:ice-candidate", ({ toSocketId, candidate }) => {
+    io.to(toSocketId).emit("group-call:ice-candidate", {
+      fromSocketId: socket.id,
+      candidate
+    });
+  });
+
+  socket.on("group-call:leave", ({ groupId }) => {
+    socket.leave(`group_call_${groupId}`);
+    socket.to(`group_call_${groupId}`).emit("group-call:user-left", {
+      userId,
+      socketId: socket.id
+    });
+    checkGroupCallRoomEmpty(groupId);
+  });
+
+  socket.on("disconnecting", () => {
+    try {
+      for (const room of socket.rooms) {
+        if (room.startsWith("group_call_")) {
+          const groupId = room.replace("group_call_", "");
+          socket.to(room).emit("group-call:user-left", {
+            userId,
+            socketId: socket.id
+          });
+          checkGroupCallRoomEmpty(groupId);
+        }
+      }
+    } catch (err) {
+      console.error("Error in disconnecting handler:", err);
+    }
+  });
+
    socket.on("disconnect", ()=>{
       for (const [sessionId, session] of qrSessions.entries()) {
         if (session.socketId === socket.id) {

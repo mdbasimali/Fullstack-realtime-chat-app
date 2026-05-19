@@ -20,7 +20,7 @@ const ChatHeader = () => {
     setGroupCallType
   } = useGroupStore();
   const { authUser, onlineUsers } = useAuthStore();
-  const { initiateCall } = useCallStore();
+  const { initiateCall, activeGroupCalls, joinGroupCall } = useCallStore();
 
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [memberIdentifier, setMemberIdentifier] = useState("");
@@ -135,6 +135,16 @@ const ChatHeader = () => {
 
         {selectedGroup && (
           <>
+            {activeGroupCalls[selectedGroup._id] && (
+              <button 
+                onClick={() => joinGroupCall(selectedGroup._id, "video")}
+                className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 animate-pulse transition-all duration-300 mr-2"
+                title="Join Active Group Call"
+              >
+                <Phone size={14} />
+                <span>Join Active Call</span>
+              </button>
+            )}
             <button 
               onClick={() => handleGroupCallClick("video")}
               className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
