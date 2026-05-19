@@ -207,14 +207,16 @@ export const getMessages = async(req,res) =>{
 
 export const sendMessage = async(req,res)=>{
    try{
-    const {text,image}=req.body;
+    const {text,image,messageType}=req.body;
     const {id: receiverId}=req.params;
     const senderId=req.user._id;
 
     let imageUrl;
     if(image){
-        //upload base64 image to cloudinary
-        const uploadResponse=await cloudinary.uploader.upload(image);
+        //upload base64 image/audio to cloudinary
+        const uploadResponse=await cloudinary.uploader.upload(image, {
+            resource_type: "auto"
+        });
         imageUrl=uploadResponse.secure_url;
     }
   
@@ -223,6 +225,7 @@ export const sendMessage = async(req,res)=>{
         receiverId,
         text,
         image: imageUrl,
+        messageType: messageType || (image ? "image" : "text"),
     });
     await newMessage.save();
 

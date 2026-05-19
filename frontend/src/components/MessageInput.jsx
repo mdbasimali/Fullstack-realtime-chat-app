@@ -1,14 +1,139 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useChatstore } from "../store/useChatStore";
-import { Image, Send, X, Smile, Mic, Plus } from "lucide-react";
+import { Image, Send, X, Smile, Mic, Plus, Trash2, Check } from "lucide-react";
 import toast from "react-hot-toast";
+import EmojiPicker from "./EmojiPicker";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
   const fileInputRef = useRef(null);
   const textInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingIntervalRef = useRef(null);
+
   const { sendMessage } = useChatstore();
+
+  useEffect(() => {
+    return () => {
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const startRecording = async () => {
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      toast.error("Audio recording is not supported in this browser.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+      
+      toast.success("Voice recording started...");
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+        toast.error("Microphone access denied. Please grant permission in browser settings.");
+      } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+        toast.error("No microphone detected. Please connect a recording device.");
+      } else {
+        toast.error("Failed to access microphone.");
+      }
+    }
+  };
+
+  const stopRecording = (shouldSend) => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") return;
+
+    clearInterval(recordingIntervalRef.current);
+    const mediaRecorder = mediaRecorderRef.current;
+
+    mediaRecorder.onstop = async () => {
+      // Release microphone tracks
+      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+
+      if (shouldSend && audioChunksRef.current.length > 0) {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64Audio = reader.result;
+          try {
+            setIsUploadingAudio(true);
+            const uploadPromise = sendMessage({
+              text: `Voice note (${formatDuration(recordingDuration)})`,
+              image: base64Audio,
+              messageType: "audio",
+            });
+
+            await toast.promise(uploadPromise, {
+              loading: "Uploading voice note...",
+              success: "Voice note sent successfully! 🎙️",
+              error: "Failed to upload voice note.",
+            });
+          } catch (err) {
+            console.error("Failed to send voice note:", err);
+          } finally {
+            setIsUploadingAudio(false);
+          }
+        };
+      }
+    };
+
+    mediaRecorder.stop();
+    setIsRecording(false);
+    setRecordingDuration(0);
+  };
+
+  const handleEmojiSelect = (emoji) => {
+    const input = textInputRef.current;
+    if (input) {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const newText = text.substring(0, start) + emoji + text.substring(end);
+      setText(newText);
+      
+      // Auto reposition selection cursor
+      setTimeout(() => {
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+        input.focus();
+      }, 10);
+    } else {
+      setText((prev) => prev + emoji);
+    }
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -40,14 +165,12 @@ const MessageInput = () => {
         image: imagePreview,
       };
 
-      // Clear form IMMEDIATELY for instant feel
       setText("");
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       await sendMessage(messageToSend);
 
-      // Auto-refocus
       setTimeout(() => {
         textInputRef.current?.focus();
       }, 10);
@@ -79,70 +202,126 @@ const MessageInput = () => {
       )}
 
       <form onSubmit={handleSendMessage} className="flex items-center gap-3">
-        {/* Beautiful Pill Input Container */}
-        <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-base-200/60 dark:bg-base-950/40 border border-base-300/40 rounded-full">
-          {/* Smiley Icon */}
-          <button
-            type="button"
-            className="text-base-content/50 hover:text-primary transition-colors cursor-pointer"
-            onClick={() => toast.success("Emoji selector coming soon! 😊")}
-          >
-            <Smile size={21} />
-          </button>
+        {isRecording ? (
+          /* Glassmorphic Pulse Recording Pill */
+          <div className="flex-1 flex items-center justify-between gap-4 px-4 py-2 bg-red-50/70 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-full">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+              </span>
+              <span className="text-xs md:text-sm font-bold text-red-600 dark:text-red-400">
+                Recording Voice ({formatDuration(recordingDuration)})
+              </span>
+            </div>
 
-          {/* Text Input */}
-          <input
-            type="text"
-            name="chat-message-text"
-            id="chat-message-text"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="sentences"
-            spellCheck="true"
-            data-lpignore="true"
-            className="flex-1 bg-transparent text-sm md:text-base border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content"
-            placeholder="ChatZone message"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            ref={textInputRef}
-          />
+            <div className="flex items-center gap-2">
+              {/* Discard / Delete */}
+              <button
+                type="button"
+                onClick={() => stopRecording(false)}
+                className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 transition-colors cursor-pointer"
+                title="Discard Recording"
+              >
+                <Trash2 size={17} />
+              </button>
 
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleImageChange}
-          />
+              {/* Stop & Send */}
+              <button
+                type="button"
+                onClick={() => stopRecording(true)}
+                className="p-1.5 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-xs cursor-pointer"
+                title="Send Recording"
+              >
+                <Check size={17} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Standard Input Bar */
+          <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-base-200/60 dark:bg-base-950/40 border border-base-300/40 rounded-full relative">
+            {showEmojiPicker && (
+              <EmojiPicker
+                onSelect={handleEmojiSelect}
+                onClose={() => setShowEmojiPicker(false)}
+              />
+            )}
 
-          {/* Camera/Attachment Icon */}
-          <button
-            type="button"
-            className={`hover:text-primary transition-colors cursor-pointer ${
-              imagePreview ? "text-primary" : "text-base-content/50"
-            }`}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Image size={21} />
-          </button>
+            {/* Emoji Button */}
+            <button
+              type="button"
+              className={`hover:text-primary transition-colors cursor-pointer ${
+                showEmojiPicker ? "text-primary" : "text-base-content/50"
+              }`}
+              onClick={() => setShowEmojiPicker((prev) => !prev)}
+            >
+              <Smile size={21} />
+            </button>
 
-          {/* Mic/Voice Icon */}
-          <button
-            type="button"
-            className="text-base-content/50 hover:text-primary transition-colors cursor-pointer"
-            onClick={() => toast.success("Voice recording feature coming soon! 🎙️")}
-          >
-            <Mic size={21} />
-          </button>
-        </div>
+            {/* Text Input */}
+            <input
+              type="text"
+              name="chat-message-text"
+              id="chat-message-text"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+              spellCheck="true"
+              data-lpignore="true"
+              className="flex-1 bg-transparent text-sm md:text-base border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content"
+              placeholder="ChatZone message"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              ref={textInputRef}
+              disabled={isUploadingAudio}
+            />
 
-        {/* Circular Action Button */}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleImageChange}
+              disabled={isUploadingAudio}
+            />
+
+            {/* Image Attachment Button */}
+            <button
+              type="button"
+              disabled={isUploadingAudio}
+              className={`hover:text-primary transition-colors cursor-pointer ${
+                imagePreview ? "text-primary" : "text-base-content/50"
+              } ${isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Image size={21} />
+            </button>
+
+            {/* Microphone Button */}
+            <button
+              type="button"
+              disabled={isUploadingAudio}
+              className={`text-base-content/50 hover:text-primary transition-colors cursor-pointer ${
+                isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              onClick={startRecording}
+              title="Record Voice Note"
+            >
+              <Mic size={21} />
+            </button>
+          </div>
+        )}
+
+        {/* Action Button */}
         <button
           type="submit"
+          disabled={isUploadingAudio || (!text.trim() && !imagePreview && !isRecording)}
           onMouseDown={(e) => e.preventDefault()}
           className="btn btn-circle bg-primary hover:bg-primary/90 text-primary-content border-none flex items-center justify-center size-11 shrink-0"
         >
-          {text.trim() || imagePreview ? (
+          {isUploadingAudio ? (
+            <span className="loading loading-spinner loading-xs"></span>
+          ) : text.trim() || imagePreview ? (
             <Send size={18} className="ml-0.5" />
           ) : (
             <Plus size={22} onClick={() => fileInputRef.current?.click()} />

@@ -8,6 +8,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useCallStore } from "../store/useCallStore";
 import { formatMessageTime } from "../lib/utils";
 import { User, Phone, Users, Check, Video, PhoneMissed, PhoneOutgoing, PhoneIncoming } from "lucide-react";
+import VoicePlayer from "./VoicePlayer";
 
 const ChatContainer = () => {
   const {
@@ -104,12 +105,15 @@ const ChatContainer = () => {
                     ? "bg-primary text-primary-content rounded-tr-[4px]" 
                     : "bg-base-200 text-base-content rounded-tl-[4px]"
                 }`}>
-                  {message.image && (
+                   {message.image && message.messageType !== "audio" && (
                     <img
                       src={message.image}
                       alt="Attachment"
                       className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover"
                     />
+                  )}
+                  {message.messageType === "audio" && message.image && (
+                    <VoicePlayer url={message.image} isMyMessage={isMyMessage} />
                   )}
                   {message.text && message.messageType === "text" && (
                     <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed">
