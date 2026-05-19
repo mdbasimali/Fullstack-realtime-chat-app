@@ -42,9 +42,24 @@ const CallModal = () => {
     facingMode,
   } = useCallStore();
 
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
-  const remoteAudioRef = useRef(null);
+  const localVideoRef = React.useCallback((el) => {
+    if (el && localStream) {
+      el.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  const remoteVideoRef = React.useCallback((el) => {
+    if (el && remoteStream) {
+      el.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
+  const remoteAudioRef = React.useCallback((el) => {
+    if (el && remoteStream) {
+      el.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
   const [duration, setDuration] = useState(0);
   const [isMirrored, setIsMirrored] = useState(true);
   const [manualFullView, setManualFullView] = useState(false);
@@ -78,22 +93,6 @@ const CallModal = () => {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
-
-  // Re-bind stream to video element when stream or status changes, or when refs are bound/mounted
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [localStream, isInCall, callType, callStatus, isVideoOff, isSharingScreen, isMinimized, isMinimized]);
-
-  useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
-    }
-    if (remoteAudioRef.current && remoteStream) {
-      remoteAudioRef.current.srcObject = remoteStream;
-    }
-  }, [remoteStream, isInCall, callType, callStatus, isRemoteSharingScreen, isMinimized]);
 
   if (!isInCall && !isIncomingCall) return null;
 
@@ -200,10 +199,19 @@ const CallModal = () => {
     );
   }
 
-  // Active Call UI
   return (
     <div className="fixed inset-0 z-[999] flex flex-col justify-between bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
       
+      {/* Hidden audio element to play remote stream audio in all call types */}
+      {remoteStream && (
+        <audio 
+          ref={remoteAudioRef} 
+          autoPlay 
+          playsInline 
+          className="hidden" 
+        />
+      )}
+
       {/* Video Streams Container */}
       {callType === "video" && (
         <div className="absolute inset-0 bg-black">
@@ -291,8 +299,6 @@ const CallModal = () => {
               <img src={remoteUser?.profilePic || "/avatar.png"} className="w-full h-full object-cover" alt={remoteUser?.fullName} />
             </div>
           </div>
-          {/* Hidden audio element to play remote stream */}
-          <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
         </div>
       )}
 

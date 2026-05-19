@@ -153,6 +153,7 @@ const createDummyStream = () => {
 export const useCallStore = create((set, get) => ({
   isInCall: false,
   isIncomingCall: false,
+  iceCandidatesQueue: [],
   callType: null, // 'audio' or 'video'
   remoteUser: null,
   localStream: null,
@@ -389,8 +390,16 @@ export const useCallStore = create((set, get) => ({
       };
 
       pc.ontrack = (event) => {
-        const [remoteStream] = event.streams;
-        set({ remoteStream });
+        console.log("ontrack: received track", event.track.kind);
+        const [stream] = event.streams;
+        if (stream) {
+          set({ remoteStream: stream });
+        } else {
+          const { remoteStream } = get();
+          const currentStream = remoteStream || new MediaStream();
+          currentStream.addTrack(event.track);
+          set({ remoteStream: currentStream });
+        }
       };
 
       const offer = await pc.createOffer();
@@ -495,10 +504,31 @@ export const useCallStore = create((set, get) => ({
       };
 
       pc.ontrack = (event) => {
-        set({ remoteStream: event.streams[0] });
+        console.log("ontrack: received track", event.track.kind);
+        const [stream] = event.streams;
+        if (stream) {
+          set({ remoteStream: stream });
+        } else {
+          const { remoteStream } = get();
+          const currentStream = remoteStream || new MediaStream();
+          currentStream.addTrack(event.track);
+          set({ remoteStream: currentStream });
+        }
       };
 
       await pc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
+
+      // Drain queued ICE candidates
+      const queue = get().iceCandidatesQueue || [];
+      for (const cand of queue) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(cand));
+        } catch (e) {
+          console.error("Error adding queued ICE candidate in acceptCall:", e);
+        }
+      }
+      set({ iceCandidatesQueue: [] });
+
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
@@ -538,19 +568,39 @@ export const useCallStore = create((set, get) => ({
     stopAllSounds();
     const { pc } = get();
     if (pc) {
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
-      set({ callStatus: "ongoing", callStartTime: Date.now() });
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        
+        // Drain queued ICE candidates
+        const queue = get().iceCandidatesQueue || [];
+        for (const cand of queue) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(cand));
+          } catch (e) {
+            console.error("Error adding queued ICE candidate in handleCallAccepted:", e);
+          }
+        }
+        set({ iceCandidatesQueue: [] });
+
+        set({ callStatus: "ongoing", callStartTime: Date.now() });
+      } catch (error) {
+        console.error("Error setting remote description in handleCallAccepted:", error);
+      }
     }
   },
 
   handleIceCandidate: async ({ candidate }) => {
     const { pc } = get();
-    if (pc) {
+    if (pc && pc.remoteDescription && pc.remoteDescription.type) {
       try {
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (e) {
-        console.error("Error adding ice candidate", e);
+        console.error("Error adding ice candidate directly:", e);
       }
+    } else {
+      console.log("Queueing ICE candidate (remoteDescription not set yet)");
+      const { iceCandidatesQueue } = get();
+      set({ iceCandidatesQueue: [...iceCandidatesQueue, candidate] });
     }
   },
 
@@ -692,6 +742,7 @@ export const useCallStore = create((set, get) => ({
     set({
       isInCall: false,
       isIncomingCall: false,
+      iceCandidatesQueue: [],
       callType: null,
       remoteUser: null,
       localStream: null,
