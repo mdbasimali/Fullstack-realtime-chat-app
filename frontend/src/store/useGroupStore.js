@@ -182,6 +182,7 @@ export const useGroupStore = create((set, get) => ({
       useChatstore.getState().setSelectedUser(null);
       get().fetchGroupMessages(group._id);
       get().subscribeToGroupMessages(group._id);
+      get().fetchGroupDetails(group._id);
     } else {
       get().unsubscribeFromGroupMessages();
       set({ messages: [] });
