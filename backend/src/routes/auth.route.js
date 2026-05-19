@@ -1,5 +1,5 @@
 import express from "express";
-import { checkAuth, login, logout, signup, updateProfile, googleAuth, getGoogleClientId  } from "../controllers/auth.controller.js";
+import { checkAuth, login, logout, signup, updateProfile, googleAuth, getGoogleClientId, googleRedirect } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router =express.Router()
@@ -8,6 +8,7 @@ router.post("/signup",signup)
 router.post("/login",login);
 router.post("/logout",logout);
 router.post("/google", googleAuth);
+router.post("/google-redirect", googleRedirect);
 router.get("/google-client-id", getGoogleClientId);
 
 router.put("/update-profile", protectRoute, updateProfile);

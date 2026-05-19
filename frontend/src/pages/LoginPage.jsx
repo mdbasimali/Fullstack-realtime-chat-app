@@ -37,6 +37,21 @@ const LoginPage = () => {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    if (error) {
+      if (error === "no_credential") toast.error("No credentials received from Google");
+      else if (error === "invalid_token") toast.error("Google authentication token verification failed");
+      else if (error === "no_email") toast.error("Google account did not provide an email address");
+      else if (error === "server_error") toast.error("Internal server error during Google login");
+      else toast.error("Google Authentication failed");
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
     // Check if script is already present
     const existingScript = document.getElementById("google-gsi-client");
     if (existingScript) {
@@ -60,11 +75,20 @@ const LoginPage = () => {
   useEffect(() => {
     if (scriptLoaded && googleClientId && window.google) {
       try {
-        window.google.accounts.id.initialize({
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const initOptions = {
           client_id: googleClientId,
-          callback: handleGoogleCredentialResponse,
           auto_select: false,
-        });
+        };
+
+        if (isStandalone) {
+          initOptions.ux_mode = "redirect";
+          initOptions.login_uri = `${axiosInstance.defaults.baseURL}/auth/google-redirect?redirect_to=${encodeURIComponent(window.location.origin)}`;
+        } else {
+          initOptions.callback = handleGoogleCredentialResponse;
+        }
+
+        window.google.accounts.id.initialize(initOptions);
 
         window.google.accounts.id.renderButton(
           document.getElementById("googleBtnContainer"),
@@ -77,8 +101,10 @@ const LoginPage = () => {
           }
         );
 
-        // Display One Tap prompt if supported
-        window.google.accounts.id.prompt();
+        // Display One Tap prompt if supported and not in standalone
+        if (!isStandalone) {
+          window.google.accounts.id.prompt();
+        }
       } catch (err) {
         console.error("Error rendering Google Sign-In button:", err);
       }

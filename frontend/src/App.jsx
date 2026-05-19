@@ -161,6 +161,14 @@ const App = () => {
       window.history.replaceState({}, document.title, "/");
     }
 
+    if (params.get("trigger_sync") === "true") {
+      localStorage.setItem("trigger_contact_sync", "true");
+      import("react-hot-toast").then(({ default: toast }) => {
+        toast.success("Welcome to ChatZone!");
+      });
+      window.history.replaceState({}, document.title, "/");
+    }
+
     const code = params.get("code");
     if (code && authUser) {
       // Clean up URL

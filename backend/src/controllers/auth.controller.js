@@ -274,5 +274,70 @@ export const getGoogleClientId = (req, res) => {
   }
 };
 
+export const googleRedirect = async (req, res) => {
+  const { credential } = req.body;
+  const redirectTo = req.query.redirect_to || "https://chatzone.cloudnexis.in";
+  
+  try {
+    if (!credential) {
+      return res.redirect(`${redirectTo}/login?error=no_credential`);
+    }
+
+    // Verify token with Google's public tokeninfo endpoint
+    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    if (!response.ok) {
+      return res.redirect(`${redirectTo}/login?error=invalid_token`);
+    }
+
+    const payload = await response.json();
+    const { email, name, picture } = payload;
+
+    if (!email) {
+      return res.redirect(`${redirectTo}/login?error=no_email`);
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create user if not registered
+      const emailPrefix = email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+      let username = emailPrefix;
+      let isUnique = false;
+      while (!isUnique) {
+        const existing = await User.findOne({ username });
+        if (!existing) {
+          isUnique = true;
+        } else {
+          username = emailPrefix + Math.floor(Math.random() * 10000);
+        }
+      }
+
+      // Generate a secure random password since schema requires password
+      const generatedPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(generatedPassword, salt);
+
+      user = new User({
+        email,
+        fullName: name || emailPrefix,
+        username,
+        password: hashedPassword,
+        profilePic: picture || "",
+      });
+      await user.save();
+      await autoLinkMatchedContacts(user);
+    }
+
+    // Generate JWT token
+    generateToken(user._id, res);
+
+    res.redirect(`${redirectTo}/?trigger_sync=true`);
+
+  } catch (error) {
+    console.error("Error in googleRedirect controller:", error.message);
+    res.redirect(`${redirectTo}/login?error=server_error`);
+  }
+};
+
 
 
