@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatstore } from "./store/useChatStore";
+import { useGroupStore } from "./store/useGroupStore";
 import { Loader } from "lucide-react"
 import { useThemeStore } from "./store/useThemeStore";
 import { useCallStore } from "./store/useCallStore";
@@ -114,6 +115,27 @@ const App = () => {
       socket.off("call:active-sync");
     };
   }, [socket, handleIncomingCall, handleCallAccepted, handleCallRejected, handleCallEnded, handleIceCandidate, handleScreenShareStarted, handleScreenShareStopped, handleActiveSync]);
+
+  // Subscribe to global group events
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleGroupCreated = (newGroup) => {
+      const { groups } = useGroupStore.getState();
+      if (!groups.some(g => g._id === newGroup._id)) {
+        useGroupStore.setState({ groups: [newGroup, ...groups] });
+      }
+      
+      // Auto-subscribe the socket to the new group's room
+      socket.emit("group:join-room", newGroup._id);
+    };
+
+    socket.on("groupCreated", handleGroupCreated);
+
+    return () => {
+      socket.off("groupCreated", handleGroupCreated);
+    };
+  }, [socket]);
 
   // Warn user before refresh during a call
   useEffect(() => {

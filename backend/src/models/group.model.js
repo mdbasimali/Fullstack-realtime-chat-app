@@ -25,6 +25,10 @@ const groupSchema = new mongoose.Schema(
         ref: "User",
       }
     ],
+    avatar: {
+      type: String,
+      default: "",
+    },
     maxMembers: {
       type: Number,
       default: 100, // Capped at 100 to prevent database performance degradation

@@ -9,6 +9,7 @@ import {
   getGroupMessages,
   sendGroupMessage,
   addMember,
+  getGroupDetails,
 } from "../controllers/group.controller.js";
 
 const router = express.Router();
@@ -24,6 +25,9 @@ router.get("/explore", protectRoute, getExploreGroups);
 router.post("/join/:groupId", protectRoute, joinGroup);
 router.post("/leave/:groupId", protectRoute, leaveGroup);
 router.post("/:groupId/add-member", protectRoute, addMember);
+
+// Get group metadata & members
+router.get("/:groupId/details", protectRoute, getGroupDetails);
 
 // Group messaging endpoints
 router.get("/:groupId/messages", protectRoute, getGroupMessages);

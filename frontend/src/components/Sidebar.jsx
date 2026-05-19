@@ -66,6 +66,37 @@ const Sidebar = () => {
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
+  const [groupAvatarPreview, setGroupAvatarPreview] = useState(null);
+  const [selectedFriendIds, setSelectedFriendIds] = useState([]);
+  const [friendSearchQuery, setFriendSearchQuery] = useState("");
+  const groupAvatarInputRef = useRef(null);
+
+  const handleGroupAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setGroupAvatarPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const toggleFriendSelection = (userId) => {
+    setSelectedFriendIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId) 
+        : [...prev, userId]
+    );
+  };
+
+  const filteredFriendsForGroup = users.filter(user => 
+    user.fullName.toLowerCase().includes(friendSearchQuery.toLowerCase())
+  );
 
   // Load groups when switching to groups tab
   useEffect(() => {
@@ -221,12 +252,17 @@ const Sidebar = () => {
 
     const success = await createGroup({
       name: newGroupName.trim(),
-      description: newGroupDesc.trim()
+      description: newGroupDesc.trim(),
+      avatar: groupAvatarPreview,
+      members: selectedFriendIds
     });
 
     if (success) {
       setNewGroupName("");
       setNewGroupDesc("");
+      setGroupAvatarPreview(null);
+      setSelectedFriendIds([]);
+      setFriendSearchQuery("");
       setShowCreateGroupModal(false);
     }
   };
@@ -875,9 +911,17 @@ const Sidebar = () => {
                           >
                             <div className="flex items-center gap-3.5 min-w-0 flex-1">
                               {/* Avatar */}
-                              <div className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950 text-primary flex items-center justify-center font-bold text-base shadow-sm shrink-0">
-                                {group.name.slice(0, 2).toLowerCase()}
-                              </div>
+                              {group.avatar ? (
+                                <img
+                                  src={group.avatar}
+                                  alt={group.name}
+                                  className="w-11 h-11 rounded-full object-cover border border-base-300 shadow-sm shrink-0"
+                                />
+                              ) : (
+                                <div className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950 text-primary flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+                                  {group.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
                               {/* Details */}
                               <div className="text-left min-w-0 flex-1">
                                 <h4 className={`font-bold text-[15px] truncate group-hover:text-primary transition-colors ${isSelected ? "text-primary" : "text-base-content"}`}>
@@ -932,9 +976,17 @@ const Sidebar = () => {
                         >
                           <div className="flex items-center gap-3.5 min-w-0 flex-1">
                             {/* Avatar */}
-                            <div className="w-11 h-11 rounded-full bg-base-300/60 text-base-content/70 flex items-center justify-center font-bold text-base shadow-sm shrink-0">
-                              {group.name.slice(0, 2).toLowerCase()}
-                            </div>
+                            {group.avatar ? (
+                              <img
+                                src={group.avatar}
+                                  alt={group.name}
+                                className="w-11 h-11 rounded-full object-cover border border-base-300 shadow-sm shrink-0"
+                              />
+                            ) : (
+                              <div className="w-11 h-11 rounded-full bg-base-300/60 text-base-content/70 flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+                                {group.name.slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
                             {/* Details */}
                             <div className="text-left min-w-0 flex-1">
                               <h4 className="font-bold text-[14px] text-base-content truncate">
@@ -1770,7 +1822,14 @@ const Sidebar = () => {
                 <p className="text-xs text-base-content/50 mt-0.5">Bring your team together in one thread</p>
               </div>
               <button 
-                onClick={() => { setShowCreateGroupModal(false); setNewGroupName(""); setNewGroupDesc(""); }}
+                onClick={() => { 
+                  setShowCreateGroupModal(false); 
+                  setNewGroupName(""); 
+                  setNewGroupDesc(""); 
+                  setGroupAvatarPreview(null); 
+                  setSelectedFriendIds([]); 
+                  setFriendSearchQuery("");
+                }}
                 className="p-1.5 rounded-full hover:bg-base-200 text-base-content/60 hover:text-base-content transition-colors"
               >
                 <X size={20} />
@@ -1778,6 +1837,36 @@ const Sidebar = () => {
             </header>
 
             <form onSubmit={handleCreateGroupSubmit} className="p-6 space-y-4">
+              {/* Group Avatar Upload */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="relative group cursor-pointer" onClick={() => groupAvatarInputRef.current?.click()}>
+                  {groupAvatarPreview ? (
+                    <img 
+                      src={groupAvatarPreview} 
+                      alt="Group Avatar" 
+                      className="w-20 h-20 rounded-full object-cover border-2 border-primary shadow-md"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-base-200 border-2 border-dashed border-base-300 flex flex-col items-center justify-center text-base-content/40 hover:border-primary hover:text-primary transition-colors">
+                      <Camera size={22} className="text-base-content/55" />
+                      <span className="text-[10px] mt-1 font-semibold">Add Image</span>
+                    </div>
+                  )}
+                  {groupAvatarPreview && (
+                    <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-semibold">
+                      Change
+                    </div>
+                  )}
+                </div>
+                <input 
+                  type="file" 
+                  ref={groupAvatarInputRef} 
+                  onChange={handleGroupAvatarChange} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+              </div>
+
               <div className="space-y-1.5 text-left">
                 <label className="text-xs font-bold text-base-content/70 tracking-wide uppercase px-1">Group Name</label>
                 <input 
@@ -1800,15 +1889,98 @@ const Sidebar = () => {
                   onChange={(e) => setNewGroupDesc(e.target.value)}
                   maxLength={200}
                   disabled={isCreatingGroup}
-                  rows={3}
+                  rows={2}
                   className="w-full px-4 py-3 rounded-2xl bg-base-200 border border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm resize-none"
                 />
+              </div>
+
+              {/* Select Members Checklist */}
+              <div className="space-y-2 text-left">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-xs font-bold text-base-content/70 tracking-wide uppercase">Add Members ({selectedFriendIds.length})</label>
+                  {selectedFriendIds.length > 0 && (
+                    <button 
+                      type="button" 
+                      onClick={() => setSelectedFriendIds([])} 
+                      className="text-[10px] font-bold text-rose-500 hover:underline"
+                    >
+                      Clear Selection
+                    </button>
+                  )}
+                </div>
+
+                {/* Friend Search Input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-base-content/40" />
+                  <input 
+                    type="text"
+                    placeholder="Search friends to add..."
+                    value={friendSearchQuery}
+                    onChange={(e) => setFriendSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-base-200 border border-base-300 focus:outline-none focus:ring-1 focus:ring-primary/20 focus:border-primary text-xs"
+                  />
+                </div>
+
+                {/* Scrollable Friends list */}
+                <div className="max-h-36 overflow-y-auto custom-scrollbar border border-base-300 rounded-2xl bg-base-150 p-2 space-y-1">
+                  {filteredFriendsForGroup.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-base-content/40">
+                      No friends found.
+                    </div>
+                  ) : (
+                    filteredFriendsForGroup.map((friend) => {
+                      const isSelected = selectedFriendIds.includes(friend._id);
+                      return (
+                        <div 
+                          key={friend._id}
+                          onClick={() => toggleFriendSelection(friend._id)}
+                          className={`p-2 flex items-center justify-between rounded-xl cursor-pointer transition-all duration-200 ${
+                            isSelected 
+                              ? "bg-primary/10 border border-primary/20" 
+                              : "hover:bg-base-200 border border-transparent"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {friend.profilePic ? (
+                              <img 
+                                src={friend.profilePic} 
+                                alt={friend.fullName}
+                                className="w-8 h-8 rounded-full object-cover border border-base-300"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-xs">
+                                {friend.fullName.charAt(0)}
+                              </div>
+                            )}
+                            <div className="text-left min-w-0">
+                              <p className="text-xs font-semibold text-base-content truncate">{friend.fullName}</p>
+                              <p className="text-[10px] text-base-content/50 truncate">@{friend.username || "user"}</p>
+                            </div>
+                          </div>
+                          <input 
+                            type="checkbox" 
+                            checked={isSelected}
+                            onChange={() => {}} // toggled via parent div click
+                            className="checkbox checkbox-xs checkbox-primary rounded-md pointer-events-none"
+                          />
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
               <div className="pt-2 flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => { setShowCreateGroupModal(false); setNewGroupName(""); setNewGroupDesc(""); }}
+                  onClick={() => { 
+                    setShowCreateGroupModal(false); 
+                    setNewGroupName(""); 
+                    setNewGroupDesc(""); 
+                    setGroupAvatarPreview(null); 
+                    setSelectedFriendIds([]); 
+                    setFriendSearchQuery("");
+                  }}
                   disabled={isCreatingGroup}
                   className="px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-base-200 transition-colors"
                 >

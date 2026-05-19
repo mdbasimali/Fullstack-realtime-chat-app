@@ -1,5 +1,5 @@
 import cloudinary from "../lib/cloudinary.js";
-import { io } from "../lib/socket.js";
+import { io, getReceiverSocketId } from "../lib/socket.js";
 import Group from "../models/group.model.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
@@ -17,7 +17,7 @@ const groupJoinCooldowns = new Map();
  */
 export const createGroup = async (req, res) => {
   const userId = req.user._id;
-  const { name, description } = req.body;
+  const { name, description, avatar, members } = req.body;
 
   // 1. In-flight request lock
   if (groupCreationLocks.has(userId.toString())) {
@@ -45,12 +45,35 @@ export const createGroup = async (req, res) => {
   try {
     groupCreationLocks.add(userId.toString());
 
-    // Create group with creator as the first member
+    // Upload avatar if present
+    let avatarUrl = "";
+    if (avatar) {
+      const uploadResponse = await cloudinary.uploader.upload(avatar);
+      avatarUrl = uploadResponse.secure_url;
+    }
+
+    // Process members list (always include creator)
+    let initialMembers = [userId];
+    if (Array.isArray(members)) {
+      // Filter out duplicate user IDs and creator ID
+      const cleanedMembers = [...new Set(members)].filter(
+        (id) => id && id.toString() !== userId.toString()
+      );
+      initialMembers = [...initialMembers, ...cleanedMembers];
+    }
+
+    // Limit initial members to max capacity (100)
+    if (initialMembers.length > 100) {
+      initialMembers = initialMembers.slice(0, 100);
+    }
+
+    // Create group
     const newGroup = new Group({
       name: name.trim(),
       description: (description || "").trim(),
       creatorId: userId,
-      members: [userId]
+      members: initialMembers,
+      avatar: avatarUrl
     });
 
     await newGroup.save();
@@ -58,7 +81,27 @@ export const createGroup = async (req, res) => {
     // Record creation timestamp
     groupCreationCooldowns.set(userId.toString(), Date.now());
 
-    res.status(201).json(newGroup);
+    // Build standard return format matching getMyGroups
+    const returnGroup = {
+      _id: newGroup._id,
+      name: newGroup.name,
+      description: newGroup.description,
+      creatorId: newGroup.creatorId,
+      membersCount: newGroup.members.length,
+      avatar: newGroup.avatar,
+      isMember: true,
+      createdAt: newGroup.createdAt
+    };
+
+    // Broadcast "groupCreated" event to all online members
+    initialMembers.forEach(mId => {
+      const socketId = getReceiverSocketId(mId.toString());
+      if (socketId) {
+        io.to(socketId).emit("groupCreated", returnGroup);
+      }
+    });
+
+    res.status(201).json(returnGroup);
   } catch (error) {
     console.error("Error in createGroup:", error);
     res.status(500).json({ message: "Server error during group creation." });
@@ -75,7 +118,7 @@ export const getMyGroups = async (req, res) => {
     const userId = req.user._id;
     // Find all groups where the user is a member, projection for lightweight load
     const groups = await Group.find({ members: userId })
-      .select("name description creatorId members createdAt")
+      .select("name description creatorId members avatar createdAt")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -85,6 +128,7 @@ export const getMyGroups = async (req, res) => {
       description: g.description,
       creatorId: g.creatorId,
       membersCount: g.members.length,
+      avatar: g.avatar,
       isMember: true,
       createdAt: g.createdAt,
     }));
@@ -104,7 +148,7 @@ export const getExploreGroups = async (req, res) => {
     const userId = req.user._id;
     // Fetch up to 20 groups where the user is NOT a member
     const groups = await Group.find({ members: { $ne: userId } })
-      .select("name description creatorId members createdAt")
+      .select("name description creatorId members avatar createdAt")
       .sort({ createdAt: -1 })
       .limit(20)
       .lean();
@@ -115,6 +159,7 @@ export const getExploreGroups = async (req, res) => {
       description: g.description,
       creatorId: g.creatorId,
       membersCount: g.members.length,
+      avatar: g.avatar,
       isMember: false,
       createdAt: g.createdAt,
     }));
@@ -169,6 +214,7 @@ export const joinGroup = async (req, res) => {
           description: updatedGroup.description,
           creatorId: updatedGroup.creatorId,
           membersCount: updatedGroup.members.length,
+          avatar: updatedGroup.avatar,
           isMember: true
         }
       });
@@ -382,6 +428,35 @@ export const addMember = async (req, res) => {
   } catch (error) {
     console.error("Error in addMember:", error);
     res.status(500).json({ message: "Server error adding group member." });
+  }
+};
+
+/**
+ * Get full group details including populated members list
+ */
+export const getGroupDetails = async (req, res) => {
+  const { groupId } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const group = await Group.findById(groupId)
+      .populate("members", "_id fullName username profilePic")
+      .lean();
+
+    if (!group) {
+      return res.status(404).json({ message: "Group not found." });
+    }
+
+    // Verify requesting user is a member
+    const isMember = group.members.some(m => m._id.toString() === userId.toString());
+    if (!isMember) {
+      return res.status(403).json({ message: "You are not a member of this group." });
+    }
+
+    res.status(200).json(group);
+  } catch (error) {
+    console.error("Error in getGroupDetails:", error);
+    res.status(500).json({ message: "Server error fetching group details." });
   }
 };
 

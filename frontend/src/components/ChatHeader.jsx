@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Video, Phone, MoreVertical, ArrowLeft, User, Trash2, PhoneOff, UserPlus, X, Loader2 } from "lucide-react";
+import { Video, Phone, MoreVertical, ArrowLeft, User, Trash2, PhoneOff, UserPlus, X, Loader2, Info } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatstore } from "../store/useChatStore";
 import { useCallStore } from "../store/useCallStore";
@@ -7,7 +7,14 @@ import { useGroupStore } from "../store/useGroupStore";
 
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser } = useChatstore();
-  const { selectedGroup, setSelectedGroup, leaveGroup, addMemberToGroup } = useGroupStore();
+  const { 
+    selectedGroup, 
+    setSelectedGroup, 
+    leaveGroup, 
+    addMemberToGroup,
+    showGroupDetailsSidebar,
+    setShowGroupDetailsSidebar
+  } = useGroupStore();
   const { onlineUsers } = useAuthStore();
   const { initiateCall } = useCallStore();
 
@@ -55,7 +62,15 @@ const ChatHeader = () => {
         <div className="avatar">
           <div className="size-10 rounded-full relative flex items-center justify-center bg-indigo-100 dark:bg-indigo-950/40 text-primary font-bold">
             {selectedGroup ? (
-              selectedGroup.name.slice(0, 2).toLowerCase()
+              selectedGroup.avatar ? (
+                <img
+                  src={selectedGroup.avatar}
+                  alt={selectedGroup.name}
+                  className="rounded-full object-cover w-full h-full"
+                />
+              ) : (
+                selectedGroup.name.slice(0, 2).toUpperCase()
+              )
             ) : (
               <img
                 src={selectedUser.profilePic || "/avatar.png"}
@@ -110,13 +125,22 @@ const ChatHeader = () => {
         )}
 
         {selectedGroup && (
-          <button 
-            onClick={() => setShowAddMemberModal(true)}
-            className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
-            title="Add Member"
-          >
-            <UserPlus size={20} />
-          </button>
+          <>
+            <button 
+              onClick={() => setShowAddMemberModal(true)}
+              className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
+              title="Add Member"
+            >
+              <UserPlus size={20} />
+            </button>
+            <button 
+              onClick={() => setShowGroupDetailsSidebar(!showGroupDetailsSidebar)}
+              className={`p-2.5 rounded-full hover:bg-base-200 transition-colors ${showGroupDetailsSidebar ? "text-primary bg-primary/10 hover:bg-primary/20" : "text-base-content/85"}`}
+              title="Group Details"
+            >
+              <Info size={20} />
+            </button>
+          </>
         )}
 
         {/* Dropdown Options */}

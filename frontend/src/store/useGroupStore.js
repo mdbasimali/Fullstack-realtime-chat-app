@@ -12,6 +12,10 @@ export const useGroupStore = create((set, get) => ({
   isGroupsLoading: false,
   isMessagesLoading: false,
   isCreatingGroup: false,
+  showGroupDetailsSidebar: false,
+  setShowGroupDetailsSidebar: (show) => set({ showGroupDetailsSidebar: show }),
+  selectedGroupDetails: null,
+  isFetchingGroupDetails: false,
 
   fetchGroups: async () => {
     set({ isGroupsLoading: true });
@@ -178,7 +182,7 @@ export const useGroupStore = create((set, get) => ({
   },
 
   setSelectedGroup: (group) => {
-    set({ selectedGroup: group });
+    set({ selectedGroup: group, showGroupDetailsSidebar: false, selectedGroupDetails: null });
     if (group) {
       // Clean DM selection state to prevent duplicate chat renders
       useChatstore.getState().setSelectedUser(null);
@@ -274,6 +278,19 @@ export const useGroupStore = create((set, get) => ({
       const errorMsg = error.response?.data?.message || "Failed to add member.";
       toast.error(errorMsg);
       return false;
+    }
+  },
+
+  fetchGroupDetails: async (groupId) => {
+    set({ isFetchingGroupDetails: true });
+    try {
+      const res = await axiosInstance.get(`/groups/${groupId}/details`);
+      set({ selectedGroupDetails: res.data });
+    } catch (error) {
+      console.error("Error fetching group details:", error);
+      toast.error("Failed to load group details.");
+    } finally {
+      set({ isFetchingGroupDetails: false });
     }
   }
 }));
