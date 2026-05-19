@@ -85,6 +85,23 @@ export const useAuthStore = create((set,get) => ({
     }
   },
 
+  firebaseLogin: async (idToken) => {
+    set({ isLoggingIn: true });
+    try {
+      const res = await axiosInstance.post("/auth/firebase-login", { idToken });
+      if (res.data?.token) localStorage.setItem("token", res.data.token);
+      set({ authUser: res.data });
+      get().connectSocket();
+      get().setupPushNotifications();
+      return { success: true, user: res.data };
+    } catch (error) {
+      console.error("Firebase Login error:", error);
+      return { success: false, error: error?.response?.data?.message || "Firebase OTP Authentication failed" };
+    } finally {
+      set({ isLoggingIn: false });
+    }
+  },
+
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout");

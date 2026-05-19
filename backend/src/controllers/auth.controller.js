@@ -2,6 +2,7 @@ import cloudinary from "../lib/cloudinary.js";
 import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js"
 import bcrypt from "bcryptjs"
+import { verifyFirebaseToken } from "../lib/firebase.js";
 
 const autoLinkMatchedContacts = async (newUser) => {
   try {
@@ -440,5 +441,85 @@ export const revokeLinkedDevice = async (req, res) => {
   } catch (error) {
     console.error("Error in revokeLinkedDevice:", error);
     res.status(500).json({ message: "Server error revoking device session" });
+  }
+};
+
+export const firebaseLogin = async (req, res) => {
+  const { idToken } = req.body;
+  const firebaseProjectId = process.env.FIREBASE_PROJECT_ID;
+
+  try {
+    if (!idToken) {
+      return res.status(400).json({ message: "Firebase ID Token is required" });
+    }
+
+    // Verify token
+    const decodedToken = await verifyFirebaseToken(idToken, firebaseProjectId);
+    const phoneNumber = decodedToken.phone_number;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ message: "Phone number not verified in token" });
+    }
+
+    // Normalize phone number (strip whitespace and confirm formatting)
+    const normalizedPhone = phoneNumber.trim();
+
+    // Check if user exists in database
+    let user = await User.findOne({ phoneNumber: normalizedPhone });
+
+    if (!user) {
+      // Create a mock email & unique username to satisfy database constraints
+      const cleanPhone = normalizedPhone.replace("+", "");
+      const mockEmail = `${cleanPhone}@chatzone.in`;
+      let username = `user_${cleanPhone}`;
+
+      // Check for duplicate username
+      let usernameExists = await User.findOne({ username });
+      let counter = 1;
+      while (usernameExists) {
+        username = `user_${cleanPhone}_${counter}`;
+        usernameExists = await User.findOne({ username });
+        counter++;
+      }
+
+      // Check if email somehow exists
+      const emailExists = await User.findOne({ email: mockEmail });
+      if (emailExists) {
+        return res.status(400).json({ message: "An account with this phone already exists under a virtual email conflict." });
+      }
+
+      // Hash a random password (since password is required)
+      const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).toUpperCase().slice(-8);
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(generatedPassword, salt);
+
+      user = new User({
+        email: mockEmail,
+        username,
+        fullName: `User ${cleanPhone.slice(-10)}`, // Standard clean display name
+        password: hashedPassword,
+        phoneNumber: normalizedPhone,
+        profilePic: "",
+      });
+
+      await user.save();
+      await autoLinkMatchedContacts(user);
+    }
+
+    // Generate local JWT token
+    const token = generateToken(user._id, res);
+
+    res.status(200).json({
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      username: user.username,
+      profilePic: user.profilePic,
+      phoneNumber: user.phoneNumber,
+      token: token,
+    });
+  } catch (error) {
+    console.error("Error in firebaseLogin controller:", error.message);
+    res.status(500).json({ message: error.message || "Authentication failed" });
   }
 };
