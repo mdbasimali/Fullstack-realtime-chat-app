@@ -15,6 +15,10 @@ export const useGroupStore = create((set, get) => ({
   setShowGroupDetailsSidebar: (show) => set({ showGroupDetailsSidebar: show }),
   selectedGroupDetails: null,
   isFetchingGroupDetails: false,
+  showGroupCallModal: false,
+  setShowGroupCallModal: (show) => set({ showGroupCallModal: show }),
+  groupCallType: "video",
+  setGroupCallType: (type) => set({ groupCallType: type }),
 
   fetchGroups: async () => {
     set({ isGroupsLoading: true });

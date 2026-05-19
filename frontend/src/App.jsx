@@ -4,7 +4,7 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatstore } from "./store/useChatStore";
 import { useGroupStore } from "./store/useGroupStore";
-import { Loader } from "lucide-react"
+import { Loader, Video, Phone, X, Loader2 } from "lucide-react"
 import { useThemeStore } from "./store/useThemeStore";
 import { useCallStore } from "./store/useCallStore";
 import CallModal from "./components/CallModal";
@@ -26,6 +26,14 @@ const App = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { selectedUser, setSelectedUser, subscribeToMessages, unsubscribeFromMessages } = useChatstore();
+  const { 
+    showGroupCallModal, 
+    setShowGroupCallModal, 
+    groupCallType, 
+    selectedGroupDetails, 
+    isFetchingGroupDetails 
+  } = useGroupStore();
+  const { initiateCall } = useCallStore();
 
   // Extract Google redirect token synchronously on initial load to avoid race conditions
   const queryParams = new URLSearchParams(window.location.search);
@@ -232,6 +240,85 @@ const App = () => {
       </div>
       
       <CallModal />
+
+      {/* Group Call Member Picker Modal */}
+      {showGroupCallModal && (
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-base-100 border border-base-300 w-full max-w-sm rounded-[28px] overflow-hidden shadow-2xl animate-scale-up">
+            <header className="px-6 py-5 border-b border-base-200 flex justify-between items-center bg-base-150">
+              <div className="text-left">
+                <h3 className="text-base font-extrabold text-base-content tracking-tight flex items-center gap-2">
+                  {groupCallType === "video" ? <Video className="text-indigo-500 fill-indigo-500/10" size={20} /> : <Phone className="text-emerald-500 fill-emerald-500/10" size={20} />}
+                  <span>Group {groupCallType === "video" ? "Video" : "Voice"} Call</span>
+                </h3>
+                <p className="text-xs text-base-content/50 mt-0.5">Select a member to start a call</p>
+              </div>
+              <button 
+                onClick={() => setShowGroupCallModal(false)}
+                className="p-1.5 rounded-full hover:bg-base-200 text-base-content/60 hover:text-base-content transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="p-4 max-h-[350px] overflow-y-auto space-y-2">
+              {isFetchingGroupDetails ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-2">
+                  <Loader2 className="size-8 animate-spin text-primary opacity-60" />
+                  <span className="text-xs text-base-content/50 font-medium">Fetching group members...</span>
+                </div>
+              ) : !selectedGroupDetails?.members || selectedGroupDetails.members.length <= 1 ? (
+                <div className="text-center py-10 text-xs text-base-content/40 font-medium">
+                  No other members in this group to call.
+                </div>
+              ) : (
+                selectedGroupDetails.members
+                  .filter((m) => m._id !== authUser?._id)
+                  .map((member) => (
+                    <div 
+                      key={member._id}
+                      className="p-3 flex items-center justify-between rounded-2xl bg-base-200/40 border border-base-200/50 hover:bg-base-200 transition-all duration-200"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {member.profilePic ? (
+                          <img 
+                            src={member.profilePic} 
+                            alt={member.fullName} 
+                            className="w-10 h-10 rounded-full object-cover border border-base-300"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm border border-indigo-100 dark:border-indigo-900/20 shadow-sm">
+                            {member.fullName.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        
+                        <div className="text-left min-w-0">
+                          <h4 className="font-bold text-xs text-base-content truncate">{member.fullName}</h4>
+                          <p className="text-[10px] text-base-content/40 truncate">@{member.username || "username"}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setShowGroupCallModal(false);
+                          initiateCall(member, groupCallType);
+                        }}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                          groupCallType === "video" 
+                            ? "bg-indigo-100 hover:bg-indigo-200 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400" 
+                            : "bg-emerald-100 hover:bg-emerald-200 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+                        }`}
+                        title={`Call ${member.fullName}`}
+                      >
+                        {groupCallType === "video" ? <Video size={16} /> : <Phone size={16} />}
+                      </button>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
