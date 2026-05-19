@@ -16,7 +16,7 @@ import {
   Monitor,
   Maximize2,
   Minimize2,
-  Loader2
+  Loader2, UserPlus
 } from "lucide-react";
 
 const ParticipantAudioTile = React.memo(({ stream }) => {
