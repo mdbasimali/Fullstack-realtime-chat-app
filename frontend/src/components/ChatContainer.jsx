@@ -13,6 +13,7 @@ import {
   PhoneOutgoing, PhoneIncoming, X, Calendar, Crown, Loader2
 } from "lucide-react";
 import VoicePlayer from "./VoicePlayer";
+import toast from "react-hot-toast";
 
 const getSenderColor = (senderId) => {
   const colors = [
@@ -353,6 +354,58 @@ const ChatContainer = () => {
                 <span>
                   Creator: {selectedGroup.creatorId === authUser?._id ? "You" : "Group Creator"}
                 </span>
+              </div>
+            </div>
+
+            {/* Invite Links / Code Section */}
+            <div className="bg-base-200/40 border border-base-300/50 rounded-2xl p-4 space-y-3 text-left animate-fade-in">
+              <span className="text-xs font-bold text-base-content/60 uppercase tracking-widest block">Invite to Group</span>
+              
+              {/* Invite Code */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-base-content/50 uppercase tracking-wider block">Invite Code</label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-base-300/60 p-2 rounded-xl text-center font-mono font-bold text-sm tracking-wider text-primary border border-base-300">
+                    {selectedGroupDetails?.inviteCode || selectedGroup.inviteCode || "N/A"}
+                  </code>
+                  <button
+                    onClick={() => {
+                      const code = selectedGroupDetails?.inviteCode || selectedGroup.inviteCode;
+                      if (code) {
+                        navigator.clipboard.writeText(code);
+                        toast.success("Invite code copied!");
+                      }
+                    }}
+                    className="btn btn-xs btn-outline border-base-300 hover:bg-base-200 rounded-lg py-1.5 px-2.5 h-auto text-[10px] font-bold"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              {/* Invite Link */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-base-content/50 uppercase tracking-wider block">Invite Link</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${window.location.origin}/join-group?code=${selectedGroupDetails?.inviteCode || selectedGroup.inviteCode || ""}`}
+                    className="flex-1 bg-base-300/60 p-2 rounded-xl text-xs text-base-content/75 border border-base-300 focus:outline-none truncate"
+                  />
+                  <button
+                    onClick={() => {
+                      const code = selectedGroupDetails?.inviteCode || selectedGroup.inviteCode;
+                      if (code) {
+                        navigator.clipboard.writeText(`${window.location.origin}/join-group?code=${code}`);
+                        toast.success("Invite link copied!");
+                      }
+                    }}
+                    className="btn btn-xs btn-outline border-base-300 hover:bg-base-200 rounded-lg py-1.5 px-2.5 h-auto text-[10px] font-bold"
+                  >
+                    Copy
+                  </button>
+                </div>
               </div>
             </div>
 

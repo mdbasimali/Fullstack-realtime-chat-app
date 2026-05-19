@@ -3,13 +3,12 @@ import { protectRoute } from "../middleware/auth.middleware.js";
 import {
   createGroup,
   getMyGroups,
-  getExploreGroups,
-  joinGroup,
   leaveGroup,
   getGroupMessages,
   sendGroupMessage,
   addMember,
   getGroupDetails,
+  joinGroupByInvite,
 } from "../controllers/group.controller.js";
 
 const router = express.Router();
@@ -18,11 +17,8 @@ const router = express.Router();
 router.get("/", protectRoute, getMyGroups);
 router.post("/", protectRoute, createGroup);
 
-// Explore public groups
-router.get("/explore", protectRoute, getExploreGroups);
-
 // Join / Leave group operations
-router.post("/join/:groupId", protectRoute, joinGroup);
+router.post("/join-invite/:inviteCode", protectRoute, joinGroupByInvite);
 router.post("/leave/:groupId", protectRoute, leaveGroup);
 router.post("/:groupId/add-member", protectRoute, addMember);
 

@@ -29,6 +29,11 @@ const groupSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    inviteCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     maxMembers: {
       type: Number,
       default: 100, // Capped at 100 to prevent database performance degradation

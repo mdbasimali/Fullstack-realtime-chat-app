@@ -50,16 +50,14 @@ const Sidebar = () => {
   // Group Store integrations
   const {
     groups,
-    exploreGroups,
     selectedGroup,
     setSelectedGroup,
     fetchGroups,
-    fetchExploreGroups,
     createGroup,
-    joinGroup,
     leaveGroup,
     isGroupsLoading,
-    isCreatingGroup
+    isCreatingGroup,
+    joinGroupByInviteCode
   } = useGroupStore();
 
   // Group Creation local state
@@ -102,9 +100,8 @@ const Sidebar = () => {
   useEffect(() => {
     if (activeTab === "groups") {
       fetchGroups();
-      fetchExploreGroups();
     }
-  }, [activeTab, fetchGroups, fetchExploreGroups]);
+  }, [activeTab, fetchGroups]);
 
   // Navigation states
   const [showContactsModal, setShowContactsModal] = useState(false);
@@ -119,7 +116,31 @@ const Sidebar = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Invite Join state
+  const [showJoinGroupModal, setShowJoinGroupModal] = useState(false);
+  const [inviteCodeInput, setInviteCodeInput] = useState("");
 
+  const handleJoinGroupByInviteSubmit = async (e) => {
+    e.preventDefault();
+    if (!inviteCodeInput.trim()) return;
+
+    let code = inviteCodeInput.trim();
+    try {
+      const url = new URL(code);
+      const urlCode = url.searchParams.get("code");
+      if (urlCode) {
+        code = urlCode;
+      }
+    } catch (_) {
+      // Input is code directly
+    }
+
+    const success = await joinGroupByInviteCode(code);
+    if (success) {
+      setShowJoinGroupModal(false);
+      setInviteCodeInput("");
+    }
+  };
 
   // Story Store
   const { stories, getStories, postStory, deleteStory, isStoriesLoading, isUploadingStory } = useStoryStore();
@@ -867,16 +888,25 @@ const Sidebar = () => {
               <div className="text-left">
                 <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider block">Groups</span>
                 <span className="text-[11px] text-base-content/40 mt-0.5 block">
-                  {groups.length} Joined • {exploreGroups.length} Public
+                  {groups.length} Joined
                 </span>
               </div>
-              <button 
-                onClick={() => setShowCreateGroupModal(true)}
-                className="btn btn-sm btn-primary rounded-full px-4 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"
-              >
-                <Plus size={16} />
-                <span>Create Group</span>
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setShowJoinGroupModal(true)}
+                  className="btn btn-sm btn-ghost border border-base-300/60 hover:bg-base-200 rounded-full px-3 flex items-center gap-1 active:scale-95 transition-transform"
+                >
+                  <UserPlus size={14} className="text-primary" />
+                  <span>Join</span>
+                </button>
+                <button 
+                  onClick={() => setShowCreateGroupModal(true)}
+                  className="btn btn-sm btn-primary rounded-full px-3 flex items-center gap-1 shadow-sm active:scale-95 transition-transform"
+                >
+                  <Plus size={14} />
+                  <span>Create</span>
+                </button>
+              </div>
             </div>
 
             {/* Loading Indicator */}
@@ -893,7 +923,7 @@ const Sidebar = () => {
                   <span className="text-[11px] font-bold text-base-content/40 uppercase tracking-widest px-1">My Groups</span>
                   {groups.length === 0 ? (
                     <div className="p-4 bg-base-200/30 rounded-2xl border border-base-300/40 text-center text-xs text-base-content/50 font-medium">
-                      You haven't joined any groups yet. Create one or join an explore group below!
+                      You haven't joined any groups yet. Create one or join using an invite code!
                     </div>
                   ) : (
                     <div className="space-y-1.5">
@@ -956,61 +986,6 @@ const Sidebar = () => {
                           </div>
                         );
                       })}
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Explore Public Groups */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-base-content/40 uppercase tracking-widest px-1">Explore Groups</span>
-                  {exploreGroups.length === 0 ? (
-                    <div className="p-4 bg-base-200/30 rounded-2xl border border-base-300/40 text-center text-xs text-base-content/50 font-medium">
-                      No new groups to explore right now.
-                    </div>
-                  ) : (
-                    <div className="space-y-1.5">
-                      {exploreGroups.map((group) => (
-                        <div
-                          key={group._id}
-                          className="w-full p-3.5 flex items-center justify-between rounded-2xl bg-base-200/40 border border-base-300/40"
-                        >
-                          <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                            {/* Avatar */}
-                            {group.avatar ? (
-                              <img
-                                src={group.avatar}
-                                  alt={group.name}
-                                className="w-11 h-11 rounded-full object-cover border border-base-300 shadow-sm shrink-0"
-                              />
-                            ) : (
-                              <div className="w-11 h-11 rounded-full bg-base-300/60 text-base-content/70 flex items-center justify-center font-bold text-base shadow-sm shrink-0">
-                                {group.name.slice(0, 2).toUpperCase()}
-                              </div>
-                            )}
-                            {/* Details */}
-                            <div className="text-left min-w-0 flex-1">
-                              <h4 className="font-bold text-[14px] text-base-content truncate">
-                                {group.name}
-                              </h4>
-                              <p className="text-[11px] text-base-content/50 truncate mt-0.5">
-                                {group.description || "No description provided."}
-                              </p>
-                              <span className="text-[10px] text-primary/80 font-bold block mt-1">
-                                {group.membersCount}/100 members
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Join Button */}
-                          <button
-                            onClick={() => joinGroup(group._id)}
-                            disabled={group.membersCount >= 100}
-                            className="btn btn-xs btn-primary rounded-full px-3.5 active:scale-95 transition-transform"
-                          >
-                            Join
-                          </button>
-                        </div>
-                      ))}
                     </div>
                   )}
                 </div>
@@ -1999,6 +1974,62 @@ const Sidebar = () => {
                   ) : (
                     <span>Create Group</span>
                   )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Join Group Modal */}
+      {showJoinGroupModal && (
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-base-100 border border-base-300 w-full max-w-md rounded-[28px] overflow-hidden shadow-2xl animate-scale-up">
+            <header className="px-6 py-5 border-b border-base-200 flex justify-between items-center bg-base-150">
+              <div className="text-left">
+                <h3 className="text-lg font-extrabold text-base-content tracking-tight">Join Private Group</h3>
+                <p className="text-xs text-base-content/50 mt-0.5">Enter an invite code or link to join</p>
+              </div>
+              <button 
+                onClick={() => { 
+                  setShowJoinGroupModal(false); 
+                  setInviteCodeInput("");
+                }}
+                className="p-1.5 rounded-full hover:bg-base-200 text-base-content/60 hover:text-base-content transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            <form onSubmit={handleJoinGroupByInviteSubmit} className="p-6 space-y-4">
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-bold text-base-content/70 tracking-wide uppercase px-1">Invite Code or Link</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. A1B2C3D4 or url" 
+                  value={inviteCodeInput}
+                  onChange={(e) => setInviteCodeInput(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl bg-base-200 border border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-mono uppercase"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => { 
+                    setShowJoinGroupModal(false); 
+                    setInviteCodeInput("");
+                  }}
+                  className="px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-base-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!inviteCodeInput.trim()}
+                  className="px-6 py-2.5 rounded-full text-sm font-semibold btn-primary flex items-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
+                >
+                  <span>Join Group</span>
                 </button>
               </div>
             </form>

@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 
 export const useGroupStore = create((set, get) => ({
   groups: [],
-  exploreGroups: [],
   selectedGroup: null,
   messages: [],
   isGroupsLoading: false,
@@ -35,15 +34,6 @@ export const useGroupStore = create((set, get) => ({
     }
   },
 
-  fetchExploreGroups: async () => {
-    try {
-      const res = await axiosInstance.get("/groups/explore");
-      set({ exploreGroups: res.data });
-    } catch (error) {
-      console.error("Error fetching explore groups:", error);
-    }
-  },
-
   createGroup: async (groupData) => {
     const { isCreatingGroup } = get();
     if (isCreatingGroup) return false;
@@ -67,6 +57,7 @@ export const useGroupStore = create((set, get) => ({
         description: res.data.description,
         creatorId: res.data.creatorId,
         membersCount: 1,
+        inviteCode: res.data.inviteCode,
         isMember: true
       });
       return true;
@@ -79,14 +70,13 @@ export const useGroupStore = create((set, get) => ({
     }
   },
 
-  joinGroup: async (groupId) => {
+  joinGroupByInviteCode: async (inviteCode) => {
     try {
-      const res = await axiosInstance.post(`/groups/join/${groupId}`);
+      const res = await axiosInstance.post(`/groups/join-invite/${inviteCode}`);
       const joinedGroup = res.data.group;
 
-      // Update explore list (remove joined one) and add to joined list
+      // Add to joined list
       set({
-        exploreGroups: get().exploreGroups.filter(g => g._id !== groupId),
         groups: [joinedGroup, ...get().groups]
       });
 
@@ -95,13 +85,13 @@ export const useGroupStore = create((set, get) => ({
       // Auto-join socket room
       const socket = useAuthStore.getState().socket;
       if (socket) {
-        socket.emit("group:join-room", groupId);
+        socket.emit("group:join-room", joinedGroup._id);
       }
 
       get().setSelectedGroup(joinedGroup);
       return true;
     } catch (error) {
-      const errorMsg = error.response?.data?.message || "Failed to join group.";
+      const errorMsg = error.response?.data?.message || "Failed to join group via invite.";
       toast.error(errorMsg);
       return false;
     }
@@ -126,8 +116,6 @@ export const useGroupStore = create((set, get) => ({
         socket.emit("group:leave-room", groupId);
       }
 
-      // Refresh explore groups to make it joinable again
-      get().fetchExploreGroups();
       return true;
     } catch (error) {
       console.error("Error leaving group:", error);

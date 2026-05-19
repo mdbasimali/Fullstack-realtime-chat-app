@@ -160,7 +160,21 @@ const App = () => {
       // Clean up URL
       window.history.replaceState({}, document.title, "/");
     }
-  }, [location]);
+
+    const code = params.get("code");
+    if (code && authUser) {
+      // Clean up URL
+      window.history.replaceState({}, document.title, "/");
+      
+      const performJoin = async () => {
+        const success = await useGroupStore.getState().joinGroupByInviteCode(code);
+        if (success) {
+          useChatstore.getState().setActiveTab("groups");
+        }
+      };
+      performJoin();
+    }
+  }, [location, authUser]);
 
   console.log({authUser});
 
@@ -170,7 +184,7 @@ const App = () => {
     </div>
   );
 
-  const showNavbar = !["/", "/settings", "/profile"].includes(location.pathname);
+  const showNavbar = !["/", "/settings", "/profile", "/join-group"].includes(location.pathname);
 
   return (
     <div data-theme={theme} className="h-screen overflow-hidden flex flex-col">
@@ -183,6 +197,7 @@ const App = () => {
         }>
           <Routes>
             <Route path="/" element={authUser ? <HomePage />:<Navigate to="/login" />} />
+            <Route path="/join-group" element={authUser ? <HomePage />:<Navigate to="/login" />} />
             <Route path="/signup" element={!authUser ? <SignUpPage />:<Navigate to="/" />} />
             <Route path="/login" element={!authUser ? <LoginPage />:<Navigate to="/" />} />
             <Route path="/settings" element={<SettingsPage />} />

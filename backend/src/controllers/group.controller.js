@@ -73,7 +73,8 @@ export const createGroup = async (req, res) => {
       description: (description || "").trim(),
       creatorId: userId,
       members: initialMembers,
-      avatar: avatarUrl
+      avatar: avatarUrl,
+      inviteCode: Math.random().toString(36).substring(2, 10).toUpperCase()
     });
 
     await newGroup.save();
@@ -89,6 +90,7 @@ export const createGroup = async (req, res) => {
       creatorId: newGroup.creatorId,
       membersCount: newGroup.members.length,
       avatar: newGroup.avatar,
+      inviteCode: newGroup.inviteCode,
       isMember: true,
       createdAt: newGroup.createdAt
     };
@@ -118,7 +120,7 @@ export const getMyGroups = async (req, res) => {
     const userId = req.user._id;
     // Find all groups where the user is a member, projection for lightweight load
     const groups = await Group.find({ members: userId })
-      .select("name description creatorId members avatar createdAt")
+      .select("name description creatorId members avatar inviteCode createdAt")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -129,6 +131,7 @@ export const getMyGroups = async (req, res) => {
       creatorId: g.creatorId,
       membersCount: g.members.length,
       avatar: g.avatar,
+      inviteCode: g.inviteCode,
       isMember: true,
       createdAt: g.createdAt,
     }));
@@ -141,89 +144,17 @@ export const getMyGroups = async (req, res) => {
 };
 
 /**
- * Explore public groups the user has not joined
+ * Join a group using invite code or link
  */
-export const getExploreGroups = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    // Fetch up to 20 groups where the user is NOT a member
-    const groups = await Group.find({ members: { $ne: userId } })
-      .select("name description creatorId members avatar createdAt")
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .lean();
-
-    const sanitized = groups.map((g) => ({
-      _id: g._id,
-      name: g.name,
-      description: g.description,
-      creatorId: g.creatorId,
-      membersCount: g.members.length,
-      avatar: g.avatar,
-      isMember: false,
-      createdAt: g.createdAt,
-    }));
-
-    res.status(200).json(sanitized);
-  } catch (error) {
-    console.error("Error in getExploreGroups:", error);
-    res.status(500).json({ message: "Server error fetching explore groups." });
-  }
-};
-
-/**
- * Join a group atomically (concurrency safe)
- */
-export const joinGroup = async (req, res) => {
+export const joinGroupByInvite = async (req, res) => {
   const userId = req.user._id;
-  const { groupId } = req.params;
-
-  // Cooldown check (prevent rapid join/leave actions)
-  const lastAction = groupJoinCooldowns.get(`${userId}_${groupId}`);
-  if (lastAction && Date.now() - lastAction < 3000) {
-    return res.status(429).json({ message: "Too many requests. Please wait." });
-  }
-  groupJoinCooldowns.set(`${userId}_${groupId}`, Date.now());
+  const { inviteCode } = req.params;
 
   try {
-    // Perform atomic update checking size and existing membership simultaneously
-    const updatedGroup = await Group.findOneAndUpdate(
-      {
-        _id: groupId,
-        members: { $ne: userId },
-        // Use MongoDB $expr to verify members size is less than maxMembers limit (100)
-        $expr: { $lt: [{ $size: "$members" }, "$maxMembers"] }
-      },
-      { $addToSet: { members: userId } },
-      { new: true }
-    );
-
-    if (updatedGroup) {
-      // Let the socket room know a user joined
-      io.to(`group_${groupId}`).emit("groupMemberJoined", {
-        groupId,
-        userId,
-        membersCount: updatedGroup.members.length
-      });
-
-      return res.status(200).json({
-        message: "Successfully joined group.",
-        group: {
-          _id: updatedGroup._id,
-          name: updatedGroup.name,
-          description: updatedGroup.description,
-          creatorId: updatedGroup.creatorId,
-          membersCount: updatedGroup.members.length,
-          avatar: updatedGroup.avatar,
-          isMember: true
-        }
-      });
-    }
-
-    // If update failed, query the group to return the exact validation reason
-    const group = await Group.findById(groupId);
+    const codeCleaned = inviteCode.trim().toUpperCase();
+    const group = await Group.findOne({ inviteCode: codeCleaned });
     if (!group) {
-      return res.status(404).json({ message: "Group not found." });
+      return res.status(404).json({ message: "Invalid invite code or link." });
     }
 
     if (group.members.includes(userId)) {
@@ -234,10 +165,43 @@ export const joinGroup = async (req, res) => {
       return res.status(400).json({ message: "Group is full (max 100 members)." });
     }
 
+    // Add user atomically
+    const updatedGroup = await Group.findOneAndUpdate(
+      {
+        _id: group._id,
+        members: { $ne: userId }
+      },
+      { $addToSet: { members: userId } },
+      { new: true }
+    );
+
+    if (updatedGroup) {
+      // Let the socket room know a user joined
+      io.to(`group_${group._id}`).emit("groupMemberJoined", {
+        groupId: group._id,
+        userId,
+        membersCount: updatedGroup.members.length
+      });
+
+      return res.status(200).json({
+        message: "Successfully joined group via invite.",
+        group: {
+          _id: updatedGroup._id,
+          name: updatedGroup.name,
+          description: updatedGroup.description,
+          creatorId: updatedGroup.creatorId,
+          membersCount: updatedGroup.members.length,
+          avatar: updatedGroup.avatar,
+          inviteCode: updatedGroup.inviteCode,
+          isMember: true
+        }
+      });
+    }
+
     res.status(400).json({ message: "Failed to join group." });
   } catch (error) {
-    console.error("Error in joinGroup:", error);
-    res.status(500).json({ message: "Server error during join operation." });
+    console.error("Error in joinGroupByInvite:", error);
+    res.status(500).json({ message: "Server error during invite join operation." });
   }
 };
 
