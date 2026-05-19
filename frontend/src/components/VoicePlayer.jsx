@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause } from "lucide-react";
+import toast from "react-hot-toast";
 
 const VoicePlayer = ({ url, isMyMessage }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -18,6 +19,14 @@ const VoicePlayer = ({ url, isMyMessage }) => {
       }
     };
     const onEnded = () => setIsPlaying(false);
+    
+    const onError = () => {
+      console.error("Audio error details:", audio.error);
+      // Only notify if there's an actual load failure (code 3/4 are format/decoding issues, 4 is src not found)
+      if (audio.error) {
+        toast.error(`Audio failed to load: ${audio.error.message || "format unsupported"}`);
+      }
+    };
 
     // Audio might load before events register
     if (audio.readyState >= 1 && audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
@@ -28,12 +37,14 @@ const VoicePlayer = ({ url, isMyMessage }) => {
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
     audio.addEventListener("durationchange", onLoadedMetadata);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       audio.removeEventListener("durationchange", onLoadedMetadata);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
     };
   }, [url]);
 
@@ -41,10 +52,18 @@ const VoicePlayer = ({ url, isMyMessage }) => {
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
+      setIsPlaying(false);
     } else {
-      audioRef.current.play().catch((e) => console.error("Playback error:", e));
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch((e) => {
+          console.error("Audio play failed:", e);
+          toast.error("Playback failed. Please click again or check browser permissions.");
+          setIsPlaying(false);
+        });
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleSeek = (e) => {

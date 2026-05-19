@@ -85,7 +85,7 @@ const MessageInput = () => {
       mediaRecorder.stream.getTracks().forEach((track) => track.stop());
 
       if (shouldSend && audioChunksRef.current.length > 0) {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
