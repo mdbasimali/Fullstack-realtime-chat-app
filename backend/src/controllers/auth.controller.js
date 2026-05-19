@@ -221,5 +221,14 @@ export const googleAuth = async (req, res) => {
   }
 };
 
+export const getGoogleClientId = (req, res) => {
+  try {
+    res.status(200).json({ clientId: process.env.GOOGLE_CLIENT_ID || "" });
+  } catch (error) {
+    console.error("Error in getGoogleClientId controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 
 

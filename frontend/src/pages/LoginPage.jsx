@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { MessageSquare, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 
 const LoginPage = () => {
   const { googleLogin, isLoggingIn } = useAuthStore();
   const navigate = useNavigate();
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState("");
 
   const handleGoogleCredentialResponse = async (response) => {
     const res = await googleLogin(response.credential);
@@ -19,6 +21,20 @@ const LoginPage = () => {
       toast.error(res.error || "Authentication failed");
     }
   };
+
+  useEffect(() => {
+    const fetchClientId = async () => {
+      try {
+        const res = await axiosInstance.get("/auth/google-client-id");
+        if (res.data?.clientId) {
+          setGoogleClientId(res.data.clientId);
+        }
+      } catch (err) {
+        console.error("Failed to fetch Google Client ID:", err);
+      }
+    };
+    fetchClientId();
+  }, []);
 
   useEffect(() => {
     // Check if script is already present
@@ -42,10 +58,10 @@ const LoginPage = () => {
   }, []);
 
   useEffect(() => {
-    if (scriptLoaded && window.google) {
+    if (scriptLoaded && googleClientId && window.google) {
       try {
         window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "934273574163-qg6k47g290h26q0f3lh65b7g4b8u2j8p.apps.googleusercontent.com",
+          client_id: googleClientId,
           callback: handleGoogleCredentialResponse,
           auto_select: false,
         });
@@ -67,7 +83,7 @@ const LoginPage = () => {
         console.error("Error rendering Google Sign-In button:", err);
       }
     }
-  }, [scriptLoaded]);
+  }, [scriptLoaded, googleClientId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-center items-center p-4 relative overflow-hidden">
