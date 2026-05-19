@@ -1,178 +1,103 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { AtSign, Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User } from "lucide-react";
-import { Link } from "react-router-dom";
-import AuthImagePattern from "../components/AuthimagePattern";
-
+import { MessageSquare, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const SignUpPage = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: "",
-    username: "",
-    email: "",
-    password: "",
-  });
+  const { googleLogin, isLoggingIn } = useAuthStore();
+  const navigate = useNavigate();
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
-  const { signup, isSigningUp } = useAuthStore();
-
-  const validateForm = () => {
-    if(!formData.username.trim()) { console.log("Username is required"); return false; }
-    if(!formData.fullName.trim()) { console.log("Full name is required"); return false; }
-    if(!formData.email.trim()) { console.log("Email is required"); return false; }
-    if(!/\S+@\S+\.\S+/.test(formData.email)) { console.log("Invalid email format"); return false; }
-    if(!formData.password) { console.log("Password is required"); return false; }
-    if(formData.password.length<6) { console.log("Password must be at least 6 characters"); return false; }
-
-    return true;
-
+  const handleGoogleCredentialResponse = async (response) => {
+    const res = await googleLogin(response.credential);
+    if (res.success) {
+      toast.success("Account created successfully!");
+      localStorage.setItem("trigger_contact_sync", "true");
+      navigate("/");
+    } else {
+      toast.error(res.error || "Authentication failed");
+    }
   };
-  const handleSubmit = (e) => {
-    e.preventDefault();
 
-    const success=validateForm()
-    if(success===true)signup(formData);
-  };
+  useEffect(() => {
+    const existingScript = document.getElementById("google-gsi-client");
+    if (existingScript) {
+      setScriptLoaded(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "google-gsi-client";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setScriptLoaded(true);
+    document.body.appendChild(script);
+  }, []);
+
+  useEffect(() => {
+    if (scriptLoaded && window.google) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "934273574163-qg6k47g290h26q0f3lh65b7g4b8u2j8p.apps.googleusercontent.com",
+          callback: handleGoogleCredentialResponse,
+          auto_select: false,
+        });
+
+        window.google.accounts.id.renderButton(
+          document.getElementById("googleBtnContainer"),
+          { 
+            theme: "outline", 
+            size: "large", 
+            width: "320",
+            text: "signup_with",
+            shape: "pill"
+          }
+        );
+      } catch (err) {
+        console.error("Error rendering Google Sign-In button:", err);
+      }
+    }
+  }, [scriptLoaded]);
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      {/* left side */}
-      <div className="flex flex-col justify-center items-center p-6 sm:p-12">
-        <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-center items-center p-4 relative overflow-hidden">
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/15 rounded-full blur-[120px] pointer-events-none" />
 
-          {/* LOGO */}
-          <div className="text-center mb-8">
-            <div className="flex flex-col items-center gap-2 group">
-              <div
-                className="size-12 rounded-xl bg-primary/10 flex items-center justify-center 
-              group-hover:bg-primary/20 transition-colors"
-              >
-                <MessageSquare className="size-6 text-primary" />
-              </div>
-              <h1 className="text-2xl font-bold mt-2">Create Account</h1>
-              <p className="text-base-content/60">Get started with your free account</p>
-            </div>
+      <div className="w-full max-w-md bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-[36px] p-8 md:p-12 shadow-2xl flex flex-col items-center space-y-8 animate-scale-up z-10">
+        <div className="relative">
+          <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-2xl blur opacity-75 animate-pulse" />
+          <div className="relative size-16 rounded-2xl bg-slate-900 border border-white/20 flex items-center justify-center">
+            <MessageSquare className="size-8 text-primary" />
           </div>
-         
-         <form onSubmit={handleSubmit} className="space-y-6">
-            {/* username section */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Username</span>
-              </label>
-              <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                  <AtSign className="size-5 text-base-content/40" />
-                </div>
-                <input
-                  type="text"
-                  className={`input input-bordered w-full pl-10`}
-                  placeholder="johndoe"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
-                />
-              </div>
+        </div>
+
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">
+            Create Account
+          </h1>
+          <p className="text-sm text-slate-400 max-w-[280px] mx-auto font-medium">
+            Join ChatZone instantly using your Google account.
+          </p>
+        </div>
+
+        <div className="w-full flex flex-col items-center justify-center space-y-4 py-4 min-h-[80px]">
+          {isLoggingIn ? (
+            <div className="flex flex-col items-center space-y-3">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <span className="text-xs text-slate-400 font-semibold">Creating your account securely...</span>
             </div>
+          ) : (
+            <div id="googleBtnContainer" className="flex justify-center transition-all duration-300 active:scale-95" />
+          )}
+        </div>
 
-           {/* name section */}
-             <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Full Name</span>
-              </label>
-              <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                  <User className="size-5 text-base-content/40" />
-                </div>
-                <input
-                  type="text"
-                  className={`input input-bordered w-full pl-10`}
-                  placeholder="John Doe"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* mail section */}
-             <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Email</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                  <Mail className="size-5 text-base-content/40" />
-                </div>
-                <input
-                  type="email"
-                  className={`input input-bordered w-full pl-10`}
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* eye control and password */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Password</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                  <Lock className="size-5 text-base-content/40" />
-                </div>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  className={`input input-bordered w-full pl-10`}
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center z-10"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="size-5 text-base-content/40" />
-                  ) : (
-                    <Eye className="size-5 text-base-content/40" />
-                  )}
-                </button>
-              </div>
-            </div>
-             {/* loader */}
-
-          <button type="submit" className="btn btn-primary w-full" disabled={isSigningUp}>
-              {isSigningUp ? (
-                <>
-                  <Loader2 className="size-5 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                "Create Account"
-              )}
-            </button>
-          </form>
-
-          <div className="text-center">
-            <p className="text-base-content/60">
-              Already have an account?{" "}
-              <Link to="/login" className="link link-primary">
-                Sign in
-              </Link>
-            </p>
-          </div>
-
+        <div className="text-[11px] text-slate-500 text-center font-medium leading-relaxed max-w-[260px]">
+          By continuing, you agree to ChatZone's <span className="hover:text-primary transition-colors cursor-pointer underline">Terms of Service</span> and <span className="hover:text-primary transition-colors cursor-pointer underline">Privacy Policy</span>.
         </div>
       </div>
-      {/* right side */}
-      <AuthImagePattern
-      title="join our communitty"
-      subtitle="Connect with friends, share moments, and stay in touch with your loved ones."
-      
-      />
-
     </div>
   );
 };
