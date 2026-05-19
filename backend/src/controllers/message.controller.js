@@ -1,3 +1,4 @@
+import https from "https";
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
 import Message from "../models/message.model.js";
@@ -327,6 +328,39 @@ export const clearCallLogs = async (req, res) => {
   } catch (error) {
     console.log("Error in clearCallLogs controller: ", error.message);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const downloadFile = async (req, res) => {
+  try {
+    const { url } = req.query;
+    if (!url) {
+      return res.status(400).json({ message: "URL parameter is required" });
+    }
+
+    if (!url.startsWith("https://res.cloudinary.com/")) {
+      return res.status(400).json({ message: "Invalid download source" });
+    }
+
+    https.get(url, (fileStream) => {
+      if (fileStream.statusCode !== 200) {
+        return res.status(fileStream.statusCode).json({ message: "Failed to fetch remote file" });
+      }
+
+      const urlParts = url.split("/");
+      const filename = urlParts[urlParts.length - 1] || "downloaded-file.jpg";
+
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Type", fileStream.headers["content-type"] || "application/octet-stream");
+
+      fileStream.pipe(res);
+    }).on("error", (err) => {
+      console.error("HTTP fetch error in downloadFile:", err);
+      res.status(500).json({ message: "Error downloading file" });
+    });
+  } catch (error) {
+    console.error("Error in downloadFile controller:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 

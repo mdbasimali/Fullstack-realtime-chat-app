@@ -42,6 +42,7 @@ const ChatContainer = () => {
     getMessages,
     isMessagesLoading: isDmMessagesLoading,
     selectedUser,
+    deleteMessage,
   } = useChatstore();
 
   const {
@@ -53,6 +54,7 @@ const ChatContainer = () => {
     selectedGroupDetails,
     isFetchingGroupDetails,
     fetchGroupDetails,
+    deleteGroupMessage,
   } = useGroupStore();
 
   const messages = selectedGroup ? groupMessages : dmMessages;
@@ -122,23 +124,27 @@ const ChatContainer = () => {
     setContextMenu(null);
   };
 
-  const handleDownloadImage = async (imageUrl) => {
+  const handleDownloadImage = (imageUrl) => {
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const token = localStorage.getItem("token") || "";
+      const isDev = import.meta.env.MODE === "development";
+      const hostname = window.location.hostname;
+      const apiBase = isDev 
+        ? `http://${hostname}:5001/api` 
+        : "https://chatzone-backend-c0mn.onrender.com/api";
+        
+      const downloadUrl = `${apiBase}/messages/download?url=${encodeURIComponent(imageUrl)}&token=${token}`;
+      
       const a = document.createElement("a");
-      a.href = url;
+      a.href = downloadUrl;
       a.download = `chat-image-${Date.now()}.jpg`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      toast.success("Image downloaded successfully!");
+      toast.success("Downloading image...");
     } catch (error) {
       console.error("Download failed:", error);
-      window.open(imageUrl, "_blank");
-      toast.success("Opening image in new window to save");
+      toast.error("Failed to download image");
     }
     setContextMenu(null);
   };
@@ -147,9 +153,9 @@ const ChatContainer = () => {
     if (!message) return;
     if (window.confirm("Are you sure you want to delete this message?")) {
       if (selectedGroup) {
-        await useGroupStore.getState().deleteGroupMessage(message._id);
+        await deleteGroupMessage(message._id);
       } else {
-        await useChatstore.getState().deleteMessage(message._id);
+        await deleteMessage(message._id);
       }
       setContextMenu(null);
     }
