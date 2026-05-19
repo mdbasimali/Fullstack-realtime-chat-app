@@ -19,6 +19,121 @@ import {
   Loader2
 } from "lucide-react";
 
+const ParticipantAudioTile = React.memo(({ stream }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    const audioEl = audioRef.current;
+    if (!audioEl || !stream) return;
+
+    if (audioEl.srcObject !== stream) {
+      audioEl.srcObject = stream;
+    }
+  }, [stream]);
+
+  return <audio ref={audioRef} autoPlay playsInline />;
+});
+
+ParticipantAudioTile.displayName = "ParticipantAudioTile";
+
+const ParticipantVideoTile = React.memo(({ 
+  id, 
+  fullName, 
+  profilePic, 
+  stream, 
+  isVideoOff, 
+  isMuted, 
+  isActiveSpeaker, 
+  isLocal, 
+  callType 
+}) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl || !stream || isVideoOff || callType !== "video") return;
+
+    if (videoEl.srcObject !== stream) {
+      videoEl.srcObject = stream;
+    }
+  }, [stream, isVideoOff, callType]);
+
+  return (
+    <div 
+      className={`relative rounded-3xl overflow-hidden bg-[#1c1f26] border-2 shadow-xl transition-all duration-500 flex items-center justify-center aspect-video md:aspect-[4/3] ${
+        isActiveSpeaker 
+          ? "border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)] scale-[1.01]" 
+          : "border-white/10"
+      }`}
+    >
+      {/* Video rendering */}
+      {callType === "video" && stream && !isVideoOff ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted={isLocal}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${isLocal ? "scale-x-[-1]" : ""}`}
+        />
+      ) : (
+        /* Avatar View */
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative">
+            {isActiveSpeaker && (
+              <div className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping"></div>
+            )}
+            {profilePic ? (
+              <img 
+                src={profilePic} 
+                alt={fullName} 
+                className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/10 shadow-lg animate-fade-in"
+              />
+            ) : (
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-2xl border-2 border-purple-500/20 shadow-lg">
+                {fullName.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <span className="text-sm font-semibold text-white/80">{fullName}</span>
+        </div>
+      )}
+
+      {/* Status Overlay Indicators */}
+      <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-1.5 border border-white/5">
+        {isLocal && <span className="text-[10px] text-purple-400 font-bold uppercase mr-0.5">You</span>}
+        <span className="truncate max-w-[80px]">{fullName}</span>
+      </div>
+
+      <div className="absolute top-3 right-3 flex gap-2">
+        {isMuted && (
+          <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
+            <MicOff size={12} />
+          </div>
+        )}
+        {isVideoOff && (
+          <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
+            <VideoOff size={12} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.fullName === nextProps.fullName &&
+    prevProps.profilePic === nextProps.profilePic &&
+    prevProps.stream === nextProps.stream &&
+    prevProps.isVideoOff === nextProps.isVideoOff &&
+    prevProps.isMuted === nextProps.isMuted &&
+    prevProps.isActiveSpeaker === nextProps.isActiveSpeaker &&
+    prevProps.isLocal === nextProps.isLocal &&
+    prevProps.callType === nextProps.callType
+  );
+});
+
+ParticipantVideoTile.displayName = "ParticipantVideoTile";
+
 const CallModal = () => {
   const { authUser } = useAuthStore();
   const {
@@ -55,21 +170,27 @@ const CallModal = () => {
 
   const localVideoRef = React.useCallback((el) => {
     if (el && localStream) {
-      el.srcObject = localStream;
+      if (el.srcObject !== localStream) {
+        el.srcObject = localStream;
+      }
       el.play().catch((err) => console.log("localVideoRef play error:", err));
     }
   }, [localStream]);
 
   const remoteVideoRef = React.useCallback((el) => {
     if (el && remoteStream) {
-      el.srcObject = remoteStream;
+      if (el.srcObject !== remoteStream) {
+        el.srcObject = remoteStream;
+      }
       el.play().catch((err) => console.log("remoteVideoRef play error:", err));
     }
   }, [remoteStream]);
 
   const remoteAudioRef = React.useCallback((el) => {
     if (el && remoteStream) {
-      el.srcObject = remoteStream;
+      if (el.srcObject !== remoteStream) {
+        el.srcObject = remoteStream;
+      }
       el.play().catch((err) => console.log("remoteAudioRef play error:", err));
     }
   }, [remoteStream]);
@@ -313,16 +434,7 @@ const CallModal = () => {
         {/* Hidden audio elements for all group participants */}
         {Object.entries(groupPeers).map(([socketId, peer]) => (
           peer.stream && (
-            <audio
-              key={socketId}
-              ref={(el) => {
-                if (el && peer.stream) {
-                  el.srcObject = peer.stream;
-                }
-              }}
-              autoPlay
-              playsInline
-            />
+            <ParticipantAudioTile key={socketId} stream={peer.stream} />
           )
         ))}
 
@@ -355,75 +467,20 @@ const CallModal = () => {
             participantsList.length <= 4 ? "grid-cols-2" :
             "grid-cols-2 md:grid-cols-3"
           }`}>
-            {participantsList.map((participant) => {
-              const isActiveSpeaker = activeSpeakerId === participant.id;
-              
-              return (
-                <div 
-                  key={participant.id} 
-                  className={`relative rounded-3xl overflow-hidden bg-[#1c1f26] border-2 shadow-xl transition-all duration-300 flex items-center justify-center aspect-video md:aspect-[4/3] ${
-                    isActiveSpeaker 
-                      ? "border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)] scale-[1.01]" 
-                      : "border-white/10"
-                  }`}
-                >
-                  {/* Video rendering */}
-                  {callType === "video" && participant.stream && !participant.isVideoOff ? (
-                    <video
-                      ref={(el) => {
-                        if (el && participant.stream) {
-                          el.srcObject = participant.stream;
-                        }
-                      }}
-                      autoPlay
-                      playsInline
-                      muted={participant.id === "self"}
-                      className={`w-full h-full object-cover ${participant.id === "self" ? "scale-x-[-1]" : ""}`}
-                    />
-                  ) : (
-                    /* Avatar View */
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="relative">
-                        {isActiveSpeaker && (
-                          <div className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping"></div>
-                        )}
-                        {participant.profilePic ? (
-                          <img 
-                            src={participant.profilePic} 
-                            alt={participant.fullName} 
-                            className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/10 shadow-lg animate-fade-in"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-2xl border-2 border-purple-500/20 shadow-lg">
-                            {participant.fullName.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-sm font-semibold text-white/80">{participant.fullName}</span>
-                    </div>
-                  )}
-
-                  {/* Status Overlay Indicators */}
-                  <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-1.5 border border-white/5">
-                    {participant.id === "self" && <span className="text-[10px] text-purple-400 font-bold uppercase mr-0.5">You</span>}
-                    <span className="truncate max-w-[80px]">{participant.fullName}</span>
-                  </div>
-
-                  <div className="absolute top-3 right-3 flex gap-2">
-                    {participant.isMuted && (
-                      <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
-                        <MicOff size={12} />
-                      </div>
-                    )}
-                    {participant.isVideoOff && (
-                      <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
-                        <VideoOff size={12} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {participantsList.map((participant) => (
+              <ParticipantVideoTile 
+                key={participant.id}
+                id={participant.id}
+                fullName={participant.fullName}
+                profilePic={participant.profilePic}
+                stream={participant.stream}
+                isVideoOff={participant.isVideoOff}
+                isMuted={participant.isMuted}
+                isActiveSpeaker={activeSpeakerId === participant.id}
+                isLocal={participant.id === "self"}
+                callType={callType}
+              />
+            ))}
           </div>
         </div>
 
