@@ -1,7 +1,7 @@
 import { useChatstore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
 import { useAuthStore } from "../store/useAuthStore";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
@@ -12,20 +12,80 @@ const HomePage = () => {
   const { selectedGroup, setSelectedGroup } = useGroupStore();
   const { socket, authUser } = useAuthStore();
 
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem("sidebarWidth");
+    return saved ? parseInt(saved, 10) : 380;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = useCallback((e) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback((e) => {
+    if (isResizing) {
+      const newWidth = Math.max(260, Math.min(600, e.clientX));
+      setSidebarWidth(newWidth);
+    }
+  }, [isResizing]);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", resize);
+      window.addEventListener("mouseup", stopResizing);
+      return () => {
+        window.removeEventListener("mousemove", resize);
+        window.removeEventListener("mouseup", stopResizing);
+      };
+    }
+  }, [isResizing, resize, stopResizing]);
+
+  useEffect(() => {
+    localStorage.setItem("sidebarWidth", sidebarWidth.toString());
+  }, [sidebarWidth]);
+
+  const resetWidth = useCallback(() => {
+    setSidebarWidth(380);
+  }, []);
+
   const unreadChatsCount = users.filter(u => u.lastMessage && !u.lastMessage.isRead && u.lastMessage.senderId !== authUser?._id).length;
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] w-full bg-base-100 flex flex-col overflow-hidden text-base-content">
+    <div className="h-[100dvh] max-h-[100dvh] w-full bg-base-100 flex flex-col overflow-hidden text-base-content relative">
       
+      {/* Resizing Overlay (for smooth drag cursor across elements) */}
+      {isResizing && (
+        <div className="fixed inset-0 cursor-col-resize z-[9999] select-none pointer-events-auto bg-transparent" />
+      )}
+
       {/* 1. Core Content Layout */}
       <div className="flex-1 flex overflow-hidden">
         
         {/* DESKTOP SPLIT VIEWPORT (Widths >= md) */}
         <div className="hidden md:flex w-full h-full overflow-hidden">
           {/* Left Sidebar Pane */}
-          <div className="w-[380px] lg:w-[420px] h-full flex-shrink-0 border-r border-base-300">
+          <div 
+            style={{ width: `${sidebarWidth}px` }} 
+            className="h-full flex-shrink-0 relative overflow-hidden"
+          >
             <Sidebar />
           </div>
+
+          {/* Resizer Handle */}
+          <div
+            onMouseDown={startResizing}
+            onDoubleClick={resetWidth}
+            className="w-1.5 cursor-col-resize h-full select-none flex-shrink-0 relative group z-30"
+          >
+            {/* Visual Border Line */}
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1px] bg-base-300 group-hover:bg-primary group-hover:w-[3px] group-active:bg-primary group-active:w-[3px] transition-all" />
+          </div>
+
           {/* Right Chat Container Pane */}
           <div className="flex-1 h-full flex flex-col bg-base-100/50 overflow-hidden">
             {(!selectedUser && !selectedGroup) ? <NoChatSelected /> : <ChatContainer />}

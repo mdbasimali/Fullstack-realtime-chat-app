@@ -50,6 +50,12 @@ const Sidebar = () => {
 
   const unreadChatsCount = users.filter(u => u.lastMessage && !u.lastMessage.isRead && u.lastMessage.senderId !== authUser?._id).length;
 
+  // Pinned Chats local state
+  const [pinnedChats, setPinnedChats] = useState(() => {
+    const saved = localStorage.getItem(`pinned_chats_${authUser?._id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Contact Sync local state
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [syncStep, setSyncStep] = useState("ask"); // "ask" | "syncing" | "matched" | "fallback"
@@ -460,6 +466,7 @@ const Sidebar = () => {
 
   // Long-press and Right-click contextual menu states and event triggers
   const [activeMenuUserId, setActiveMenuUserId] = useState(null);
+  const [activeMenuGroupId, setActiveMenuGroupId] = useState(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const longPressTimer = useRef(null);
 
@@ -485,6 +492,17 @@ const Sidebar = () => {
     }, 500); // 500ms long-press duration
   };
 
+  const startGroupLongPress = (e, groupId) => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    let clientX = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
+    let clientY = e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY;
+    longPressTimer.current = setTimeout(() => {
+      e.preventDefault();
+      setMenuPosition({ x: clientX, y: clientY });
+      setActiveMenuGroupId(groupId);
+    }, 500);
+  };
+
   const endLongPress = () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
@@ -493,6 +511,12 @@ const Sidebar = () => {
     e.preventDefault();
     setMenuPosition({ x: e.clientX, y: e.clientY });
     setActiveMenuUserId(userId);
+  };
+
+  const handleGroupContextMenu = (e, groupId) => {
+    e.preventDefault();
+    setMenuPosition({ x: e.clientX, y: e.clientY });
+    setActiveMenuGroupId(groupId);
   };
 
   // Remove and permanently delete a conversation from database and sidebar
@@ -757,7 +781,13 @@ const Sidebar = () => {
                   <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Conversations</span>
                   <span className="text-xs text-primary font-medium">({chatUsers.length})</span>
                 </div>
-                {chatUsers.map((user) => {
+                {[...chatUsers].sort((a, b) => {
+                  const aPinned = pinnedChats.includes(a._id);
+                  const bPinned = pinnedChats.includes(b._id);
+                  if (aPinned && !bPinned) return -1;
+                  if (!aPinned && bPinned) return 1;
+                  return 0;
+                }).map((user) => {
                   const isOnline = onlineUsers.includes(user._id);
                   const isSelected = selectedUser?._id === user._id;
 
@@ -802,8 +832,9 @@ const Sidebar = () => {
                         {/* Name & Last Message Preview */}
                         <div className="text-left min-w-0 flex-1">
                           <div className="flex justify-between items-baseline gap-2">
-                            <h4 className="font-bold text-base-content text-sm md:text-base truncate group-hover:text-primary transition-colors">
+                            <h4 className="font-bold text-base-content text-sm md:text-base truncate group-hover:text-primary transition-colors flex items-center gap-1.5">
                               {user.fullName}
+                              {pinnedChats.includes(user._id) && <Pin size={12} className="text-base-content/40 rotate-[45deg] shrink-0" />}
                             </h4>
                             {user.lastMessage && (
                               <span className="text-[10px] text-base-content/40 font-semibold whitespace-nowrap">
@@ -857,14 +888,6 @@ const Sidebar = () => {
                         </div>
                       </div>
 
-                      {/* Archive/Delete Action */}
-                      <button
-                        onClick={(e) => deleteConversation(e, user._id)}
-                        className="p-2 rounded-full opacity-0 group-hover:opacity-100 hover:bg-base-300 text-base-content/60 hover:text-error transition-all"
-                        title="Archive Chat"
-                      >
-                        <Trash2 size={16} />
-                      </button>
                     </div>
                   );
                 })}
@@ -901,13 +924,19 @@ const Sidebar = () => {
                   {/* 2. Pin */}
                   <button 
                     onClick={() => {
-                      toast.success("Chat pinned 📌");
+                      const isPinned = pinnedChats.includes(activeMenuUserId);
+                      const updated = isPinned 
+                        ? pinnedChats.filter(id => id !== activeMenuUserId) 
+                        : [...pinnedChats, activeMenuUserId];
+                      setPinnedChats(updated);
+                      localStorage.setItem(`pinned_chats_${authUser?._id}`, JSON.stringify(updated));
+                      toast.success(isPinned ? "Chat unpinned" : "Chat pinned 📌");
                       setActiveMenuUserId(null);
                     }}
                     className="flex items-center gap-3 w-full px-4 py-3 hover:bg-base-200 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
                   >
                     <Pin size={18} className="text-base-content/60 rotate-[45deg]" />
-                    <span>Pin</span>
+                    <span>{pinnedChats.includes(activeMenuUserId) ? "Unpin" : "Pin"}</span>
                   </button>
 
                   {/* 3. Mute */}
@@ -1033,7 +1062,15 @@ const Sidebar = () => {
                         return (
                           <div
                             key={group._id}
-                            onClick={() => setSelectedGroup(group)}
+                            onClick={() => {
+                              if (activeMenuGroupId) return;
+                              setSelectedGroup(group);
+                            }}
+                            onContextMenu={(e) => handleGroupContextMenu(e, group._id)}
+                            onTouchStart={(e) => startGroupLongPress(e, group._id)}
+                            onTouchEnd={endLongPress}
+                            onMouseDown={(e) => startGroupLongPress(e, group._id)}
+                            onMouseUp={endLongPress}
                             className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none ${
                               isSelected 
                                 ? "bg-indigo-50 dark:bg-indigo-950/20 border border-primary/20" 
@@ -1069,20 +1106,6 @@ const Sidebar = () => {
                               <span className="text-[10px] bg-base-300/60 text-base-content/70 px-2 py-0.5 rounded-full font-bold">
                                 {group.membersCount} members
                               </span>
-                              
-                              {/* Leave Button */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (window.confirm(`Are you sure you want to leave ${group.name}?`)) {
-                                    leaveGroup(group._id);
-                                  }
-                                }}
-                                className="opacity-0 group-hover:opacity-100 hover:bg-base-300 p-1.5 rounded-full text-base-content/50 hover:text-error transition-all"
-                                title="Leave Group"
-                              >
-                                <LogOut size={14} />
-                              </button>
                             </div>
                           </div>
                         );
@@ -1091,6 +1114,39 @@ const Sidebar = () => {
                   )}
                 </div>
 
+              </div>
+            )}
+
+            {/* Custom Group Long-press Options Menu Popover Overlay */}
+            {activeMenuGroupId && (
+              <div 
+                className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[1px]" 
+                onClick={() => setActiveMenuGroupId(null)}
+                onContextMenu={(e) => { e.preventDefault(); setActiveMenuGroupId(null); }}
+              >
+                <div 
+                  style={{ 
+                    top: Math.min(menuPosition.y, window.innerHeight - 340), 
+                    left: Math.min(menuPosition.x, window.innerWidth - 240) 
+                  }}
+                  className="absolute bg-base-100 border border-base-300 shadow-2xl rounded-[24px] p-2 w-56 flex flex-col space-y-0.5 z-50 animate-fade-in"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Leave Group */}
+                  <button 
+                    onClick={() => {
+                      const group = groups.find(g => g._id === activeMenuGroupId);
+                      if (group && window.confirm(`Are you sure you want to leave ${group.name}?`)) {
+                        leaveGroup(group._id);
+                      }
+                      setActiveMenuGroupId(null);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-base-200 rounded-xl text-left text-sm font-semibold transition-colors text-error"
+                  >
+                    <LogOut size={18} />
+                    <span>Leave Group</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
