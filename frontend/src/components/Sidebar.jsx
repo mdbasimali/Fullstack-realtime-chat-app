@@ -14,6 +14,7 @@ import {
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import StoryViewer from "./StoryViewer";
+import CameraModal from "./CameraModal";
 
 const formatLastMessageTime = (dateString) => {
   if (!dateString) return "";
@@ -43,7 +44,7 @@ const formatLastMessageTime = (dateString) => {
 };
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation, syncContacts } = useChatstore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation, syncContacts, sendMessage } = useChatstore();
   const { authUser, onlineUsers, logout } = useAuthStore();
   const { initiateCall } = useCallStore();
 
@@ -52,6 +53,9 @@ const Sidebar = () => {
   // Contact Sync local state
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [syncStep, setSyncStep] = useState("ask"); // "ask" | "syncing" | "matched" | "fallback"
+
+  // Camera Modal state
+  const [showCameraModal, setShowCameraModal] = useState(false);
   const [matchedContacts, setMatchedContacts] = useState([]);
   const [manualEmails, setManualEmails] = useState("");
   const [isSyncingContacts, setIsSyncingContacts] = useState(false);
@@ -210,7 +214,8 @@ const Sidebar = () => {
     leaveGroup,
     isGroupsLoading,
     isCreatingGroup,
-    joinGroupByInviteCode
+    joinGroupByInviteCode,
+    sendGroupMessage
   } = useGroupStore();
 
   // Group Creation local state
@@ -1606,7 +1611,7 @@ const Sidebar = () => {
         {/* Camera FAB */}
         <button 
           onClick={() => {
-            toast.success("Camera: Under active development!");
+            setShowCameraModal(true);
           }}
           className="w-12 h-12 rounded-2xl bg-base-200 hover:bg-base-300 text-base-content/80 hover:text-base-content flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95"
           title="Camera"
@@ -2359,6 +2364,20 @@ const Sidebar = () => {
           </div>
         </div>
       )}
+
+      {/* Camera Capture Modal */}
+      <CameraModal 
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        authUser={authUser}
+        selectedUser={selectedUser}
+        selectedGroup={selectedGroup}
+        users={users}
+        groups={groups}
+        postStory={postStory}
+        sendMessage={sendMessage}
+        sendGroupMessage={sendGroupMessage}
+      />
 
     </div>
   );
