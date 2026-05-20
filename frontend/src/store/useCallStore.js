@@ -324,6 +324,26 @@ export const useCallStore = create((set, get) => ({
           }
         }
 
+        // Update Group Peer Connections
+        const { isGroupCall, groupPeers } = get();
+        if (isGroupCall) {
+          await Promise.all(
+            Object.values(groupPeers).map(async (peer) => {
+              if (peer.pc) {
+                const senders = peer.pc.getSenders();
+                const videoSender = senders.find(s => s.track && s.track.kind === "video");
+                if (videoSender) {
+                  try {
+                    await videoSender.replaceTrack(newVideoTrack);
+                  } catch (e) {
+                    console.error(`Error replacing track for group peer ${peer.socketId}:`, e);
+                  }
+                }
+              }
+            })
+          );
+        }
+
         set({ 
           localStream: newLocalStream,
           facingMode: newFacingMode
@@ -342,6 +362,24 @@ export const useCallStore = create((set, get) => ({
           if (pc) {
             const videoSender = pc.getSenders().find(s => s.track && s.track.kind === "video");
             if (videoSender) await videoSender.replaceTrack(fallbackTrack);
+          }
+          const { isGroupCall, groupPeers } = get();
+          if (isGroupCall) {
+            await Promise.all(
+              Object.values(groupPeers).map(async (peer) => {
+                if (peer.pc) {
+                  const senders = peer.pc.getSenders();
+                  const videoSender = senders.find(s => s.track && s.track.kind === "video");
+                  if (videoSender) {
+                    try {
+                      await videoSender.replaceTrack(fallbackTrack);
+                    } catch (e) {
+                      console.error(`Error replacing fallback track for group peer ${peer.socketId}:`, e);
+                    }
+                  }
+                }
+              })
+            );
           }
         }
       }
