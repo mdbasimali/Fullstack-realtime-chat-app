@@ -4,11 +4,17 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 const StoryViewer = ({ user, stories, onClose }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   const currentStory = stories[currentIndex];
 
   useEffect(() => {
     setProgress(0);
+  }, [currentIndex]);
+
+  useEffect(() => {
+    if (isPaused) return;
+
     const duration = 5000; // 5 seconds per story
     const interval = 50;
     const increment = (interval / duration) * 100;
@@ -24,7 +30,7 @@ const StoryViewer = ({ user, stories, onClose }) => {
     }, interval);
 
     return () => clearInterval(timer);
-  }, [currentIndex]);
+  }, [currentIndex, isPaused]);
 
   const handleNext = () => {
     if (currentIndex < stories.length - 1) {
@@ -89,7 +95,14 @@ const StoryViewer = ({ user, stories, onClose }) => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex items-center justify-center relative">
+      <div 
+        className="flex-1 flex items-center justify-center relative"
+        onMouseDown={() => setIsPaused(true)}
+        onMouseUp={() => setIsPaused(false)}
+        onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={() => setIsPaused(true)}
+        onTouchEnd={() => setIsPaused(false)}
+      >
         {/* Navigation Tap Areas */}
         <div className="absolute inset-y-0 left-0 w-1/3 z-40 cursor-pointer" onClick={handlePrev} />
         <div className="absolute inset-y-0 right-0 w-1/3 z-40 cursor-pointer" onClick={handleNext} />
