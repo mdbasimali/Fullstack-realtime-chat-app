@@ -46,6 +46,9 @@ const ProfileModal = ({ profile, onClose }) => {
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [nicknameValue, setNicknameValue] = useState("");
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const touchStartY = useRef(0);
+  const isDragging = useRef(false);
   const nicknameInputRef = useRef(null);
 
   if (!profile) return null;
@@ -125,14 +128,56 @@ const ProfileModal = ({ profile, onClose }) => {
 
   const displayName = currentNickname || name;
 
+  const handleTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY;
+    isDragging.current = true;
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging.current) return;
+    const diff = e.touches[0].clientY - touchStartY.current;
+    if (diff > 0) {
+      setDragY(diff);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+    if (dragY > 80) {
+      onClose();
+    }
+    setDragY(0);
+  };
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm transition-all" onClick={onClose}>
       <div 
         className="w-full sm:w-[400px] bg-base-100 sm:rounded-[2rem] rounded-t-[2rem] shadow-2xl flex flex-col overflow-hidden animate-slide-up sm:animate-fade-in"
         onClick={(e) => e.stopPropagation()}
+        style={{ transform: `translateY(${dragY}px)`, transition: isDragging.current ? 'none' : 'transform 0.3s ease' }}
       >
         {/* Drag handle */}
-        <div className="flex justify-center pt-4 pb-2 sm:hidden">
+        <div 
+          className="flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={(e) => {
+            const startY = e.clientY;
+            const onMouseMove = (ev) => {
+              const diff = ev.clientY - startY;
+              if (diff > 0) setDragY(diff);
+            };
+            const onMouseUp = () => {
+              if (dragY > 80) onClose();
+              setDragY(0);
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          }}
+        >
           <div className="w-12 h-1 rounded-full bg-base-300"></div>
         </div>
 
