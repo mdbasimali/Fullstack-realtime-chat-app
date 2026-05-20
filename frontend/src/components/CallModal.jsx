@@ -774,7 +774,7 @@ const CallModal = () => {
           {/* Camera Switch (Flip) for Mobile */}
           <button
             onClick={switchCamera}
-            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
             title="Switch Camera"
           >
             <RefreshCw size={18} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
@@ -783,7 +783,7 @@ const CallModal = () => {
           {/* Add Participant Button */}
           <button
             onClick={() => setShowAddMemberModal(true)}
-            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
             title="Add Participant"
           >
             <UserPlus size={18} />
@@ -1036,7 +1036,7 @@ const CallModal = () => {
         {callType === "video" && (
           <button
             onClick={switchCamera}
-            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
             title="Switch Camera"
           >
             <RefreshCw size={18} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
