@@ -855,7 +855,8 @@ export const useCallStore = create((set, get) => ({
             pc,
             fullName: user.fullName,
             profilePic: user.profilePic,
-            stream: null
+            stream: null,
+            iceCandidatesQueue: []
           }
         }
       }));
@@ -871,23 +872,41 @@ export const useCallStore = create((set, get) => ({
       };
 
       pc.ontrack = (event) => {
-        const stream = event.streams[0] || new MediaStream([event.track]);
         set((state) => {
           const currentPeer = state.groupPeers[socketId];
           if (!currentPeer) return {};
+
+          const existingStream = currentPeer.stream;
+          const existingTracks = existingStream ? existingStream.getTracks() : [];
+          const newTracks = event.streams && event.streams[0]
+            ? event.streams[0].getTracks()
+            : [event.track];
+
+          const allTracks = [...existingTracks];
+          newTracks.forEach(track => {
+            if (!allTracks.some(t => t.id === track.id)) {
+              allTracks.push(track);
+            }
+          });
+
+          const combinedStream = new MediaStream(allTracks);
           return {
             groupPeers: {
               ...state.groupPeers,
               [socketId]: {
                 ...currentPeer,
-                stream
+                stream: combinedStream
               }
             }
           };
         });
 
-        // Speaker detection on the peer stream
-        get().setupActiveSpeakerDetection(stream, socketId);
+        setTimeout(() => {
+          const updatedPeer = get().groupPeers[socketId];
+          if (updatedPeer && updatedPeer.stream) {
+            get().setupActiveSpeakerDetection(updatedPeer.stream, socketId);
+          }
+        }, 100);
       };
 
       pc.onconnectionstatechange = () => {
@@ -927,7 +946,8 @@ export const useCallStore = create((set, get) => ({
             pc,
             fullName: user.fullName,
             profilePic: user.profilePic,
-            stream: null
+            stream: null,
+            iceCandidatesQueue: []
           }
         }
       }));
@@ -943,23 +963,41 @@ export const useCallStore = create((set, get) => ({
       };
 
       pc.ontrack = (event) => {
-        const stream = event.streams[0] || new MediaStream([event.track]);
         set((state) => {
           const currentPeer = state.groupPeers[fromSocketId];
           if (!currentPeer) return {};
+
+          const existingStream = currentPeer.stream;
+          const existingTracks = existingStream ? existingStream.getTracks() : [];
+          const newTracks = event.streams && event.streams[0]
+            ? event.streams[0].getTracks()
+            : [event.track];
+
+          const allTracks = [...existingTracks];
+          newTracks.forEach(track => {
+            if (!allTracks.some(t => t.id === track.id)) {
+              allTracks.push(track);
+            }
+          });
+
+          const combinedStream = new MediaStream(allTracks);
           return {
             groupPeers: {
               ...state.groupPeers,
               [fromSocketId]: {
                 ...currentPeer,
-                stream
+                stream: combinedStream
               }
             }
           };
         });
 
-        // Speaker detection on the peer stream
-        get().setupActiveSpeakerDetection(stream, fromSocketId);
+        setTimeout(() => {
+          const updatedPeer = get().groupPeers[fromSocketId];
+          if (updatedPeer && updatedPeer.stream) {
+            get().setupActiveSpeakerDetection(updatedPeer.stream, fromSocketId);
+          }
+        }, 100);
       };
 
       pc.onconnectionstatechange = () => {
@@ -969,6 +1007,20 @@ export const useCallStore = create((set, get) => ({
       };
 
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+      // Drain queued ICE candidates
+      const peer = get().groupPeers[fromSocketId];
+      if (peer && peer.iceCandidatesQueue) {
+        for (const cand of peer.iceCandidatesQueue) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(cand));
+          } catch (e) {
+            console.error("Error adding queued ICE candidate for peer:", e);
+          }
+        }
+        peer.iceCandidatesQueue = [];
+      }
+
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
@@ -984,6 +1036,18 @@ export const useCallStore = create((set, get) => ({
     if (peer && peer.pc) {
       try {
         await peer.pc.setRemoteDescription(new RTCSessionDescription(answer));
+
+        // Drain queued ICE candidates
+        if (peer.iceCandidatesQueue) {
+          for (const cand of peer.iceCandidatesQueue) {
+            try {
+              await peer.pc.addIceCandidate(new RTCIceCandidate(cand));
+            } catch (e) {
+              console.error("Error adding queued ICE candidate for peer:", e);
+            }
+          }
+          peer.iceCandidatesQueue = [];
+        }
       } catch (error) {
         console.error("Error handling group call answer:", error);
       }
@@ -993,11 +1057,16 @@ export const useCallStore = create((set, get) => ({
   handleGroupCallIceCandidate: async ({ fromSocketId, candidate }) => {
     const { groupPeers } = get();
     const peer = groupPeers[fromSocketId];
-    if (peer && peer.pc) {
-      try {
-        await peer.pc.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (error) {
-        console.error("Error adding group call ice candidate:", error);
+    if (peer) {
+      if (peer.pc && peer.pc.remoteDescription && peer.pc.remoteDescription.type) {
+        try {
+          await peer.pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (error) {
+          console.error("Error adding group call ice candidate:", error);
+        }
+      } else {
+        const queue = peer.iceCandidatesQueue || [];
+        peer.iceCandidatesQueue = [...queue, candidate];
       }
     }
   },
@@ -1042,6 +1111,10 @@ export const useCallStore = create((set, get) => ({
 
   setupActiveSpeakerDetection: (stream, socketIdOrSelf) => {
     try {
+      if (!stream || stream.getAudioTracks().length === 0) {
+        console.log("setupActiveSpeakerDetection: No audio track found in stream, skipping.");
+        return;
+      }
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();

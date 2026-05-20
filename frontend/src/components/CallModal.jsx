@@ -72,7 +72,7 @@ const ParticipantVideoTile = React.memo(({
           ref={videoRef}
           autoPlay
           playsInline
-          muted={isLocal}
+          muted={true}
           className={`w-full h-full object-cover transition-opacity duration-300 ${isLocal ? "scale-x-[-1]" : ""}`}
         />
       ) : (
