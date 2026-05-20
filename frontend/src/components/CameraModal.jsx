@@ -255,7 +255,7 @@ const CameraModal = ({
       <div className="bg-base-100 border border-base-300 w-full max-w-4xl rounded-[28px] overflow-hidden shadow-2xl flex flex-col md:flex-row h-[90dvh] max-h-[800px] animate-scale-up">
         
         {/* Left Side: Camera viewport or Image preview */}
-        <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden h-3/5 md:h-full">
+        <div className="shrink-0 h-[40%] md:h-full md:flex-1 bg-black relative flex items-center justify-center overflow-hidden">
           {/* Flash screen overlay */}
           <div 
             className={`absolute inset-0 bg-white z-20 pointer-events-none transition-opacity duration-200 ${
@@ -340,7 +340,7 @@ const CameraModal = ({
         </div>
 
         {/* Right Side: Options & Share settings */}
-        <div className="w-full md:w-[350px] border-t md:border-t-0 md:border-l border-base-300 p-5 flex flex-col h-2/5 md:h-full bg-base-100/95">
+        <div className="flex-1 w-full md:w-[350px] md:flex-none border-t md:border-t-0 md:border-l border-base-300 p-4 md:p-5 flex flex-col bg-base-100/95 min-h-0">
           <header className="pb-3 border-b border-base-300 flex justify-between items-center shrink-0">
             <div className="text-left">
               <h3 className="font-extrabold text-base tracking-tight text-base-content">Share Captured Photo</h3>
@@ -547,8 +547,8 @@ const CameraModal = ({
                 <button
                   type="button"
                   onClick={handleSend}
-                  disabled={isSending}
-                  className="btn btn-sm btn-primary rounded-full px-5 text-xs font-bold normal-case shadow-md flex items-center gap-2 cursor-pointer"
+                  disabled={isSending || !(sendToStory || (sendToActive && (selectedUser || selectedGroup)) || selectedDMs.length > 0 || selectedGroups.length > 0)}
+                  className="btn btn-sm btn-primary rounded-full px-5 text-xs font-bold normal-case shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {isSending ? (
                     <span className="loading loading-spinner loading-xs" />
