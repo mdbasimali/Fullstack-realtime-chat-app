@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import StoryViewer from "./StoryViewer";
 import CameraModal from "./CameraModal";
+import ProfileModal, { getNickname } from "./ProfileModal";
 
 const formatLastMessageTime = (dateString) => {
   if (!dateString) return "";
@@ -62,6 +63,8 @@ const Sidebar = () => {
 
   // Camera Modal state
   const [showCameraModal, setShowCameraModal] = useState(false);
+  const [profileModalData, setProfileModalData] = useState(null);
+  const [nicknamesVersion, setNicknamesVersion] = useState(0);
   const [matchedContacts, setMatchedContacts] = useState([]);
   const [manualEmails, setManualEmails] = useState("");
   const [isSyncingContacts, setIsSyncingContacts] = useState(false);
@@ -376,6 +379,13 @@ const Sidebar = () => {
       initializeActiveConversations(authUser._id);
     }
   }, [getUsers, getStories, authUser?._id, initializeActiveConversations]);
+
+  // Listen for nickname updates to re-render
+  useEffect(() => {
+    const handleNicknameUpdate = () => setNicknamesVersion(v => v + 1);
+    window.addEventListener("nicknamesUpdated", handleNicknameUpdate);
+    return () => window.removeEventListener("nicknamesUpdated", handleNicknameUpdate);
+  }, []);
 
   // Sync real-time call logs instantly when updated
   useEffect(() => {
@@ -812,7 +822,13 @@ const Sidebar = () => {
                     >
                       <div className="flex items-center gap-3.5 min-w-0 flex-1 mr-2">
                         {/* Avatar */}
-                        <div className="relative flex-shrink-0">
+                        <div 
+                          className="relative flex-shrink-0 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProfileModalData(user);
+                          }}
+                        >
                           {user.profilePic ? (
                             <img
                               src={user.profilePic}
@@ -833,7 +849,7 @@ const Sidebar = () => {
                         <div className="text-left min-w-0 flex-1">
                           <div className="flex justify-between items-baseline gap-2">
                             <h4 className="font-bold text-base-content text-sm md:text-base truncate group-hover:text-primary transition-colors flex items-center gap-1.5">
-                              {user.fullName}
+                              {getNickname(authUser?._id, user._id) || user.fullName}
                               {pinnedChats.includes(user._id) && <Pin size={12} className="text-base-content/40 rotate-[45deg] shrink-0" />}
                             </h4>
                             {user.lastMessage && (
@@ -1083,10 +1099,20 @@ const Sidebar = () => {
                                 <img
                                   src={group.avatar}
                                   alt={group.name}
-                                  className="w-11 h-11 rounded-full object-cover border border-base-300 shadow-sm shrink-0"
+                                  className="w-11 h-11 rounded-full object-cover border border-base-300 shadow-sm shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setProfileModalData(group);
+                                  }}
                                 />
                               ) : (
-                                <div className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950 text-primary flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+                                <div 
+                                  className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950 text-primary flex items-center justify-center font-bold text-base shadow-sm shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setProfileModalData(group);
+                                  }}
+                                >
                                   {group.name.slice(0, 2).toUpperCase()}
                                 </div>
                               )}
@@ -1541,7 +1567,7 @@ const Sidebar = () => {
                           </div>
                           
                           <div className="text-left min-w-0">
-                            <h4 className="font-bold text-sm text-base-content truncate group-hover:text-primary transition-colors">{user.fullName}</h4>
+                            <h4 className="font-bold text-sm text-base-content truncate group-hover:text-primary transition-colors">{getNickname(authUser?._id, user._id) || user.fullName}</h4>
                             <p className="text-xs text-base-content/50 truncate mt-0.5">{user.email || user.username || "No status"}</p>
                           </div>
                         </div>
@@ -2433,6 +2459,12 @@ const Sidebar = () => {
         postStory={postStory}
         sendMessage={sendMessage}
         sendGroupMessage={sendGroupMessage}
+      />
+
+      {/* Profile Details Modal */}
+      <ProfileModal 
+        profile={profileModalData} 
+        onClose={() => setProfileModalData(null)} 
       />
 
     </div>
