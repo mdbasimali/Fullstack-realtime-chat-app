@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Video, Phone, Edit2, ShieldCheck, User, Ban, ChevronRight, Info, X, Check } from 'lucide-react';
+import { MessageSquare, Video, Phone, Edit2, ShieldCheck, User, Ban, ChevronRight, Info, X, Check, Mail, AtSign, PhoneCall, ChevronDown } from 'lucide-react';
 import { useChatstore } from '../store/useChatStore';
 import { useGroupStore } from '../store/useGroupStore';
 import { useCallStore } from '../store/useCallStore';
@@ -45,6 +45,7 @@ const ProfileModal = ({ profile, onClose }) => {
 
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [nicknameValue, setNicknameValue] = useState("");
+  const [showContactInfo, setShowContactInfo] = useState(false);
   const nicknameInputRef = useRef(null);
 
   if (!profile) return null;
@@ -234,10 +235,59 @@ const ProfileModal = ({ profile, onClose }) => {
                 <ShieldCheck size={24} className="text-base-content/80" strokeWidth={1.5} />
                 <span className="text-[16px] text-base-content/90">View safety number</span>
               </button>
-              <button onClick={() => toast.success("Phone contact info coming soon!")} className="flex items-center gap-5 px-6 py-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors w-full text-left">
+              <button onClick={() => setShowContactInfo(!showContactInfo)} className="flex items-center gap-5 px-6 py-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors w-full text-left">
                 <User size={24} className="text-base-content/80" strokeWidth={1.5} />
-                <span className="text-[16px] text-base-content/90">Phone contact info</span>
+                <span className="text-[16px] text-base-content/90 flex-1">Phone contact info</span>
+                <ChevronDown size={18} className={`text-base-content/40 transition-transform duration-200 ${showContactInfo ? "rotate-180" : ""}`} />
               </button>
+              {showContactInfo && (
+                <div className="px-6 pb-3 space-y-3 animate-fade-in">
+                  {/* Email */}
+                  {profile.email && (
+                    <div className="flex items-center gap-4 py-2.5 px-4 bg-base-200/40 dark:bg-base-200/20 rounded-xl">
+                      <Mail size={18} className="text-primary/70 shrink-0" />
+                      <div className="text-left min-w-0">
+                        <p className="text-[10px] text-base-content/40 font-semibold uppercase tracking-wider">Email</p>
+                        <p className="text-sm text-base-content/90 font-medium truncate">{profile.email}</p>
+                      </div>
+                    </div>
+                  )}
+                  {/* Username */}
+                  {profile.username && (
+                    <div className="flex items-center gap-4 py-2.5 px-4 bg-base-200/40 dark:bg-base-200/20 rounded-xl">
+                      <AtSign size={18} className="text-primary/70 shrink-0" />
+                      <div className="text-left min-w-0">
+                        <p className="text-[10px] text-base-content/40 font-semibold uppercase tracking-wider">Username</p>
+                        <p className="text-sm text-base-content/90 font-medium truncate">@{profile.username}</p>
+                      </div>
+                    </div>
+                  )}
+                  {/* Phone */}
+                  {profile.phoneNumber && (
+                    <div className="flex items-center gap-4 py-2.5 px-4 bg-base-200/40 dark:bg-base-200/20 rounded-xl">
+                      <PhoneCall size={18} className="text-primary/70 shrink-0" />
+                      <div className="text-left min-w-0">
+                        <p className="text-[10px] text-base-content/40 font-semibold uppercase tracking-wider">Phone</p>
+                        <p className="text-sm text-base-content/90 font-medium truncate">{profile.phoneNumber}</p>
+                      </div>
+                    </div>
+                  )}
+                  {/* About */}
+                  {profile.about && (
+                    <div className="flex items-center gap-4 py-2.5 px-4 bg-base-200/40 dark:bg-base-200/20 rounded-xl">
+                      <Info size={18} className="text-primary/70 shrink-0" />
+                      <div className="text-left min-w-0">
+                        <p className="text-[10px] text-base-content/40 font-semibold uppercase tracking-wider">About</p>
+                        <p className="text-sm text-base-content/90 font-medium truncate">{profile.about}</p>
+                      </div>
+                    </div>
+                  )}
+                  {/* No info fallback */}
+                  {!profile.email && !profile.username && !profile.phoneNumber && !profile.about && (
+                    <p className="text-xs text-base-content/40 text-center py-2 font-medium">No contact info available</p>
+                  )}
+                </div>
+              )}
               <button onClick={() => toast.success("User blocked")} className="flex items-center gap-5 px-6 py-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors w-full text-left mt-1">
                 <Ban size={24} className="text-base-content/80" strokeWidth={1.5} />
                 <span className="text-[16px] text-base-content/90">Block</span>
