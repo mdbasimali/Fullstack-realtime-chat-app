@@ -4,17 +4,20 @@ import User from "../models/user.model.js";
 import { io, getReceiverSocketId } from "../lib/socket.js";
 
 export const createStory = async (req, res) => {
+  console.log("Create story request received, type:", req.body.type);
   try {
     const { content, type, caption, bgColor } = req.body;
     const userId = req.user._id;
 
     if (!content) {
+      console.log("Create story failed: Content missing");
       return res.status(400).json({ message: "Content is required" });
     }
 
     let finalContent = content;
 
     if (type === "image" || type === "video") {
+      console.log(`Uploading ${type} to Cloudinary...`);
       const uploadOptions = {
         folder: "stories",
       };
@@ -24,9 +27,10 @@ export const createStory = async (req, res) => {
       try {
         const uploadResponse = await cloudinary.uploader.upload(content, uploadOptions);
         finalContent = uploadResponse.secure_url;
+        console.log("Cloudinary upload successful:", finalContent);
       } catch (uploadError) {
         console.error("Cloudinary upload error in createStory:", uploadError);
-        return res.status(500).json({ error: "Failed to upload media to Cloudinary" });
+        return res.status(500).json({ error: "Failed to upload media to Cloudinary", details: uploadError.message });
       }
     }
 
@@ -39,27 +43,35 @@ export const createStory = async (req, res) => {
     });
 
     await newStory.save();
+    console.log("Story saved to database, ID:", newStory._id);
 
     // Populate user info before sending back
     const populatedStory = await Story.findById(newStory._id).populate("userId", "fullName profilePic");
 
     if (!populatedStory) {
-      throw new Error("Failed to retrieve story after saving");
+      console.error("Failed to retrieve story after saving");
+      return res.status(500).json({ error: "Failed to retrieve story after saving" });
     }
 
     // Real-time broadcast: notify contacts that a new story was posted
-    const user = await User.findById(userId);
-    if (user && Array.isArray(user.contacts) && user.contacts.length > 0) {
-      const storyData = populatedStory.toJSON();
-      user.contacts.forEach(contactId => {
-        if (!contactId) return;
-        const socketId = getReceiverSocketId(contactId.toString());
-        if (socketId) {
-          io.to(socketId).emit("newStory", storyData);
-        }
-      });
+    try {
+      const user = await User.findById(userId);
+      if (user && Array.isArray(user.contacts) && user.contacts.length > 0) {
+        const storyData = populatedStory.toJSON();
+        user.contacts.forEach(contactId => {
+          if (!contactId) return;
+          const socketId = getReceiverSocketId(contactId.toString());
+          if (socketId) {
+            io.to(socketId).emit("newStory", storyData);
+          }
+        });
+      }
+    } catch (socketError) {
+      console.error("Error broadcasting story via socket:", socketError);
+      // Don't fail the request if socket broadcast fails
     }
 
+    console.log("Story created successfully");
     res.status(201).json(populatedStory);
   } catch (error) {
     console.error("Error in createStory controller:", error);
