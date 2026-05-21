@@ -283,12 +283,19 @@ export const sendGroupMessage = async (req, res) => {
 
     let imageUrl = "";
     if (image) {
-      // Audio or general image file upload to Cloudinary
-      const options = {};
-      if (messageType === "audio" || messageType === "video") {
-        options.resource_type = "video";
-      }
-      const uploadResponse = await cloudinary.uploader.upload(image, options);
+      // Convert base64 data URL to Buffer to avoid ENAMETOOLONG OS error
+      const base64Data = image.replace(/^data:\w+\/[\w.+-]+;base64,/, "");
+      const buffer = Buffer.from(base64Data, "base64");
+      const options = {
+        resource_type: messageType === "audio" || messageType === "video" ? "video" : "image",
+      };
+      const uploadResponse = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        });
+        stream.end(buffer);
+      });
       imageUrl = uploadResponse.secure_url;
     }
 

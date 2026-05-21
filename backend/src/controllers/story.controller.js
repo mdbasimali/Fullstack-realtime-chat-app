@@ -17,32 +17,37 @@ export const createStory = async (req, res) => {
     let finalContent = content;
 
     if (type === "image" || type === "video") {
-      console.log(`[Story] Uploading ${type} to Cloudinary...`);
-      const uploadOptions = {
-        folder: "stories",
-        resource_type: type === "video" ? "video" : "image",
-        timeout: 120000, // 2 minute timeout for large video uploads
-      };
+      console.log(`[Story] Uploading ${type} to Cloudinary via stream...`);
 
       try {
-        let uploadResponse;
-        if (type === "video") {
-          // Use upload_large for video to handle files > 10MB reliably
-          uploadResponse = await cloudinary.uploader.upload_large(content, {
-            ...uploadOptions,
-            chunk_size: 6000000, // 6MB chunks
-          });
-        } else {
-          uploadResponse = await cloudinary.uploader.upload(content, uploadOptions);
-        }
+        // Convert base64 data URL to Buffer to avoid ENAMETOOLONG OS error
+        // (Cloudinary SDK otherwise tries to use the raw base64 string as a file path)
+        const base64Data = content.replace(/^data:\w+\/[\w.+-]+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+
+        const uploadOptions = {
+          folder: "stories",
+          resource_type: type === "video" ? "video" : "image",
+        };
+
+        const uploadResponse = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            uploadOptions,
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          stream.end(buffer);
+        });
+
         finalContent = uploadResponse.secure_url;
-        console.log(`[Story] Cloudinary success: ${finalContent}`);
+        console.log(`[Story] Cloudinary upload success: ${finalContent}`);
       } catch (uploadError) {
-        console.error("[Story] Cloudinary error:", uploadError);
-        return res.status(500).json({ 
-          error: "Cloudinary upload failed", 
+        console.error("[Story] Cloudinary upload error:", uploadError.message);
+        return res.status(500).json({
+          error: "Cloudinary upload failed",
           details: uploadError.message,
-          code: uploadError.http_code || 500
         });
       }
     }

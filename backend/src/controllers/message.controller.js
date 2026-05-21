@@ -215,13 +215,20 @@ export const sendMessage = async(req,res)=>{
 
     let imageUrl;
     if(image){
-        // For audio uploads, we must explicitly set resource_type: "video" (Cloudinary stores audio under the video category)
-        // to prevent it from defaulting to "raw" which blocks browser streaming.
+        // Convert base64 data URL to Buffer to avoid ENAMETOOLONG OS error
+        const base64Data = image.replace(/^data:\w+\/[\w.+-]+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
         const uploadOptions = {
-            resource_type: messageType === "audio" || messageType === "video" ? "video" : "auto"
+            resource_type: messageType === "audio" || messageType === "video" ? "video" : "image",
         };
-        const uploadResponse=await cloudinary.uploader.upload(image, uploadOptions);
-        imageUrl=uploadResponse.secure_url;
+        const uploadResponse = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+            });
+            stream.end(buffer);
+        });
+        imageUrl = uploadResponse.secure_url;
     }
   
     const newMessage=new Message({
