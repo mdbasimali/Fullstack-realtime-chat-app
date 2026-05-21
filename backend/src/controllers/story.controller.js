@@ -4,33 +4,36 @@ import User from "../models/user.model.js";
 import { io, getReceiverSocketId } from "../lib/socket.js";
 
 export const createStory = async (req, res) => {
-  console.log("Create story request received, type:", req.body.type);
-  try {
-    const { content, type, caption, bgColor } = req.body;
-    const userId = req.user._id;
+  const userId = req.user._id;
+  const { content, type, caption, bgColor } = req.body;
+  
+  console.log(`[Story] Create attempt - User: ${userId}, Type: ${type}, Content size: ${content?.length || 0}`);
 
+  try {
     if (!content) {
-      console.log("Create story failed: Content missing");
       return res.status(400).json({ message: "Content is required" });
     }
 
     let finalContent = content;
 
     if (type === "image" || type === "video") {
-      console.log(`Uploading ${type} to Cloudinary...`);
+      console.log(`[Story] Uploading ${type} to Cloudinary...`);
       const uploadOptions = {
         folder: "stories",
+        resource_type: type === "video" ? "video" : "image",
       };
-      if (type === "video") {
-        uploadOptions.resource_type = "video";
-      }
+
       try {
         const uploadResponse = await cloudinary.uploader.upload(content, uploadOptions);
         finalContent = uploadResponse.secure_url;
-        console.log("Cloudinary upload successful:", finalContent);
+        console.log(`[Story] Cloudinary success: ${finalContent}`);
       } catch (uploadError) {
-        console.error("Cloudinary upload error in createStory:", uploadError);
-        return res.status(500).json({ error: "Failed to upload media to Cloudinary", details: uploadError.message });
+        console.error("[Story] Cloudinary error:", uploadError);
+        return res.status(500).json({ 
+          error: "Cloudinary upload failed", 
+          details: uploadError.message,
+          code: uploadError.http_code || 500
+        });
       }
     }
 
@@ -43,21 +46,20 @@ export const createStory = async (req, res) => {
     });
 
     await newStory.save();
-    console.log("Story saved to database, ID:", newStory._id);
+    console.log(`[Story] Database save success: ${newStory._id}`);
 
-    // Populate user info before sending back
     const populatedStory = await Story.findById(newStory._id).populate("userId", "fullName profilePic");
 
     if (!populatedStory) {
-      console.error("Failed to retrieve story after saving");
+      console.error("[Story] Population failed");
       return res.status(500).json({ error: "Failed to retrieve story after saving" });
     }
 
-    // Real-time broadcast: notify contacts that a new story was posted
+    // Broadcast logic
     try {
       const user = await User.findById(userId);
       if (user && Array.isArray(user.contacts) && user.contacts.length > 0) {
-        const storyData = populatedStory.toJSON();
+        const storyData = populatedStory.toObject(); // Use toObject for cleaner serialization
         user.contacts.forEach(contactId => {
           if (!contactId) return;
           const socketId = getReceiverSocketId(contactId.toString());
@@ -65,17 +67,20 @@ export const createStory = async (req, res) => {
             io.to(socketId).emit("newStory", storyData);
           }
         });
+        console.log(`[Story] Broadcast sent to ${user.contacts.length} contacts`);
       }
     } catch (socketError) {
-      console.error("Error broadcasting story via socket:", socketError);
-      // Don't fail the request if socket broadcast fails
+      console.error("[Story] Socket broadcast failed:", socketError.message);
     }
 
-    console.log("Story created successfully");
-    res.status(201).json(populatedStory);
+    return res.status(201).json(populatedStory);
   } catch (error) {
-    console.error("Error in createStory controller:", error);
-    res.status(500).json({ error: error.message || "Internal server error" });
+    console.error("[Story] Final catch error:", error);
+    return res.status(500).json({ 
+      error: "Internal server error", 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    });
   }
 };
 
