@@ -324,7 +324,7 @@ const Sidebar = () => {
   };
 
   // Story Store
-  const { stories, getStories, postStory, deleteStory, isStoriesLoading, isUploadingStory } = useStoryStore();
+  const { stories, getStories, postStory, deleteStory, isStoriesLoading, isUploadingStory, subscribeToStories, unsubscribeFromStories } = useStoryStore();
 
   const [viewingStory, setViewingStory] = useState(null);
   const [storyText, setStoryText] = useState("");
@@ -392,10 +392,15 @@ const Sidebar = () => {
   useEffect(() => {
     getUsers();
     getStories();
+    subscribeToStories();
     if (authUser?._id) {
       initializeActiveConversations(authUser._id);
     }
-  }, [getUsers, getStories, authUser?._id, initializeActiveConversations]);
+
+    return () => {
+      unsubscribeFromStories();
+    };
+  }, [getUsers, getStories, subscribeToStories, unsubscribeFromStories, authUser?._id, initializeActiveConversations]);
 
   // Listen for nickname updates to re-render
   useEffect(() => {

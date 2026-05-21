@@ -24,6 +24,7 @@ const CameraModal = ({
   const [facingMode, setFacingMode] = useState("user"); // "user" | "environment"
   const [capturedImage, setCapturedImage] = useState(null);
   const [capturedVideo, setCapturedVideo] = useState(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTimer, setRecordingTimer] = useState(0);
   const [flashActive, setFlashActive] = useState(false);
@@ -120,7 +121,7 @@ const CameraModal = ({
   };
 
   useEffect(() => {
-    if (isOpen && !capturedImage && !capturedVideo && activeMode === "camera") {
+    if (isOpen && !capturedImage && !videoPreviewUrl && activeMode === "camera") {
       startCamera();
     } else {
       stopCamera();
@@ -128,7 +129,7 @@ const CameraModal = ({
     return () => {
       stopCamera();
     };
-  }, [isOpen, facingMode, capturedImage, capturedVideo, activeMode]);
+  }, [isOpen, facingMode, capturedImage, videoPreviewUrl, activeMode]);
 
   // Safely bind camera stream to video element whenever stream changes
   useEffect(() => {
@@ -142,6 +143,8 @@ const CameraModal = ({
     if (isOpen) {
       setCapturedImage(null);
       setCapturedVideo(null);
+      if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+      setVideoPreviewUrl(null);
       setCaption("");
       setSendToStory(false);
       setSendToActive(true);
@@ -169,6 +172,8 @@ const CameraModal = ({
       }
     } else {
       stopCamera();
+      if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+      setVideoPreviewUrl(null);
     }
   }, [isOpen, initialMode]);
 
@@ -176,6 +181,7 @@ const CameraModal = ({
     return () => {
       if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
     };
   }, []);
 
@@ -232,6 +238,12 @@ const CameraModal = ({
       mediaRecorder.onstop = () => {
         const mimeType = mediaRecorder.mimeType || "video/webm";
         const videoBlob = new Blob(videoChunksRef.current, { type: mimeType });
+        
+        // Generate preview URL
+        const previewUrl = URL.createObjectURL(videoBlob);
+        setVideoPreviewUrl(previewUrl);
+
+        // Convert to data URL for sending
         const reader = new FileReader();
         reader.readAsDataURL(videoBlob);
         reader.onloadend = () => {
@@ -271,7 +283,6 @@ const CameraModal = ({
   };
 
   const handleShutterPress = (e) => {
-    if (e) e.preventDefault();
     if (isHoldingRef.current) return;
     isHoldingRef.current = true;
 
@@ -283,7 +294,6 @@ const CameraModal = ({
   };
 
   const handleShutterRelease = (e) => {
-    if (e) e.preventDefault();
     if (!isHoldingRef.current) return;
     isHoldingRef.current = false;
 
@@ -440,13 +450,24 @@ const CameraModal = ({
           return;
         }
 
-        await Promise.all(promises);
-        toast.success(`Status shared successfully!`);
-        onClose();
+        const results = await Promise.all(promises);
+        const allSuccessful = results.every(res => res !== false);
+
+        if (allSuccessful) {
+          toast.success(`Status shared successfully!`);
+          onClose();
+        } else {
+          toast.error("Failed to share to some destinations. Please try again.");
+        }
 
       } else {
         // Camera/Photo/Video Mode
-        const isVideo = !!capturedVideo;
+        const isVideo = !!videoPreviewUrl;
+        if (isVideo && !capturedVideo) {
+          toast.error("Video is still processing, please wait a moment.");
+          setIsSending(false);
+          return;
+        }
         const mediaContent = isVideo ? capturedVideo : capturedImage;
         const mediaType = isVideo ? "video" : "image";
 
@@ -528,13 +549,20 @@ const CameraModal = ({
           return;
         }
 
-        await Promise.all(promises);
-        toast.success(`${isVideo ? "Video" : "Photo"} shared successfully!`);
-        onClose();
+        const results = await Promise.all(promises);
+        const allSuccessful = results.every(res => res !== false);
+
+        if (allSuccessful) {
+          toast.success(`${isVideo ? "Video" : "Photo"} shared successfully!`);
+          onClose();
+        } else {
+          toast.error("Failed to share to some destinations. Please try again.");
+        }
       }
     } catch (err) {
       console.error("Error sharing content:", err);
-      toast.error("Failed to share.");
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || "Failed to share.";
+      toast.error(errorMsg);
     } finally {
       setIsSending(false);
     }
@@ -582,7 +610,7 @@ const CameraModal = ({
     <div className="fixed inset-0 z-[999] bg-black/75 backdrop-blur-md text-white select-none flex items-center justify-center animate-in fade-in duration-300">
       <div className="relative w-full h-full md:max-w-[420px] md:max-h-[850px] md:h-[92vh] md:rounded-[40px] md:border-8 md:border-neutral-800 md:shadow-2xl bg-black overflow-hidden flex flex-col justify-between">
       
-      {!capturedImage && !capturedVideo ? (
+      {!capturedImage && !videoPreviewUrl ? (
         // Camera Viewport & Live Stream / Text composer with portrait mockup layout - edge-to-edge
         <div className="flex-1 w-full flex flex-col justify-between h-full">
           
@@ -664,12 +692,11 @@ const CameraModal = ({
                   onMouseLeave={handleShutterRelease}
                   onTouchStart={handleShutterPress}
                   onTouchEnd={handleShutterRelease}
-                  className={`w-[76px] h-[76px] rounded-full border-4 flex items-center justify-center bg-transparent transition-all duration-300 cursor-pointer ${
+                  className={`w-[76px] h-[76px] rounded-full border-4 flex items-center justify-center bg-transparent transition-all duration-300 cursor-pointer touch-none ${
                     isRecording ? "border-red-500 scale-110" : "border-white active:scale-90"
                   }`}
                   title="Hold to Record, Tap to Take Photo"
-                >
-                  <div className={`transition-all duration-300 ${
+                >                  <div className={`transition-all duration-300 ${
                     isRecording 
                       ? "w-[36px] h-[36px] rounded bg-red-600 animate-pulse" 
                       : "w-[58px] h-[58px] rounded-full bg-white hover:bg-neutral-100"
@@ -966,11 +993,12 @@ const CameraModal = ({
       ) : (
         // Captured Image/Video Preview Screen
         <div className="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden bg-black">
-          {capturedVideo ? (
+          {videoPreviewUrl ? (
             <video 
-              src={capturedVideo} 
+              src={videoPreviewUrl} 
               controls 
               autoPlay 
+              muted
               loop 
               playsInline 
               className="w-full h-full object-cover md:object-contain"
@@ -990,6 +1018,8 @@ const CameraModal = ({
               onClick={() => {
                 setCapturedImage(null);
                 setCapturedVideo(null);
+                if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+                setVideoPreviewUrl(null);
               }}
               className="w-10 h-10 rounded-full bg-black/45 text-white flex items-center justify-center border border-white/5 active:scale-95 transition-transform cursor-pointer"
               title="Retake"
@@ -1138,11 +1168,11 @@ const CameraModal = ({
               <button
                 type="button"
                 onClick={handleSend}
-                disabled={isSending || !(sendToStory || (sendToActive && (selectedUser || selectedGroup)) || selectedDMs.length > 0 || selectedGroups.length > 0)}
+                disabled={isSending || (videoPreviewUrl && !capturedVideo) || !(sendToStory || (sendToActive && (selectedUser || selectedGroup)) || selectedDMs.length > 0 || selectedGroups.length > 0)}
                 className="w-12 h-12 rounded-full bg-[#00a884] hover:bg-[#008069] flex items-center justify-center text-white active:scale-95 transition-transform cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Send"
               >
-                {isSending ? (
+                {isSending || (videoPreviewUrl && !capturedVideo) ? (
                   <span className="loading loading-spinner loading-xs" />
                 ) : (
                   <Send size={20} className="ml-0.5" />

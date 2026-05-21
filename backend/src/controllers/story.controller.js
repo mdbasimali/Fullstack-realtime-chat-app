@@ -21,8 +21,13 @@ export const createStory = async (req, res) => {
       if (type === "video") {
         uploadOptions.resource_type = "video";
       }
-      const uploadResponse = await cloudinary.uploader.upload(content, uploadOptions);
-      finalContent = uploadResponse.secure_url;
+      try {
+        const uploadResponse = await cloudinary.uploader.upload(content, uploadOptions);
+        finalContent = uploadResponse.secure_url;
+      } catch (uploadError) {
+        console.error("Cloudinary upload error in createStory:", uploadError);
+        return res.status(500).json({ error: "Failed to upload media to Cloudinary" });
+      }
     }
 
     const newStory = new Story({
@@ -38,10 +43,26 @@ export const createStory = async (req, res) => {
     // Populate user info before sending back
     const populatedStory = await Story.findById(newStory._id).populate("userId", "fullName profilePic");
 
+    if (!populatedStory) {
+      throw new Error("Failed to retrieve story after saving");
+    }
+
+    // Real-time broadcast: notify contacts that a new story was posted
+    const user = await User.findById(userId);
+    if (user && user.contacts && user.contacts.length > 0) {
+      const storyData = populatedStory.toJSON();
+      user.contacts.forEach(contactId => {
+        const socketId = getReceiverSocketId(contactId.toString());
+        if (socketId) {
+          io.to(socketId).emit("newStory", storyData);
+        }
+      });
+    }
+
     res.status(201).json(populatedStory);
   } catch (error) {
-    console.error("Error in createStory controller:", error.message);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error in createStory controller:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
 };
 
