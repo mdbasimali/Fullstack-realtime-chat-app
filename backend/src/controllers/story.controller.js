@@ -49,9 +49,10 @@ export const createStory = async (req, res) => {
 
     // Real-time broadcast: notify contacts that a new story was posted
     const user = await User.findById(userId);
-    if (user && user.contacts && user.contacts.length > 0) {
+    if (user && Array.isArray(user.contacts) && user.contacts.length > 0) {
       const storyData = populatedStory.toJSON();
       user.contacts.forEach(contactId => {
+        if (!contactId) return;
         const socketId = getReceiverSocketId(contactId.toString());
         if (socketId) {
           io.to(socketId).emit("newStory", storyData);
