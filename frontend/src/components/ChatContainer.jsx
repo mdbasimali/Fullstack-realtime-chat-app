@@ -134,8 +134,9 @@ const ChatContainer = () => {
     setContextMenu(null);
   };
 
-  const handleDownloadImage = async (imageUrl) => {
-    const toastId = toast.loading("Preparing download...");
+  const handleDownloadImage = async (imageUrl, messageType = "image") => {
+    const isVideo = messageType === "video";
+    const toastId = toast.loading(isVideo ? "Preparing video download..." : "Preparing download...");
     try {
       let blob;
       // 1. Try direct fetch first (Cloudinary supports CORS, public asset)
@@ -158,10 +159,15 @@ const ChatContainer = () => {
       const a = document.createElement("a");
       a.href = blobUrl;
       
-      let filename = `chat-image-${Date.now()}.jpg`;
-      if (imageUrl.toLowerCase().includes(".png")) filename = `chat-image-${Date.now()}.png`;
-      else if (imageUrl.toLowerCase().includes(".gif")) filename = `chat-image-${Date.now()}.gif`;
-      else if (imageUrl.toLowerCase().includes(".webp")) filename = `chat-image-${Date.now()}.webp`;
+      let filename = isVideo ? `chat-video-${Date.now()}.mp4` : `chat-image-${Date.now()}.jpg`;
+      if (!isVideo) {
+        if (imageUrl.toLowerCase().includes(".png")) filename = `chat-image-${Date.now()}.png`;
+        else if (imageUrl.toLowerCase().includes(".gif")) filename = `chat-image-${Date.now()}.gif`;
+        else if (imageUrl.toLowerCase().includes(".webp")) filename = `chat-image-${Date.now()}.webp`;
+      } else {
+        if (imageUrl.toLowerCase().includes(".webm")) filename = `chat-video-${Date.now()}.webm`;
+        else if (imageUrl.toLowerCase().includes(".mov")) filename = `chat-video-${Date.now()}.mov`;
+      }
       
       a.download = filename;
       document.body.appendChild(a);
@@ -169,10 +175,10 @@ const ChatContainer = () => {
       document.body.removeChild(a);
       
       setTimeout(() => URL.revokeObjectURL(blobUrl), 200);
-      toast.success("Image saved to gallery!", { id: toastId });
+      toast.success(isVideo ? "Video saved to gallery!" : "Image saved to gallery!", { id: toastId });
     } catch (error) {
       console.error("Download failed:", error);
-      toast.error("Failed to download image", { id: toastId });
+      toast.error(isVideo ? "Failed to download video" : "Failed to download image", { id: toastId });
     }
     setContextMenu(null);
   };
@@ -393,11 +399,22 @@ const ChatContainer = () => {
                               : "bg-base-200 text-base-content rounded-tl-[4px]"
                           }`}
                         >
-                          {message.image && message.messageType !== "audio" && (
+                          {message.image && message.messageType !== "audio" && message.messageType !== "video" && (
                             <img
                               src={message.image}
                               alt="Attachment"
                               className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover pointer-events-none select-none"
+                            />
+                          )}
+                          {message.image && message.messageType === "video" && (
+                            <video
+                              src={message.image}
+                              controls
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                              className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover"
                             />
                           )}
                           {message.messageType === "audio" && message.image && (
@@ -504,11 +521,11 @@ const ChatContainer = () => {
                   
                   {contextMenu.message.image && (
                     <button 
-                      onClick={() => handleDownloadImage(contextMenu.message.image)}
+                      onClick={() => handleDownloadImage(contextMenu.message.image, contextMenu.message.messageType)}
                       className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-base-200 rounded-xl text-left text-base font-semibold transition-all active:scale-[0.98] text-base-content"
                     >
                       <Download size={20} className="opacity-70" />
-                      <span>Save Image to Gallery</span>
+                      <span>{contextMenu.message.messageType === "video" ? "Save Video to Gallery" : "Save Image to Gallery"}</span>
                     </button>
                   )}
                   
@@ -553,11 +570,11 @@ const ChatContainer = () => {
                 
                 {contextMenu.message.image && (
                   <button 
-                    onClick={() => handleDownloadImage(contextMenu.message.image)}
+                    onClick={() => handleDownloadImage(contextMenu.message.image, contextMenu.message.messageType)}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl hover:bg-base-200 text-left transition-colors"
                   >
                     <Download size={16} className="opacity-70" />
-                    <span>Download Image</span>
+                    <span>{contextMenu.message.messageType === "video" ? "Download Video" : "Download Image"}</span>
                   </button>
                 )}
                 

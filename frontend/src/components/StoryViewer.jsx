@@ -8,6 +8,7 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [storyDuration, setStoryDuration] = useState(5000);
   const [showViewsDrawer, setShowViewsDrawer] = useState(false);
 
   const { deleteStory, viewStory, getStories, stories: storeStories } = useStoryStore();
@@ -131,13 +132,18 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
   };
 
   useEffect(() => {
+    setStoryDuration(5000);
     setProgress(0);
   }, [currentIndex]);
 
   useEffect(() => {
+    setProgress(0);
+  }, [storyDuration]);
+
+  useEffect(() => {
     if (isPaused || showViewsDrawer) return;
 
-    const duration = 5000; // 5 seconds per story
+    const duration = storyDuration;
     const interval = 50;
     const increment = (interval / duration) * 100;
 
@@ -152,7 +158,7 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
     }, interval);
 
     return () => clearInterval(timer);
-  }, [currentIndex, isPaused, showViewsDrawer]);
+  }, [currentIndex, isPaused, showViewsDrawer, storyDuration]);
 
   const handleNext = () => {
     if (currentIndex < activeStories.length - 1) {
@@ -293,6 +299,28 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
               <p className="text-3xl md:text-4xl font-normal text-center leading-relaxed whitespace-pre-wrap select-text text-white">
                 {currentStory.content}
               </p>
+            </div>
+          ) : currentStory.type === "video" ? (
+            <div className="relative w-full h-full flex items-center justify-center">
+              <video 
+                src={currentStory.content} 
+                className="w-full h-full object-contain"
+                autoPlay
+                playsInline
+                loop
+                controls={false}
+                onLoadedMetadata={(e) => {
+                  const dur = e.target.duration;
+                  if (dur && !isNaN(dur)) {
+                    setStoryDuration(Math.min(dur * 1000, 30000));
+                  }
+                }}
+              />
+              {currentStory.caption && (
+                <div className="absolute bottom-24 inset-x-0 px-6 py-4 bg-black/40 backdrop-blur-sm text-white text-center font-medium rounded-xl max-w-lg mx-auto border border-white/5 shadow-xl">
+                  {currentStory.caption}
+                </div>
+              )}
             </div>
           ) : (
             <div className="relative w-full h-full flex items-center justify-center">

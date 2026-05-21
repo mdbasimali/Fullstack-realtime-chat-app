@@ -901,6 +901,10 @@ const Sidebar = () => {
                                       {user.lastMessage.messageType === "video_call" ? <Video size={13} /> : <Phone size={13} />}
                                       {user.lastMessage.messageType === "video_call" ? "Video call" : "Voice call"}
                                     </span>
+                                  ) : user.lastMessage.messageType === "video" ? (
+                                    <span className="italic flex items-center gap-1 text-primary/60">
+                                      🎥 Video
+                                    </span>
                                   ) : user.lastMessage.image ? (
                                     <span className="italic flex items-center gap-1 text-primary/60">
                                       📷 Photo

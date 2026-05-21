@@ -61,6 +61,8 @@ const CameraModal = ({
   const mediaRecorderRef = useRef(null);
   const videoChunksRef = useRef([]);
   const isHoldingRef = useRef(false);
+  const isRecordingRef = useRef(false);
+  const recordingStartTimeRef = useRef(null);
 
   const formatRecordingDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -155,6 +157,8 @@ const CameraModal = ({
       setIsRecording(false);
       setRecordingTimer(0);
       isHoldingRef.current = false;
+      isRecordingRef.current = false;
+      recordingStartTimeRef.current = null;
       if (holdTimeoutRef.current) {
         clearTimeout(holdTimeoutRef.current);
         holdTimeoutRef.current = null;
@@ -177,21 +181,34 @@ const CameraModal = ({
 
   const startRecordingVideo = () => {
     if (!stream) return;
+    isRecordingRef.current = true;
     setIsRecording(true);
     setRecordingTimer(0);
+    recordingStartTimeRef.current = Date.now();
     videoChunksRef.current = [];
 
-    // Select supported mimeType dynamically
+    // Select supported mimeType dynamically based on whether stream has audio track
+    const hasAudio = stream.getAudioTracks().length > 0;
     let selectedMimeType = "";
-    const mimeTypes = [
-      "video/webm;codecs=vp9,opus",
-      "video/webm;codecs=vp8,opus",
-      "video/webm;codecs=h264,opus",
-      "video/webm",
-      "video/mp4;codecs=h264,aac",
-      "video/mp4",
-      "video/quicktime"
-    ];
+    const mimeTypes = hasAudio
+      ? [
+          "video/webm;codecs=vp9,opus",
+          "video/webm;codecs=vp8,opus",
+          "video/webm;codecs=h264,opus",
+          "video/webm",
+          "video/mp4;codecs=h264,aac",
+          "video/mp4",
+          "video/quicktime"
+        ]
+      : [
+          "video/webm;codecs=vp9",
+          "video/webm;codecs=vp8",
+          "video/webm;codecs=h264",
+          "video/webm",
+          "video/mp4;codecs=h264",
+          "video/mp4",
+          "video/quicktime"
+        ];
 
     for (const type of mimeTypes) {
       if (MediaRecorder.isTypeSupported(type)) {
@@ -231,20 +248,25 @@ const CameraModal = ({
     } catch (err) {
       console.error("Error starting video recording:", err);
       toast.error("Failed to start video recording.");
+      isRecordingRef.current = false;
       setIsRecording(false);
     }
   };
 
-  const stopRecordingVideo = () => {
+  const stopRecordingVideo = (shouldDiscard = false) => {
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      if (shouldDiscard) {
+        mediaRecorderRef.current.onstop = null;
+      }
       mediaRecorderRef.current.stop();
     }
 
+    isRecordingRef.current = false;
     setIsRecording(false);
   };
 
@@ -270,8 +292,15 @@ const CameraModal = ({
       holdTimeoutRef.current = null;
     }
 
-    if (isRecording) {
-      stopRecordingVideo();
+    if (isRecordingRef.current) {
+      const elapsed = Date.now() - recordingStartTimeRef.current;
+      if (elapsed < 1000) {
+        stopRecordingVideo(true);
+        toast.error("Hold to record video (must be at least 1 second)");
+        startCamera();
+      } else {
+        stopRecordingVideo(false);
+      }
     } else {
       capturePhoto();
     }
@@ -438,7 +467,7 @@ const CameraModal = ({
           promises.push(
             sendMessage({
               text: caption.trim(),
-              [isVideo ? "video" : "image"]: mediaContent,
+              image: mediaContent,
               messageType: mediaType
             })
           );
@@ -450,7 +479,7 @@ const CameraModal = ({
           promises.push(
             sendGroupMessage({
               text: caption.trim(),
-              [isVideo ? "video" : "image"]: mediaContent,
+              image: mediaContent,
               messageType: mediaType
             })
           );
@@ -467,7 +496,7 @@ const CameraModal = ({
             promises.push(
               axiosInstance.post(`/messages/send/${userId}`, {
                 text: caption.trim(),
-                [isVideo ? "video" : "image"]: mediaContent,
+                image: mediaContent,
                 messageType: mediaType
               })
             );
@@ -485,7 +514,7 @@ const CameraModal = ({
             promises.push(
               axiosInstance.post(`/groups/${groupId}/send`, {
                 text: caption.trim(),
-                [isVideo ? "video" : "image"]: mediaContent,
+                image: mediaContent,
                 messageType: mediaType
               })
             );
