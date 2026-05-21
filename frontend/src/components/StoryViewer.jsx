@@ -11,6 +11,10 @@ const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [storyDuration, setStoryDuration] = useState(5000);
   const [showViewsDrawer, setShowViewsDrawer] = useState(false);
+  
+  // Swipe to close states
+  const [touchStart, setTouchStart] = useState(null);
+  const [translateY, setTranslateY] = useState(0);
 
   const { deleteStory, viewStory, getStories, stories: storeStories } = useStoryStore();
   const { socket } = useAuthStore();
@@ -187,6 +191,33 @@ const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => 
     }
   };
 
+  // Touch handlers for swipe to close
+  const onTouchStartSwipe = (e) => {
+    setTouchStart(e.targetTouches[0].clientY);
+    setIsPaused(true);
+  };
+
+  const onTouchMoveSwipe = (e) => {
+    if (touchStart === null) return;
+    const currentTouch = e.targetTouches[0].clientY;
+    const diff = currentTouch - touchStart;
+    if (diff > 0) {
+      setTranslateY(diff);
+    }
+  };
+
+  const onTouchEndSwipe = () => {
+    if (touchStart === null) return;
+    setIsPaused(false);
+    
+    if (translateY > 100) {
+      onClose();
+    } else {
+      setTranslateY(0);
+    }
+    setTouchStart(null);
+  };
+
   const getInitials = (name) => {
     if (!name) return "";
     return name.split(" ").map(n => n[0]).join("").toLowerCase();
@@ -206,7 +237,14 @@ const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => 
 
   return (
     <div 
-      className={`fixed inset-0 z-[999] flex flex-col justify-between animate-in fade-in duration-300 text-white select-none group ${getStatusBgColor(currentStory)}`}
+      className={`fixed inset-0 z-[999] flex flex-col justify-between animate-in fade-in duration-300 text-white select-none group overscroll-none touch-pan-y ${getStatusBgColor(currentStory)}`}
+      style={{ 
+        transform: `translateY(${translateY}px)`,
+        transition: translateY === 0 ? 'transform 0.3s ease-out' : 'none'
+      }}
+      onTouchStart={onTouchStartSwipe}
+      onTouchMove={onTouchMoveSwipe}
+      onTouchEnd={onTouchEndSwipe}
     >
       {/* Top Header Section (Progress + Nav) */}
       <div className={`absolute top-0 inset-x-0 p-4 pt-3 z-50 ${currentStory.type === "text" ? "" : "bg-gradient-to-b from-black/25 to-transparent"}`}>
