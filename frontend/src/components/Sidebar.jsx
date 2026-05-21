@@ -612,7 +612,7 @@ const Sidebar = () => {
   const otherStories = stories.filter(s => s.user._id.toString() !== authUser?._id?.toString());
 
   return (
-    <div className="h-full w-full flex flex-col bg-base-100 select-none relative overscroll-none">
+    <div className="h-full w-full flex flex-col bg-base-100 select-none relative">
       
       {/* 1. Sleek Signal Header */}
       <header className="p-4 safe-top border-b border-base-300 flex items-center justify-between bg-base-100/90 backdrop-blur sticky top-0 z-10">
