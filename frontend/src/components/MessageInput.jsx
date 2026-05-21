@@ -100,13 +100,15 @@ const MessageInput = () => {
 
     clearInterval(recordingIntervalRef.current);
     const mediaRecorder = mediaRecorderRef.current;
+    const finalDuration = recordingDuration;
 
     mediaRecorder.onstop = async () => {
       // Release microphone tracks
       mediaRecorder.stream.getTracks().forEach((track) => track.stop());
 
       if (shouldSend && audioChunksRef.current.length > 0) {
-        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        const mimeType = mediaRecorder.mimeType ? mediaRecorder.mimeType.split(";")[0] : "audio/webm";
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
@@ -115,12 +117,12 @@ const MessageInput = () => {
             setIsUploadingAudio(true);
             const sendPromise = selectedGroup
               ? sendGroupMessage({
-                  text: `Voice note (${formatDuration(recordingDuration)})`,
+                  text: `Voice note (${formatDuration(finalDuration)})`,
                   image: base64Audio,
                   messageType: "audio",
                 })
               : sendMessage({
-                  text: `Voice note (${formatDuration(recordingDuration)})`,
+                  text: `Voice note (${formatDuration(finalDuration)})`,
                   image: base64Audio,
                   messageType: "audio",
                 });

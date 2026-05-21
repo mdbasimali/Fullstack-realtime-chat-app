@@ -56,5 +56,13 @@ export const useStoryStore = create((set, get) => ({
     } catch (error) {
       console.error("Delete story error:", error);
     }
+  },
+
+  viewStory: async (storyId) => {
+    try {
+      await axiosInstance.post(`/stories/${storyId}/view`);
+    } catch (error) {
+      console.error("View story error:", error);
+    }
   }
 }));

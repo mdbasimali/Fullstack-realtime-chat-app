@@ -187,6 +187,7 @@ export const useChatstore = create((set,get) => ({
       // 4. If sending fails, remove the optimistic message
       set({ messages: get().messages.filter(m => m._id !== optimisticMessage._id) });
       console.error("SendMessage error:", error);
+      throw error;
     }
   },
   subscribeToMessages: () => {

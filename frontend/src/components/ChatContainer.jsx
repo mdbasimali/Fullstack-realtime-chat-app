@@ -64,6 +64,7 @@ const ChatContainer = () => {
   const { initiateCall } = useCallStore();
   const { authUser, onlineUsers } = useAuthStore();
   const messageEndRef = useRef(null);
+  const isInitialLoadRef = useRef(true);
 
   const [contextMenu, setContextMenu] = useState(null); // { message, x, y, isMobile }
   const touchTimeoutRef = useRef(null);
@@ -193,6 +194,11 @@ const ChatContainer = () => {
     }
   };
 
+  // Reset initial load flag when switching chats
+  useEffect(() => {
+    isInitialLoadRef.current = true;
+  }, [selectedUser?._id, selectedGroup?._id]);
+
   useEffect(() => {
     if (selectedUser) {
       getMessages(selectedUser._id);
@@ -207,7 +213,14 @@ const ChatContainer = () => {
 
   useEffect(() => {
     if (messageEndRef.current && messages) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+      if (isInitialLoadRef.current) {
+        // First load: jump instantly to bottom, no scroll animation
+        messageEndRef.current.scrollIntoView({ behavior: "instant" });
+        isInitialLoadRef.current = false;
+      } else {
+        // New messages: smooth scroll
+        messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
     }
   }, [messages]);
 

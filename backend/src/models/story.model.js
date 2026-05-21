@@ -20,6 +20,16 @@ const storySchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    bgColor: {
+      type: String,
+      default: "",
+    },
+    views: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      }
+    ],
     // Stories expire after 24 hours
     expireAt: {
       type: Date,

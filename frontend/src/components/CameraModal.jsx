@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
-  Camera, X, RotateCw, Send, RefreshCw, User, Users, Check, Search, Image
+  Camera, X, RotateCw, Send, RefreshCw, User, Users, Check, Search, Image, Zap, ZapOff, ArrowLeft, Palette, Link, ArrowRight
 } from "lucide-react";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
@@ -15,13 +15,31 @@ const CameraModal = ({
   groups = [],
   postStory,
   sendMessage,
-  sendGroupMessage
+  sendGroupMessage,
+  setShowStoryCreator,
+  setActiveTab
 }) => {
   const [stream, setStream] = useState(null);
   const [facingMode, setFacingMode] = useState("user"); // "user" | "environment"
   const [capturedImage, setCapturedImage] = useState(null);
   const [flashActive, setFlashActive] = useState(false);
   const [caption, setCaption] = useState("");
+  
+  // Text mode states
+  const [activeMode, setActiveMode] = useState("camera"); // "camera" | "text"
+  const [statusText, setStatusText] = useState("");
+  const [textBgColorIndex, setTextBgColorIndex] = useState(0);
+  const [showTextSharePanel, setShowTextSharePanel] = useState(false);
+
+  const textBgColors = [
+    "bg-[#c7a2c9]", // Pastel lavender
+    "bg-[#7f66de]", // Soft purple
+    "bg-[#5c9ca6]", // Soft teal
+    "bg-[#df6976]", // Soft coral/red
+    "bg-[#e5a05d]", // Soft orange/peach
+    "bg-[#5c7da6]", // Soft blue
+    "bg-[#6bb38a]", // Soft green
+  ];
   
   // Destinations state
   const [sendToStory, setSendToStory] = useState(false);
@@ -30,8 +48,10 @@ const CameraModal = ({
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [showShareDrawer, setShowShareDrawer] = useState(false);
 
   const videoRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const startCamera = async () => {
     // Stop any existing stream tracks first
@@ -66,13 +86,22 @@ const CameraModal = ({
   };
 
   useEffect(() => {
-    if (isOpen && !capturedImage) {
+    if (isOpen && !capturedImage && activeMode === "camera") {
       startCamera();
+    } else {
+      stopCamera();
     }
     return () => {
       stopCamera();
     };
-  }, [isOpen, facingMode, capturedImage]);
+  }, [isOpen, facingMode, capturedImage, activeMode]);
+
+  // Safely bind camera stream to video element whenever stream changes
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream, isOpen, activeMode]);
 
   // Reset state on open/close
   useEffect(() => {
@@ -85,6 +114,11 @@ const CameraModal = ({
       setSelectedGroups([]);
       setSearchQuery("");
       setIsSending(false);
+      setShowShareDrawer(false);
+      setActiveMode("camera");
+      setStatusText("");
+      setTextBgColorIndex(0);
+      setShowTextSharePanel(false);
     } else {
       stopCamera();
     }
@@ -94,8 +128,12 @@ const CameraModal = ({
     if (!videoRef.current) return;
 
     // Trigger flash animation
-    setFlashActive(true);
-    setTimeout(() => setFlashActive(false), 200);
+    const tempFlash = flashActive;
+    if (tempFlash) {
+      // Simulate real hardware flash by flashing screen white briefly
+      setFlashActive(true);
+      setTimeout(() => setFlashActive(false), 200);
+    }
 
     const video = videoRef.current;
     const canvas = document.createElement("canvas");
@@ -115,6 +153,23 @@ const CameraModal = ({
     stopCamera();
   };
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCapturedImage(reader.result);
+      stopCamera();
+    };
+    reader.readAsDataURL(file);
+  };
+
   const toggleFacingMode = () => {
     setFacingMode(prev => prev === "user" ? "environment" : "user");
   };
@@ -127,86 +182,169 @@ const CameraModal = ({
     const sentDestNames = [];
 
     try {
-      // 1. Post to Story
-      if (sendToStory) {
-        promises.push(
-          postStory({
-            content: capturedImage,
-            type: "image",
-            caption: caption.trim()
-          })
-        );
-        sentDestNames.push("Story");
-      }
+      if (activeMode === "text") {
+        const textContent = statusText.trim();
+        if (!textContent) {
+          toast.error("Please enter some text status first.");
+          setIsSending(false);
+          return;
+        }
 
-      // 2. Send to Active DM Chat
-      if (sendToActive && selectedUser) {
-        promises.push(
-          sendMessage({
-            text: caption.trim(),
-            image: capturedImage
-          })
-        );
-        sentDestNames.push(selectedUser.fullName);
-      }
-
-      // 3. Send to Active Group Chat
-      if (sendToActive && selectedGroup) {
-        promises.push(
-          sendGroupMessage({
-            text: caption.trim(),
-            image: capturedImage
-          })
-        );
-        sentDestNames.push(selectedGroup.name);
-      }
-
-      // 4. Send to Selected Other DMs
-      selectedDMs.forEach(userId => {
-        // If it's already active chat, don't send twice
-        if (selectedUser && selectedUser._id === userId) return;
-        
-        const dmUser = users.find(u => u._id === userId);
-        if (dmUser) {
+        // 1. Post to Story
+        if (sendToStory) {
           promises.push(
-            axiosInstance.post(`/messages/send/${userId}`, {
+            postStory({
+              content: textContent,
+              type: "text",
+              bgColor: textBgColors[textBgColorIndex],
+            })
+          );
+          sentDestNames.push("Story");
+        }
+
+        // 2. Send to Active DM Chat
+        if (sendToActive && selectedUser) {
+          promises.push(
+            sendMessage({
+              text: textContent,
+            })
+          );
+          sentDestNames.push(selectedUser.fullName);
+        }
+
+        // 3. Send to Active Group Chat
+        if (sendToActive && selectedGroup) {
+          promises.push(
+            sendGroupMessage({
+              text: textContent,
+            })
+          );
+          sentDestNames.push(selectedGroup.name);
+        }
+
+        // 4. Send to Selected Other DMs
+        selectedDMs.forEach(userId => {
+          if (selectedUser && selectedUser._id === userId) return;
+          
+          const dmUser = users.find(u => u._id === userId);
+          if (dmUser) {
+            promises.push(
+              axiosInstance.post(`/messages/send/${userId}`, {
+                text: textContent,
+              })
+            );
+            sentDestNames.push(dmUser.fullName);
+          }
+        });
+
+        // 5. Send to Selected Other Groups
+        selectedGroups.forEach(groupId => {
+          if (selectedGroup && selectedGroup._id === groupId) return;
+          
+          const groupObj = groups.find(g => g._id === groupId);
+          if (groupObj) {
+            promises.push(
+              axiosInstance.post(`/groups/${groupId}/send`, {
+                text: textContent,
+              })
+            );
+            sentDestNames.push(groupObj.name);
+          }
+        });
+
+        if (promises.length === 0) {
+          toast.error("Please select at least one destination to share.");
+          setIsSending(false);
+          return;
+        }
+
+        await Promise.all(promises);
+        toast.success(`Status shared successfully!`);
+        onClose();
+
+      } else {
+        // Camera/Photo Mode
+        // 1. Post to Story
+        if (sendToStory) {
+          promises.push(
+            postStory({
+              content: capturedImage,
+              type: "image",
+              caption: caption.trim()
+            })
+          );
+          sentDestNames.push("Story");
+        }
+
+        // 2. Send to Active DM Chat
+        if (sendToActive && selectedUser) {
+          promises.push(
+            sendMessage({
               text: caption.trim(),
               image: capturedImage
             })
           );
-          sentDestNames.push(dmUser.fullName);
+          sentDestNames.push(selectedUser.fullName);
         }
-      });
 
-      // 5. Send to Selected Other Groups
-      selectedGroups.forEach(groupId => {
-        // If it's already active group, don't send twice
-        if (selectedGroup && selectedGroup._id === groupId) return;
-        
-        const groupObj = groups.find(g => g._id === groupId);
-        if (groupObj) {
+        // 3. Send to Active Group Chat
+        if (sendToActive && selectedGroup) {
           promises.push(
-            axiosInstance.post(`/groups/${groupId}/send`, {
+            sendGroupMessage({
               text: caption.trim(),
               image: capturedImage
             })
           );
-          sentDestNames.push(groupObj.name);
+          sentDestNames.push(selectedGroup.name);
         }
-      });
 
-      if (promises.length === 0) {
-        toast.error("Please select at least one destination to share.");
-        setIsSending(false);
-        return;
+        // 4. Send to Selected Other DMs
+        selectedDMs.forEach(userId => {
+          // If it's already active chat, don't send twice
+          if (selectedUser && selectedUser._id === userId) return;
+          
+          const dmUser = users.find(u => u._id === userId);
+          if (dmUser) {
+            promises.push(
+              axiosInstance.post(`/messages/send/${userId}`, {
+                text: caption.trim(),
+                image: capturedImage
+              })
+            );
+            sentDestNames.push(dmUser.fullName);
+          }
+        });
+
+        // 5. Send to Selected Other Groups
+        selectedGroups.forEach(groupId => {
+          // If it's already active group, don't send twice
+          if (selectedGroup && selectedGroup._id === groupId) return;
+          
+          const groupObj = groups.find(g => g._id === groupId);
+          if (groupObj) {
+            promises.push(
+              axiosInstance.post(`/groups/${groupId}/send`, {
+                text: caption.trim(),
+                image: capturedImage
+              })
+            );
+            sentDestNames.push(groupObj.name);
+          }
+        });
+
+        if (promises.length === 0) {
+          toast.error("Please select at least one destination to share.");
+          setIsSending(false);
+          return;
+        }
+
+        await Promise.all(promises);
+        toast.success(`Photo shared successfully!`);
+        onClose();
       }
-
-      await Promise.all(promises);
-      toast.success(`Photo sent to: ${sentDestNames.join(", ")}`);
-      onClose();
     } catch (err) {
-      console.error("Error sending captured image:", err);
-      toast.error("Failed to send captured photo.");
+      console.error("Error sharing content:", err);
+      toast.error("Failed to share.");
     } finally {
       setIsSending(false);
     }
@@ -251,320 +389,545 @@ const CameraModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300 animate-fade-in select-none">
-      <div className="bg-base-100 border border-base-300 w-full max-w-4xl rounded-[28px] overflow-hidden shadow-2xl flex flex-col md:flex-row h-[90dvh] max-h-[800px] animate-scale-up">
-        
-        {/* Left Side: Camera viewport or Image preview */}
-        <div className="shrink-0 h-[40%] md:h-full md:flex-1 bg-black relative flex items-center justify-center overflow-hidden">
-          {/* Flash screen overlay */}
-          <div 
-            className={`absolute inset-0 bg-white z-20 pointer-events-none transition-opacity duration-200 ${
-              flashActive ? "opacity-100" : "opacity-0"
-            }`}
-          />
+    <div className="fixed inset-0 z-[999] bg-black/75 backdrop-blur-md text-white select-none flex items-center justify-center animate-in fade-in duration-300">
+      <div className="relative w-full h-full md:max-w-[420px] md:max-h-[850px] md:h-[92vh] md:rounded-[40px] md:border-8 md:border-neutral-800 md:shadow-2xl bg-black overflow-hidden flex flex-col justify-between">
+      
+      {!capturedImage ? (
+        // Camera Viewport & Live Stream / Text composer with portrait mockup layout - edge-to-edge
+        <div className="flex-1 w-full flex flex-col justify-between h-full">
+          
+          {activeMode === "camera" ? (
+            /* Edge-to-edge camera viewfinder container */
+            <div className="relative flex-1 w-full overflow-hidden bg-neutral-950">
+              {/* Flash visual overlay */}
+              <div 
+                className={`absolute inset-0 bg-white z-40 pointer-events-none transition-opacity duration-200 ${
+                  flashActive ? "opacity-100" : "opacity-0"
+                }`}
+              />
 
-          {!capturedImage ? (
-            // Live Stream
-            <>
               <video 
                 ref={videoRef}
                 autoPlay 
                 playsInline 
                 muted
-                className={`w-full h-full object-cover ${
+                className={`absolute inset-0 w-full h-full object-cover ${
                   facingMode === "user" ? "scale-x-[-1]" : ""
                 }`}
               />
-              
-              {/* Bottom controls inside camera */}
-              <div className="absolute bottom-6 inset-x-0 flex items-center justify-center gap-8 z-15">
-                {/* Flip camera */}
+
+              {/* Top-Right Flash Icon as in user screenshot */}
+              <div className="absolute top-4 right-4 z-30">
+                <button 
+                  type="button"
+                  onClick={() => setFlashActive(!flashActive)}
+                  className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center border border-white/15 active:scale-95 transition-all cursor-pointer hover:bg-black/50"
+                  title="Toggle Flash"
+                >
+                  {flashActive ? (
+                    <Zap size={20} className="text-yellow-400 fill-yellow-400" />
+                  ) : (
+                    <ZapOff size={20} className="text-white/90" />
+                  )}
+                </button>
+              </div>
+
+              {/* Top-Left Close/Back button for navigation accessibility */}
+              <div className="absolute top-4 left-4 z-30">
+                <button 
+                  type="button"
+                  onClick={onClose}
+                  className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center border border-white/15 active:scale-95 transition-all cursor-pointer hover:bg-black/50"
+                  title="Close"
+                >
+                  <ArrowLeft size={20} className="text-white" />
+                </button>
+              </div>
+
+              {/* Bottom Capturing controls (Flip, Shutter, Gallery) overlayed on video */}
+              <div className="absolute bottom-6 inset-x-0 flex items-center justify-between px-8 z-30">
+                {/* Flip camera Button */}
                 <button
                   type="button"
                   onClick={toggleFacingMode}
-                  className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all border border-white/15 cursor-pointer"
+                  className="w-12 h-12 rounded-full bg-black/35 backdrop-blur-sm text-white flex items-center justify-center border border-white/20 active:scale-90 transition-all cursor-pointer hover:bg-black/55"
                   title="Flip camera"
                 >
-                  <RotateCw size={20} className="hover:rotate-45 transition-transform" />
+                  <RefreshCw size={22} className="text-white" />
                 </button>
 
-                {/* Shutter */}
+                {/* White Double Shutter Button */}
                 <button
                   type="button"
                   onClick={capturePhoto}
-                  className="w-20 h-20 rounded-full bg-white border-[6px] border-white/30 flex items-center justify-center cursor-pointer transition-transform hover:scale-105 active:scale-90"
+                  className="w-[76px] h-[76px] rounded-full border-4 border-white flex items-center justify-center bg-transparent active:scale-90 transition-transform cursor-pointer"
                   title="Capture"
                 >
-                  <div className="w-14 h-14 rounded-full bg-white hover:bg-neutral-100 transition-colors" />
+                  <div className="w-[58px] h-[58px] rounded-full bg-white hover:bg-neutral-100 transition-colors" />
                 </button>
 
-                {/* Cancel */}
+                {/* Hidden Input for Gallery selection */}
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileSelect} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+
+                {/* Gallery Image Picker Button: Styled to look like the solid grey/white container in photo */}
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all border border-white/15 cursor-pointer"
-                  title="Close"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-12 h-12 rounded-full bg-zinc-700/60 border border-white/20 flex items-center justify-center active:scale-90 transition-transform cursor-pointer hover:bg-zinc-600/70"
+                  title="Gallery"
                 >
-                  <X size={20} />
+                  <Image size={22} className="text-white" />
                 </button>
               </div>
-            </>
-          ) : (
-            // Captured Image Preview
-            <>
-              <img 
-                src={capturedImage} 
-                alt="Captured" 
-                className="w-full h-full object-cover"
-              />
-              
-              {/* Retake Button overlay */}
-              <button
-                type="button"
-                onClick={() => setCapturedImage(null)}
-                className="absolute top-4 left-4 px-4 py-2 bg-black/60 hover:bg-black/85 text-white text-xs font-bold rounded-full flex items-center gap-2 border border-white/10 transition-colors cursor-pointer"
-              >
-                <RefreshCw size={14} />
-                Retake
-              </button>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-black/85 text-white rounded-full border border-white/10 transition-colors cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Right Side: Options & Share settings */}
-        <div className="flex-1 w-full md:w-[350px] md:flex-none border-t md:border-t-0 md:border-l border-base-300 p-4 md:p-5 flex flex-col bg-base-100/95 min-h-0">
-          <header className="pb-3 border-b border-base-300 flex justify-between items-center shrink-0">
-            <div className="text-left">
-              <h3 className="font-extrabold text-base tracking-tight text-base-content">Share Captured Photo</h3>
-              <p className="text-[10px] text-base-content/50">Choose where to send your capture</p>
-            </div>
-            {capturedImage && (
-              <button 
-                type="button" 
-                onClick={onClose} 
-                className="text-base-content/40 hover:text-base-content p-1 hover:bg-base-200 rounded-full transition-colors md:hidden"
-              >
-                <X size={18} />
-              </button>
-            )}
-          </header>
-
-          {!capturedImage ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center text-sm text-base-content/40 py-8">
-              <Camera size={36} className="opacity-35 mb-2.5 animate-pulse" />
-              <p className="font-semibold text-xs">Awaiting Photo Capture</p>
-              <p className="text-[10px] max-w-[200px] mt-0.5">Snaps can be posted to Stories or sent as messages to your contacts.</p>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col min-h-0 py-4 space-y-4">
-              
-              {/* Caption field */}
-              <div className="space-y-1 text-left shrink-0">
-                <label className="text-[10px] font-bold text-base-content/60 uppercase tracking-wider px-1">Add Caption</label>
-                <input 
-                  type="text" 
-                  placeholder="Say something about this snap... ✍️"
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-base-200 border border-base-300 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-xs font-medium"
+            /* Text composer container with custom WhatsApp pastel background color - edge-to-edge */
+            <div className={`relative flex-1 w-full flex flex-col justify-between pt-6 transition-colors duration-300 ${textBgColors[textBgColorIndex]}`}>
+              {/* Empty top spacer to match mockup */}
+              <div className="h-10 z-30 w-full" />
+
+              {/* Center status creator textarea */}
+              <div className="flex-1 flex items-center justify-center px-4 w-full">
+                <textarea
+                  value={statusText}
+                  onChange={(e) => setStatusText(e.target.value)}
+                  placeholder="Tap to add text"
+                  className="w-full bg-transparent text-center text-3xl md:text-4xl font-normal text-white placeholder-white/40 focus:outline-none resize-none px-2 leading-relaxed"
+                  rows={4}
+                  maxLength={250}
+                  autoFocus
                 />
               </div>
 
-              {/* Destinations List */}
-              <div className="flex-1 flex flex-col min-h-0">
-                <label className="text-[10px] font-bold text-base-content/60 uppercase tracking-wider px-1 mb-2 text-left shrink-0">Destinations</label>
-                
-                <div className="flex flex-col space-y-2 overflow-y-auto pr-1 flex-1 custom-scrollbar">
-                  
-                  {/* Option: Stories */}
-                  <div 
-                    onClick={() => setSendToStory(prev => !prev)}
-                    className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 ${
-                      sendToStory 
-                        ? "bg-primary/10 border-primary/45 text-primary" 
-                        : "bg-base-200/50 border-base-300 text-base-content/80 hover:bg-base-200"
-                    }`}
+              {/* Bottom Overlays inside the colored background */}
+              <div className="flex justify-between items-center px-6 pb-6 z-30 w-full">
+                {/* Bottom Left controls */}
+                <div className="flex items-center gap-3">
+                  {/* Double circle color picker */}
+                  <button
+                    type="button"
+                    onClick={() => setTextBgColorIndex(prev => (prev + 1) % textBgColors.length)}
+                    className="w-[42px] h-[42px] rounded-full border-2 border-white flex items-center justify-center bg-transparent active:scale-95 transition-all cursor-pointer"
+                    title="Change background color"
                   >
-                    <div className="flex items-center gap-3.5 text-left">
-                      <div className="p-2 rounded-lg bg-gradient-to-tr from-pink-500 to-indigo-500 text-white shadow-sm">
-                        <Image size={15} />
-                      </div>
-                      <div>
-                        <h5 className="font-bold text-xs">My Story</h5>
-                        <p className="text-[10px] opacity-70">Share status update with friends</p>
-                      </div>
-                    </div>
-                    <div className={`w-4.5 h-4.5 rounded border flex items-center justify-center transition-all ${
-                      sendToStory ? "bg-primary border-primary text-primary-content" : "border-base-content/20"
-                    }`}>
-                      {sendToStory && <Check size={11} strokeWidth={4} />}
-                    </div>
+                    <div className="w-[28px] h-[28px] rounded-full bg-white" />
+                  </button>
+
+                  {/* Gray Link button */}
+                  <button
+                    type="button"
+                    className="w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center active:scale-95 transition-all cursor-pointer hover:bg-white/30"
+                    title="Add link"
+                  >
+                    <Link size={18} className="text-white" />
+                  </button>
+                </div>
+
+                {/* Bottom Right horizontal line */}
+                <div className="w-12 h-[2px] bg-white/90 rounded-full" />
+              </div>
+
+              {/* Slide-up Destination Picker Drawer */}
+              {showTextSharePanel && (
+                <div className="absolute inset-x-4 bottom-4 bg-[#182229]/95 backdrop-blur-lg border border-white/10 rounded-3xl p-4 z-40 flex flex-col gap-4 shadow-2xl animate-in slide-in-from-bottom duration-300">
+                  {/* Header with close button */}
+                  <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                    <span className="text-sm font-semibold text-white/90">Share to</span>
+                    <button 
+                      type="button"
+                      onClick={() => setShowTextSharePanel(false)}
+                      className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20 active:scale-95 transition-all"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
 
-                  {/* Option: Active chat shortcut */}
-                  {(selectedUser || selectedGroup) && (
-                    <div 
-                      onClick={() => setSendToActive(prev => !prev)}
-                      className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 ${
-                        sendToActive 
-                          ? "bg-primary/10 border-primary/45 text-primary" 
-                          : "bg-base-200/50 border-base-300 text-base-content/80 hover:bg-base-200"
+                  {/* Horizontal Destinations select pills */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Target: Story */}
+                    <button
+                      type="button"
+                      onClick={() => setSendToStory(prev => !prev)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                        sendToStory 
+                          ? "bg-[#008069] border-[#008069] text-white" 
+                          : "bg-black/45 border-white/10 text-white/80 hover:bg-black/60"
                       }`}
                     >
-                      <div className="flex items-center gap-3.5 text-left min-w-0">
-                        {selectedUser ? (
-                          selectedUser.profilePic ? (
-                            <img src={selectedUser.profilePic} className="w-8 h-8 rounded-full object-cover border border-base-300" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-xs border border-indigo-100">
-                              {getInitials(selectedUser.fullName)}
-                            </div>
-                          )
-                        ) : (
-                          <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-300 flex items-center justify-center font-bold text-xs border border-emerald-100">
-                            {getInitials(selectedGroup.name)}
-                          </div>
-                        )}
-                        <div className="truncate">
-                          <h5 className="font-bold text-xs truncate">
-                            {selectedUser ? selectedUser.fullName : selectedGroup.name}
-                          </h5>
-                          <p className="text-[10px] opacity-70">Currently active chat</p>
+                      <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-pink-500 to-indigo-500" />
+                      <span>My Story</span>
+                      {sendToStory && <Check size={12} strokeWidth={3} />}
+                    </button>
+
+                    {/* Target: Currently active DM/Group shortcut */}
+                    {(selectedUser || selectedGroup) && (
+                      <button
+                        type="button"
+                        onClick={() => setSendToActive(prev => !prev)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                          sendToActive 
+                            ? "bg-[#008069] border-[#008069] text-white" 
+                            : "bg-black/45 border-white/10 text-white/80 hover:bg-black/60"
+                        }`}
+                      >
+                        <span>{selectedUser ? selectedUser.fullName : selectedGroup.name} (Active)</span>
+                        {sendToActive && <Check size={12} strokeWidth={3} />}
+                      </button>
+                    )}
+
+                    {/* Toggle other contacts list drawer */}
+                    <button
+                      type="button"
+                      onClick={() => setShowShareDrawer(!showShareDrawer)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                        selectedDMs.length > 0 || selectedGroups.length > 0
+                          ? "bg-indigo-600 border-indigo-600 text-white" 
+                          : "bg-black/45 border-white/10 text-white/80 hover:bg-black/60"
+                      }`}
+                    >
+                      <span>Share with others {selectedDMs.length + selectedGroups.length > 0 && `(${selectedDMs.length + selectedGroups.length})`}</span>
+                      <Users size={12} />
+                    </button>
+                  </div>
+
+                  {/* Collapsible Contacts list drawer */}
+                  {showShareDrawer && (
+                    <div className="bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 max-h-[140px] overflow-y-auto custom-scrollbar animate-in slide-in-from-bottom duration-200">
+                      <div className="flex items-center gap-2 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg mb-2">
+                        <Search size={12} className="text-white/40" />
+                        <input 
+                          type="text" 
+                          placeholder="Search contacts..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full bg-transparent text-xs focus:outline-none placeholder-white/40 text-white"
+                        />
+                      </div>
+
+                      {/* Other contacts DMs */}
+                      {filteredUsers.length > 0 && (
+                        <div className="space-y-1 mb-2">
+                          <span className="text-[9px] font-bold text-white/40 uppercase tracking-wider block text-left px-1">Contacts</span>
+                          {filteredUsers.map(user => {
+                            const isChecked = selectedDMs.includes(user._id);
+                            return (
+                              <div 
+                                key={user._id}
+                                onClick={() => toggleDMSelection(user._id)}
+                                className={`p-1.5 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                                  isChecked ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"
+                                }`}
+                              >
+                                <span className="text-xs font-semibold truncate">{user.fullName}</span>
+                                <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                                  isChecked ? "bg-indigo-500 border-indigo-500 text-white" : "border-white/20"
+                                }`}>
+                                  {isChecked && <Check size={8} strokeWidth={4} />}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                      <div className={`w-4.5 h-4.5 rounded border flex items-center justify-center transition-all ${
-                        sendToActive ? "bg-primary border-primary text-primary-content" : "border-base-content/20"
-                      }`}>
-                        {sendToActive && <Check size={11} strokeWidth={4} />}
-                      </div>
+                      )}
+
+                      {/* Other groups */}
+                      {filteredGroups.length > 0 && (
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-bold text-white/40 uppercase tracking-wider block text-left px-1">Groups</span>
+                          {filteredGroups.map(group => {
+                            const isChecked = selectedGroups.includes(group._id);
+                            return (
+                              <div 
+                                key={group._id}
+                                onClick={() => toggleGroupSelection(group._id)}
+                                className={`p-1.5 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                                  isChecked ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"
+                                }`}
+                              >
+                                <span className="text-xs font-semibold truncate">{group.name}</span>
+                                <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                                  isChecked ? "bg-indigo-500 border-indigo-500 text-white" : "border-white/20"
+                                }`}>
+                                  {isChecked && <Check size={8} strokeWidth={4} />}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* Search Other Chats */}
-                  <div className="pt-2">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-base-200 border border-base-300 rounded-lg mb-2">
-                      <Search size={14} className="text-base-content/40" />
-                      <input 
-                        type="text" 
-                        placeholder="Search other chats..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-transparent text-xs focus:outline-none placeholder-base-content/40"
-                      />
-                    </div>
-                    
-                    {/* Other DMs List */}
-                    {filteredUsers.length > 0 && (
-                      <div className="space-y-1.5 mb-3">
-                        <span className="text-[9px] font-bold text-base-content/40 uppercase tracking-wider block text-left px-1">Contacts</span>
-                        {filteredUsers.map(user => {
-                          const isChecked = selectedDMs.includes(user._id);
-                          return (
-                            <div 
-                              key={user._id}
-                              onClick={() => toggleDMSelection(user._id)}
-                              className={`p-2.5 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
-                                isChecked ? "bg-base-200" : "hover:bg-base-200/50"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0 text-left">
-                                {user.profilePic ? (
-                                  <img src={user.profilePic} className="w-6.5 h-6.5 rounded-full object-cover" />
-                                ) : (
-                                  <div className="w-6.5 h-6.5 rounded-full bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xxs">
-                                    {getInitials(user.fullName)}
-                                  </div>
-                                )}
-                                <span className="text-xs font-semibold text-base-content truncate">{user.fullName}</span>
-                              </div>
-                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
-                                isChecked ? "bg-primary border-primary text-primary-content" : "border-base-content/20"
-                              }`}>
-                                {isChecked && <Check size={10} strokeWidth={4} />}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Other Groups List */}
-                    {filteredGroups.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[9px] font-bold text-base-content/40 uppercase tracking-wider block text-left px-1">Groups</span>
-                        {filteredGroups.map(group => {
-                          const isChecked = selectedGroups.includes(group._id);
-                          return (
-                            <div 
-                              key={group._id}
-                              onClick={() => toggleGroupSelection(group._id)}
-                              className={`p-2.5 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
-                                isChecked ? "bg-base-200" : "hover:bg-base-200/50"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0 text-left">
-                                <div className="w-6.5 h-6.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xxs border border-emerald-100/10">
-                                  {getInitials(group.name)}
-                                </div>
-                                <span className="text-xs font-semibold text-base-content truncate">{group.name}</span>
-                              </div>
-                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
-                                isChecked ? "bg-primary border-primary text-primary-content" : "border-base-content/20"
-                              }`}>
-                                {isChecked && <Check size={10} strokeWidth={4} />}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {filteredUsers.length === 0 && filteredGroups.length === 0 && searchQuery && (
-                      <div className="py-6 text-center text-[10px] text-base-content/40">No matching chats found</div>
-                    )}
+                  {/* Action/Send Button */}
+                  <div className="flex items-center justify-end w-full">
+                    <button
+                      type="button"
+                      onClick={handleSend}
+                      disabled={isSending || !statusText.trim() || !(sendToStory || (sendToActive && (selectedUser || selectedGroup)) || selectedDMs.length > 0 || selectedGroups.length > 0)}
+                      className="w-12 h-12 rounded-full bg-[#00a884] hover:bg-[#008069] flex items-center justify-center text-white active:scale-95 transition-transform cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                      title="Send"
+                    >
+                      {isSending ? (
+                        <span className="loading loading-spinner loading-xs" />
+                      ) : (
+                        <Send size={20} className="ml-0.5" />
+                      )}
+                    </button>
                   </div>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-3 border-t border-base-300 flex justify-end gap-2.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isSending}
-                  className="btn btn-sm btn-ghost rounded-full px-4 text-xs normal-case cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSend}
-                  disabled={isSending || !(sendToStory || (sendToActive && (selectedUser || selectedGroup)) || selectedDMs.length > 0 || selectedGroups.length > 0)}
-                  className="btn btn-sm btn-primary rounded-full px-5 text-xs font-bold normal-case shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {isSending ? (
-                    <span className="loading loading-spinner loading-xs" />
-                  ) : (
-                    <>
-                      <Send size={13} />
-                      Send
-                    </>
-                  )}
-                </button>
-              </div>
-
+              )}
             </div>
           )}
-        </div>
 
+          {/* Bottom Panel containing Mode selector and home indicator */}
+          <div className="h-20 w-full bg-black flex flex-col justify-center relative px-6">
+            <div className="flex items-center justify-between w-full">
+              {/* Left spacer to align switcher centrally */}
+              <div className="w-10" />
+
+              {/* Mode Switcher */}
+              <div className="flex items-center gap-6 text-sm font-semibold">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setActiveMode("camera");
+                    setShowShareDrawer(false);
+                    setShowTextSharePanel(false);
+                  }}
+                  className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${
+                    activeMode === "camera" 
+                      ? "bg-white text-black" 
+                      : "text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  Camera
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setActiveMode("text");
+                    setShowShareDrawer(false);
+                    setShowTextSharePanel(false);
+                  }}
+                  className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${
+                    activeMode === "text" 
+                      ? "bg-white text-black" 
+                      : "text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  Text
+                </button>
+              </div>
+
+              {/* Right Arrow Button (Text mode only) */}
+              <div className="w-10 flex justify-end">
+                {activeMode === "text" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (statusText.trim()) {
+                        setShowTextSharePanel(true);
+                      }
+                    }}
+                    disabled={!statusText.trim()}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${
+                      statusText.trim() 
+                        ? "bg-zinc-700 text-white hover:bg-zinc-600 cursor-pointer" 
+                        : "bg-zinc-800/50 text-neutral-600 cursor-not-allowed"
+                    }`}
+                    title="Continue to share"
+                  >
+                    <ArrowRight size={20} />
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {/* Home indicator bar */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/20 rounded-full" />
+          </div>
+        </div>
+      ) : (
+        // Captured Image Preview Screen
+        <div className="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden bg-black">
+          <img 
+            src={capturedImage} 
+            alt="Captured Preview" 
+            className="w-full h-full object-cover md:object-contain"
+          />
+
+          {/* Top navigation overlay for preview */}
+          <div className="absolute top-4 inset-x-0 px-4 flex justify-between items-center z-30">
+            <button 
+              type="button"
+              onClick={() => setCapturedImage(null)}
+              className="w-10 h-10 rounded-full bg-black/45 text-white flex items-center justify-center border border-white/5 active:scale-95 transition-transform cursor-pointer"
+              title="Retake"
+            >
+              <ArrowLeft size={22} />
+            </button>
+
+            <button 
+              type="button"
+              onClick={onClose}
+              className="w-10 h-10 rounded-full bg-black/45 text-white flex items-center justify-center border border-white/5 active:scale-95 transition-transform cursor-pointer"
+              title="Close"
+            >
+              <X size={22} />
+            </button>
+          </div>
+
+          {/* Bottom Share overlay panel */}
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 via-black/60 to-transparent p-4 pb-7 z-30 flex flex-col gap-3.5">
+            {/* Horizontal Destinations select pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Target: Story */}
+              <button
+                type="button"
+                onClick={() => setSendToStory(prev => !prev)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                  sendToStory 
+                    ? "bg-[#008069] border-[#008069] text-white" 
+                    : "bg-black/45 border-white/10 text-white/80 hover:bg-black/60"
+                }`}
+              >
+                <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-pink-500 to-indigo-500" />
+                <span>My Story</span>
+                {sendToStory && <Check size={12} strokeWidth={3} />}
+              </button>
+
+              {/* Target: Currently active DM/Group shortcut */}
+              {(selectedUser || selectedGroup) && (
+                <button
+                  type="button"
+                  onClick={() => setSendToActive(prev => !prev)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                    sendToActive 
+                      ? "bg-[#008069] border-[#008069] text-white" 
+                      : "bg-black/45 border-white/10 text-white/80 hover:bg-black/60"
+                  }`}
+                >
+                  <span>{selectedUser ? selectedUser.fullName : selectedGroup.name} (Active)</span>
+                  {sendToActive && <Check size={12} strokeWidth={3} />}
+                </button>
+              )}
+
+              {/* Toggle other contacts list drawer */}
+              <button
+                type="button"
+                onClick={() => setShowShareDrawer(!showShareDrawer)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                  selectedDMs.length > 0 || selectedGroups.length > 0
+                    ? "bg-indigo-600 border-indigo-600 text-white" 
+                    : "bg-black/45 border-white/10 text-white/80 hover:bg-black/60"
+                }`}
+              >
+                <span>Share with others {selectedDMs.length + selectedGroups.length > 0 && `(${selectedDMs.length + selectedGroups.length})`}</span>
+                <Users size={12} />
+              </button>
+            </div>
+
+            {/* Collapsible Contacts list within the preview screen */}
+            {showShareDrawer && (
+              <div className="bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl p-3 max-h-[170px] overflow-y-auto custom-scrollbar animate-in slide-in-from-bottom duration-200">
+                <div className="flex items-center gap-2 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg mb-2">
+                  <Search size={12} className="text-white/40" />
+                  <input 
+                    type="text" 
+                    placeholder="Search contacts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-transparent text-xs focus:outline-none placeholder-white/40 text-white"
+                  />
+                </div>
+
+                {/* Other contacts DMs */}
+                {filteredUsers.length > 0 && (
+                  <div className="space-y-1 mb-2">
+                    <span className="text-[9px] font-bold text-white/40 uppercase tracking-wider block text-left px-1">Contacts</span>
+                    {filteredUsers.map(user => {
+                      const isChecked = selectedDMs.includes(user._id);
+                      return (
+                        <div 
+                          key={user._id}
+                          onClick={() => toggleDMSelection(user._id)}
+                          className={`p-1.5 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                            isChecked ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"
+                          }`}
+                        >
+                          <span className="text-xs font-semibold truncate">{user.fullName}</span>
+                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                            isChecked ? "bg-indigo-500 border-indigo-500 text-white" : "border-white/20"
+                          }`}>
+                            {isChecked && <Check size={8} strokeWidth={4} />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Other groups */}
+                {filteredGroups.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-bold text-white/40 uppercase tracking-wider block text-left px-1">Groups</span>
+                    {filteredGroups.map(group => {
+                      const isChecked = selectedGroups.includes(group._id);
+                      return (
+                        <div 
+                          key={group._id}
+                          onClick={() => toggleGroupSelection(group._id)}
+                          className={`p-1.5 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                            isChecked ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"
+                          }`}
+                        >
+                          <span className="text-xs font-semibold truncate">{group.name}</span>
+                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                            isChecked ? "bg-indigo-500 border-indigo-500 text-white" : "border-white/20"
+                          }`}>
+                            {isChecked && <Check size={8} strokeWidth={4} />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Input & Send Bar */}
+            <div className="flex items-center gap-3">
+              <input 
+                type="text" 
+                placeholder="Add a caption... ✍️"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                className="flex-1 bg-black/45 backdrop-blur-md border border-white/10 rounded-full px-5 py-3 text-white text-sm focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 placeholder-white/40"
+              />
+
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={isSending || !(sendToStory || (sendToActive && (selectedUser || selectedGroup)) || selectedDMs.length > 0 || selectedGroups.length > 0)}
+                className="w-12 h-12 rounded-full bg-[#00a884] hover:bg-[#008069] flex items-center justify-center text-white active:scale-95 transition-transform cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Send"
+              >
+                {isSending ? (
+                  <span className="loading loading-spinner loading-xs" />
+                ) : (
+                  <Send size={20} className="ml-0.5" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

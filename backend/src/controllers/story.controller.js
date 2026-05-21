@@ -4,7 +4,7 @@ import User from "../models/user.model.js";
 
 export const createStory = async (req, res) => {
   try {
-    const { content, type, caption } = req.body;
+    const { content, type, caption, bgColor } = req.body;
     const userId = req.user._id;
 
     if (!content) {
@@ -25,6 +25,7 @@ export const createStory = async (req, res) => {
       content: finalContent,
       type,
       caption,
+      bgColor,
     });
 
     await newStory.save();
@@ -87,6 +88,29 @@ export const deleteStory = async (req, res) => {
     res.status(200).json({ message: "Story deleted successfully" });
   } catch (error) {
     console.error("Error in deleteStory controller:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const viewStory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const story = await Story.findById(id);
+    if (!story) {
+      return res.status(404).json({ message: "Story not found" });
+    }
+
+    // Add user ID to views if they are not the creator and have not viewed it already
+    if (story.userId.toString() !== userId.toString() && !story.views.includes(userId)) {
+      story.views.push(userId);
+      await story.save();
+    }
+
+    res.status(200).json({ message: "Story view registered successfully" });
+  } catch (error) {
+    console.error("Error in viewStory controller:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };

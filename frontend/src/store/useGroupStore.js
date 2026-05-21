@@ -176,6 +176,7 @@ export const useGroupStore = create((set, get) => ({
       set({ messages: get().messages.filter(m => m._id !== optimisticMessage._id) });
       toast.error("Failed to send message to the group.");
       console.error("Error sending group message:", error);
+      throw error;
     }
   },
 
