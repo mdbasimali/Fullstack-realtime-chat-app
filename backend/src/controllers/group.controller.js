@@ -283,9 +283,12 @@ export const sendGroupMessage = async (req, res) => {
 
     let imageUrl = "";
     if (image) {
-      // Convert base64 data URL to Buffer to avoid ENAMETOOLONG OS error
-      const base64Data = image.replace(/^data:\w+\/[\w.+-]+;base64,/, "");
-      const buffer = Buffer.from(base64Data, "base64");
+      // Robustly extract base64 data — MIME type may include codec params
+      // e.g. "data:video/webm;codecs=vp9,opus;base64,XXXX" — simple regex breaks on this
+      const base64Index = image.indexOf(';base64,');
+      if (base64Index === -1) throw new Error('Invalid base64 data URL');
+      const base64Data = image.slice(base64Index + 8);
+      const buffer = Buffer.from(base64Data, 'base64');
       const options = {
         resource_type: messageType === "audio" || messageType === "video" ? "video" : "image",
       };

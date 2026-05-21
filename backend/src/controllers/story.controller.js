@@ -20,10 +20,12 @@ export const createStory = async (req, res) => {
       console.log(`[Story] Uploading ${type} to Cloudinary via stream...`);
 
       try {
-        // Convert base64 data URL to Buffer to avoid ENAMETOOLONG OS error
-        // (Cloudinary SDK otherwise tries to use the raw base64 string as a file path)
-        const base64Data = content.replace(/^data:\w+\/[\w.+-]+;base64,/, "");
-        const buffer = Buffer.from(base64Data, "base64");
+        // Robustly extract base64 data — MIME type may include codec params
+        // e.g. "data:video/webm;codecs=vp9,opus;base64,XXXX" — simple regex breaks on this
+        const base64Index = content.indexOf(';base64,');
+        if (base64Index === -1) throw new Error('Invalid base64 data URL');
+        const base64Data = content.slice(base64Index + 8); // 8 = length of ';base64,'
+        const buffer = Buffer.from(base64Data, 'base64');
 
         const uploadOptions = {
           folder: "stories",
