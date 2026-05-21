@@ -104,10 +104,22 @@ export const createStory = async (req, res) => {
 export const getStories = async (req, res) => {
   try {
     const userId = req.user._id;
-    const user = await User.findById(userId);
     
-    // Get user's own stories + their contacts' stories
-    const targetUserIds = [userId, ...(user.contacts || [])];
+    // 1. Get contacts
+    const user = await User.findById(userId);
+    const contactIds = user.contacts || [];
+
+    // 2. Get people interacted with via messages
+    const messageUserIds = await Story.db.model("Message").distinct("senderId", { receiverId: userId });
+    const messageUserIds2 = await Story.db.model("Message").distinct("receiverId", { senderId: userId });
+    const interactedUserIds = [...new Set([...messageUserIds, ...messageUserIds2])].filter(id => id != null);
+
+    // 3. Combine unique IDs (Self + Contacts + Interactions)
+    const targetUserIds = [...new Set([
+      userId.toString(), 
+      ...contactIds.map(id => id.toString()), 
+      ...interactedUserIds.map(id => id.toString())
+    ])];
 
     const stories = await Story.find({
       userId: { $in: targetUserIds },
@@ -117,7 +129,8 @@ export const getStories = async (req, res) => {
       .populate("views", "fullName profilePic");
 
     // Group stories by user (WhatsApp style)
-    const groupedStories = stories.reduce((acc, story) => {
+    const groupedStoriesMap = stories.reduce((acc, story) => {
+      if (!story.userId) return acc;
       const uid = story.userId._id.toString();
       if (!acc[uid]) {
         acc[uid] = {
@@ -129,7 +142,7 @@ export const getStories = async (req, res) => {
       return acc;
     }, {});
 
-    res.status(200).json(Object.values(groupedStories));
+    res.status(200).json(Object.values(groupedStoriesMap));
   } catch (error) {
     console.error("Error in getStories controller:", error.message);
     res.status(500).json({ error: "Internal server error" });

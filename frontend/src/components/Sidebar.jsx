@@ -335,6 +335,7 @@ const Sidebar = () => {
   const storyFileInputRef = useRef(null);
   const [cameraInitialMode, setCameraInitialMode] = useState("camera");
   const [activeStoryMenuId, setActiveStoryMenuId] = useState(null);
+  const [storyToDelete, setStoryToDelete] = useState(null);
 
   // Call Logs State
   const [callLogs, setCallLogs] = useState(() => {
@@ -607,8 +608,8 @@ const Sidebar = () => {
   };
 
   // Find current user's stories from the grouped list
-  const myGroupedStories = stories.find(s => s.user._id === authUser._id);
-  const otherStories = stories.filter(s => s.user._id !== authUser._id);
+  const myGroupedStories = stories.find(s => s.user._id.toString() === authUser?._id?.toString());
+  const otherStories = stories.filter(s => s.user._id.toString() !== authUser?._id?.toString());
 
   return (
     <div className="h-full w-full flex flex-col bg-base-100 select-none relative">
@@ -1339,7 +1340,8 @@ const Sidebar = () => {
                     setViewingStory({ 
                       name: authUser.fullName, 
                       user: authUser,
-                      stories: myGroupedStories.stories 
+                      stories: myGroupedStories.stories,
+                      initialIndex: 0
                     }); 
                   }}
                   className="btn btn-xs btn-outline btn-primary rounded-full px-3"
@@ -1847,6 +1849,7 @@ const Sidebar = () => {
             stories={viewingStory.stories}
             authUser={authUser}
             onClose={() => setViewingStory(null)}
+            initialIndex={viewingStory.initialIndex || 0}
         />
       )}
 
@@ -2455,23 +2458,45 @@ const Sidebar = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {myGroupedStories.stories.map((story) => (
+                  {myGroupedStories.stories.map((story, index) => (
                     <div 
                       key={story._id}
-                      className="p-3.5 bg-base-200/40 rounded-2xl flex items-center justify-between border border-base-300/30 hover:bg-base-200/60 transition-all duration-200"
+                      onClick={() => setViewingStory({ 
+                        name: authUser.fullName, 
+                        user: authUser,
+                        stories: myGroupedStories.stories,
+                        initialIndex: index
+                      })}
+                      className="p-3.5 bg-base-200/40 rounded-2xl flex items-center justify-between border border-base-300/30 hover:bg-base-200/60 transition-all duration-200 cursor-pointer"
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        {/* User Avatar */}
+                        {/* Story Content Thumbnail */}
                         <div className="flex-shrink-0">
-                          {authUser?.profilePic ? (
+                          {story.type === "image" ? (
                             <img 
-                              src={authUser.profilePic} 
-                              alt="me" 
+                              src={story.content} 
+                              alt="story" 
                               className="w-12 h-12 rounded-full object-cover border border-base-300 shadow-sm"
                             />
+                          ) : story.type === "video" ? (
+                            <div className="relative w-12 h-12 rounded-full overflow-hidden border border-base-300 shadow-sm bg-neutral-800">
+                               <img 
+                                  src={story.content.replace(/\.[^/.]+$/, ".jpg")} 
+                                  alt="video thumb" 
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.src = "https://images.unsplash.com/photo-1492724441997-5dc865305da7?q=80&w=100&auto=format&fit=crop"; // fallback
+                                  }}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                  <Video size={14} className="text-white fill-white/20" />
+                                </div>
+                            </div>
                           ) : (
-                            <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-base shadow-sm">
-                              {getInitials(authUser?.fullName)}
+                            <div className={`w-12 h-12 rounded-full ${story.bgColor || "bg-primary"} border border-base-300 shadow-sm flex items-center justify-center p-1.5 overflow-hidden`}>
+                              <span className="text-[8px] text-white font-black leading-[1.1] text-center line-clamp-3 uppercase tracking-tighter">
+                                {story.content}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -2506,13 +2531,10 @@ const Sidebar = () => {
                             />
                             <div className="absolute right-0 mt-1 w-32 bg-base-100 border border-base-300 rounded-xl shadow-xl z-50 py-1 text-left">
                               <button
-                                onClick={async (e) => {
+                                onClick={(e) => {
                                   e.stopPropagation();
                                   setActiveStoryMenuId(null);
-                                  const confirmDelete = window.confirm("Are you sure you want to permanently delete this status update?");
-                                  if (confirmDelete) {
-                                    await deleteStory(story._id);
-                                  }
+                                  setStoryToDelete(story);
                                 }}
                                 className="flex items-center gap-2 w-full px-4 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-500 text-xs font-bold transition-colors text-left"
                               >
@@ -2530,11 +2552,14 @@ const Sidebar = () => {
             )}
 
             {/* Encryption Disclaimer */}
-            <div className="flex items-start justify-center gap-2 py-6 text-center max-w-xs mx-auto text-[11px] text-base-content/45 font-semibold">
-              <Lock size={12} className="shrink-0 mt-0.5 text-base-content/40" />
-              <span>
-                Your status updates are <span className="text-emerald-600 dark:text-emerald-400 font-bold">end-to-end encrypted</span>. They will disappear after 24 hours.
-              </span>
+            <div className="flex flex-col items-center justify-center gap-1.5 py-8 text-center max-w-[280px] mx-auto text-[11px] leading-tight text-base-content/40 font-medium select-none">
+              <div className="flex items-center gap-1.5">
+                <Lock size={12} className="shrink-0 text-base-content/30" />
+                <span>
+                  Your status updates are <span className="text-emerald-600/80 dark:text-emerald-400/80 font-bold">end-to-end encrypted</span>.
+                </span>
+              </div>
+              <span className="block px-4">They will disappear after 24 hours.</span>
             </div>
           </div>
 
@@ -2567,6 +2592,40 @@ const Sidebar = () => {
         </div>
       )}
 
+      {/* 8. Delete Confirmation Modal (WhatsApp Style) */}
+      {storyToDelete && (
+        <div 
+          className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-6 animate-in fade-in duration-200"
+          onClick={() => setStoryToDelete(null)}
+        >
+          <div 
+            className="bg-white rounded-[28px] w-full max-w-[320px] p-6 shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[#3b4a54] text-[17px] font-medium mb-8">Delete 1 status update?</p>
+            <div className="flex justify-end gap-8">
+              <button 
+                type="button"
+                onClick={() => setStoryToDelete(null)}
+                className="text-[#008069] font-bold text-[15px] hover:opacity-80 transition-opacity uppercase tracking-wide cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={async () => {
+                  const id = storyToDelete._id;
+                  setStoryToDelete(null);
+                  await deleteStory(id);
+                }}
+                className="text-[#008069] font-bold text-[15px] hover:opacity-80 transition-opacity uppercase tracking-wide cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

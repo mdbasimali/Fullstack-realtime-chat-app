@@ -3,11 +3,12 @@ import { ArrowLeft, MoreVertical, Eye, Trash2, ChevronLeft, ChevronRight } from 
 import { useStoryStore } from "../store/useStoryStore";
 import { useAuthStore } from "../store/useAuthStore";
 
-const StoryViewer = ({ user, stories, authUser, onClose }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [storyDuration, setStoryDuration] = useState(5000);
   const [showViewsDrawer, setShowViewsDrawer] = useState(false);
 
@@ -124,12 +125,24 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
     };
   }, [socket, isOwnStory, user._id]);
 
-  const handleDelete = async () => {
-    if (window.confirm("Delete this status update?")) {
-      onClose();
-      await deleteStory(currentStory._id);
-    }
+  const handleDelete = () => {
+    setIsPaused(true);
+    setShowDeleteConfirm(true);
+    setShowMenu(false);
   };
+
+  const confirmDelete = async () => {
+    onClose();
+    await deleteStory(currentStory._id);
+  };
+
+  useEffect(() => {
+    if (showDeleteConfirm || showViewsDrawer) {
+      setIsPaused(true);
+    } else {
+      setIsPaused(false);
+    }
+  }, [showDeleteConfirm, showViewsDrawer]);
 
   useEffect(() => {
     setStoryDuration(5000);
@@ -416,6 +429,36 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 8. Delete Confirmation Modal (WhatsApp Style) */}
+      {showDeleteConfirm && (
+        <div 
+          className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-6 animate-in fade-in duration-200"
+          onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false); }}
+        >
+          <div 
+            className="bg-white rounded-[28px] w-full max-w-[320px] p-6 shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[#3b4a54] text-[17px] font-medium mb-8">Delete 1 status update?</p>
+            <div className="flex justify-end gap-8">
+              <button 
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="text-[#008069] font-bold text-[15px] hover:opacity-80 transition-opacity uppercase tracking-wide cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={confirmDelete}
+                className="text-[#008069] font-bold text-[15px] hover:opacity-80 transition-opacity uppercase tracking-wide cursor-pointer"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>

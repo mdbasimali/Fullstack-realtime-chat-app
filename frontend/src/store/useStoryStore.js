@@ -36,12 +36,12 @@ export const useStoryStore = create((set, get) => ({
       const newStory = res.data;
       const userId = newStory.userId._id;
       
-      const userStoryIndex = stories.findIndex(s => s.user._id === userId);
+      const userStoryIndex = stories.findIndex(s => s.user._id.toString() === userId.toString());
       
       if (userStoryIndex > -1) {
         const updatedStories = [...stories];
         // Avoid duplicates if real-time event already added it
-        if (!updatedStories[userStoryIndex].stories.some(s => s._id === newStory._id)) {
+        if (!updatedStories[userStoryIndex].stories.some(s => s._id.toString() === newStory._id.toString())) {
           updatedStories[userStoryIndex].stories.unshift(newStory);
           set({ stories: updatedStories });
         }
@@ -70,11 +70,11 @@ export const useStoryStore = create((set, get) => ({
       const { stories } = get();
       const userId = newStory.userId._id;
       
-      const userStoryIndex = stories.findIndex(s => s.user._id === userId);
+      const userStoryIndex = stories.findIndex(s => s.user._id.toString() === userId.toString());
       
       if (userStoryIndex > -1) {
         // Only add if not already present (to avoid race with postStory success)
-        if (!stories[userStoryIndex].stories.some(s => s._id === newStory._id)) {
+        if (!stories[userStoryIndex].stories.some(s => s._id.toString() === newStory._id.toString())) {
           const updatedStories = [...stories];
           updatedStories[userStoryIndex].stories.unshift(newStory);
           set({ stories: updatedStories });
@@ -91,9 +91,9 @@ export const useStoryStore = create((set, get) => ({
       const updatedStories = stories.map(group => ({
         ...group,
         stories: group.stories.map(story => {
-          if (story._id === storyId) {
+          if (story._id.toString() === storyId.toString()) {
             // Add viewer if not already there
-            const hasViewed = story.views.some(v => v._id === viewer._id || v === viewer._id);
+            const hasViewed = story.views.some(v => v._id?.toString() === viewer._id?.toString() || v.toString() === viewer._id?.toString());
             if (!hasViewed) {
               return { ...story, views: [...story.views, viewer] };
             }
