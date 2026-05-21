@@ -1,16 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, MoreVertical, Eye, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useStoryStore } from "../store/useStoryStore";
+import { useAuthStore } from "../store/useAuthStore";
 
 const StoryViewer = ({ user, stories, authUser, onClose }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showViewsDrawer, setShowViewsDrawer] = useState(false);
 
-  const { deleteStory, viewStory } = useStoryStore();
-  const currentStory = stories[currentIndex];
+  const { deleteStory, viewStory, getStories, stories: storeStories } = useStoryStore();
+  const { socket } = useAuthStore();
   const isOwnStory = authUser && user._id === authUser._id;
+
+  // Find dynamic version of stories from store to get updated views
+  const myStoriesGroup = storeStories.find(s => {
+    const sId = s.user?._id ? s.user._id.toString() : s.user?.toString();
+    const uId = user?._id ? user._id.toString() : user?.toString();
+    return sId === uId;
+  });
+  const activeStories = myStoriesGroup ? myStoriesGroup.stories : stories;
+  const currentStory = activeStories[currentIndex] || activeStories[0] || stories[0];
 
   // Curated list of premium WhatsApp-style background colors for text status updates
   const getStatusBgColor = (story) => {
@@ -62,6 +73,56 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
     }
   }, [currentIndex, currentStory, authUser, user._id, viewStory]);
 
+  // Load latest stories for the owner to ensure view data is fresh
+  useEffect(() => {
+    if (isOwnStory) {
+      getStories();
+    }
+  }, [isOwnStory, getStories]);
+
+  // Subscribe to real-time views updates via socket
+  useEffect(() => {
+    if (!socket || !isOwnStory) return;
+
+    const handleStoryViewed = ({ storyId, viewer }) => {
+      useStoryStore.setState((state) => {
+        const updatedStories = state.stories.map((group) => {
+          const groupUserId = group.user?._id ? group.user._id.toString() : group.user?.toString();
+          const targetUserId = user?._id ? user._id.toString() : user?.toString();
+          
+          if (groupUserId === targetUserId) {
+            return {
+              ...group,
+              stories: group.stories.map((story) => {
+                const sId = story._id ? story._id.toString() : story.toString();
+                if (sId === storyId.toString()) {
+                  const exists = story.views.some(v => {
+                    const vId = v?._id ? v._id.toString() : v?.toString();
+                    return vId === viewer._id.toString();
+                  });
+                  if (!exists) {
+                    return {
+                      ...story,
+                      views: [...story.views, viewer]
+                    };
+                  }
+                }
+                return story;
+              })
+            };
+          }
+          return group;
+        });
+        return { stories: updatedStories };
+      });
+    };
+
+    socket.on("storyViewed", handleStoryViewed);
+    return () => {
+      socket.off("storyViewed", handleStoryViewed);
+    };
+  }, [socket, isOwnStory, user._id]);
+
   const handleDelete = async () => {
     if (window.confirm("Delete this status update?")) {
       onClose();
@@ -74,7 +135,7 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
   }, [currentIndex]);
 
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || showViewsDrawer) return;
 
     const duration = 5000; // 5 seconds per story
     const interval = 50;
@@ -91,10 +152,10 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
     }, interval);
 
     return () => clearInterval(timer);
-  }, [currentIndex, isPaused]);
+  }, [currentIndex, isPaused, showViewsDrawer]);
 
   const handleNext = () => {
-    if (currentIndex < stories.length - 1) {
+    if (currentIndex < activeStories.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
       onClose();
@@ -132,7 +193,7 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
       <div className={`absolute top-0 inset-x-0 p-4 pt-3 z-50 ${currentStory.type === "text" ? "" : "bg-gradient-to-b from-black/25 to-transparent"}`}>
         {/* Progress Bar Indicators */}
         <div className="flex gap-1.5 mb-3.5">
-          {stories.map((_, index) => (
+          {activeStories.map((_, index) => (
             <div key={index} className="flex-1 h-[3px] bg-white/35 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-white transition-all duration-75"
@@ -267,9 +328,67 @@ const StoryViewer = ({ user, stories, authUser, onClose }) => {
       {/* Views Pill Badge at Bottom Center */}
       {isOwnStory && (
         <div className="absolute bottom-8 inset-x-0 flex justify-center z-50">
-          <div className="flex items-center gap-1.5 bg-[#202c33] px-[18px] py-2.5 rounded-full border border-white/5 text-white shadow-xl min-w-[70px] justify-center">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowViewsDrawer(true);
+            }}
+            className="flex items-center gap-1.5 bg-[#202c33] hover:bg-[#2a3942] px-[18px] py-2.5 rounded-full border border-white/5 text-white shadow-xl min-w-[70px] justify-center transition-colors active:scale-95 text-white cursor-pointer"
+          >
             <Eye size={18} className="text-white/95" />
-            <span className="text-sm font-medium leading-none">{currentStory.views?.length || 0}</span>
+            <span className="text-sm font-medium leading-none">{currentStory?.views?.length || 0}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Slide-up Views Drawer */}
+      {showViewsDrawer && (
+        <div 
+          className="fixed inset-0 bg-black/40 z-[100] animate-in fade-in duration-200 flex items-end justify-center"
+          onClick={() => setShowViewsDrawer(false)}
+        >
+          <div 
+            className="w-full max-w-md bg-white rounded-t-[24px] text-slate-800 flex flex-col max-h-[50vh] animate-in slide-in-from-bottom duration-300 shadow-2xl pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <span className="font-bold text-base text-slate-900">
+                Viewed by {currentStory?.views?.length || 0}
+              </span>
+              <button 
+                onClick={() => setShowViewsDrawer(false)}
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500 transition-colors cursor-pointer"
+              >
+                <MoreVertical size={20} />
+              </button>
+            </div>
+
+            {/* Drawer Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
+              {!currentStory?.views || currentStory.views.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                  <span className="text-sm font-medium">No views yet</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {currentStory.views.map((viewer) => (
+                    <div key={viewer._id} className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center font-bold text-sm text-slate-600 border border-slate-200 shrink-0">
+                        {viewer.profilePic ? (
+                          <img src={viewer.profilePic} className="w-full h-full object-cover" alt={viewer.fullName} />
+                        ) : (
+                          <span className="uppercase">{getInitials(viewer.fullName)}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <h5 className="font-semibold text-sm text-slate-800 leading-none">{viewer.fullName}</h5>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import cloudinary from "../lib/cloudinary.js";
 import Story from "../models/story.model.js";
 import User from "../models/user.model.js";
+import { io, getReceiverSocketId } from "../lib/socket.js";
 
 export const createStory = async (req, res) => {
   try {
@@ -52,7 +53,8 @@ export const getStories = async (req, res) => {
       userId: { $in: targetUserIds },
     })
       .sort({ createdAt: -1 })
-      .populate("userId", "fullName profilePic");
+      .populate("userId", "fullName profilePic")
+      .populate("views", "fullName profilePic");
 
     // Group stories by user (WhatsApp style)
     const groupedStories = stories.reduce((acc, story) => {
@@ -103,9 +105,26 @@ export const viewStory = async (req, res) => {
     }
 
     // Add user ID to views if they are not the creator and have not viewed it already
-    if (story.userId.toString() !== userId.toString() && !story.views.includes(userId)) {
+    const hasViewed = story.views.some(v => v.toString() === userId.toString());
+    if (story.userId.toString() !== userId.toString() && !hasViewed) {
       story.views.push(userId);
       await story.save();
+
+      // Emit real-time storyViewed event to the owner of the story
+      const ownerSocketId = getReceiverSocketId(story.userId.toString());
+      if (ownerSocketId) {
+        const viewer = await User.findById(userId).select("fullName profilePic");
+        if (viewer) {
+          io.to(ownerSocketId).emit("storyViewed", {
+            storyId: story._id,
+            viewer: {
+              _id: viewer._id,
+              fullName: viewer.fullName,
+              profilePic: viewer.profilePic
+            }
+          });
+        }
+      }
     }
 
     res.status(200).json({ message: "Story view registered successfully" });
