@@ -278,9 +278,9 @@ const App = () => {
   const showNavbar = !["/", "/settings", "/settings/devices", "/profile", "/join-group", "/login", "/signup"].includes(location.pathname);
 
   return (
-    <div data-theme={theme} className="h-screen overflow-hidden flex flex-col">
+    <div data-theme={theme} className="h-screen flex flex-col">
       {showNavbar && <Navbar />}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0">
         <React.Suspense fallback={
           <div className="flex items-center justify-center h-full">
             <Loader className="size-10 animate-spin text-primary opacity-20"/>
