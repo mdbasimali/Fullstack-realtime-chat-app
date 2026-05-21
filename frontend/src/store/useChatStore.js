@@ -35,6 +35,10 @@ export const useChatstore = create((set,get) => ({
   isMessagesLoading: false,
   activeTab: "chats",
   setActiveTab: (activeTab) => {
+    const authUser = useAuthStore.getState().authUser;
+    if (authUser) {
+      localStorage.setItem(`active_tab_${authUser._id}`, activeTab);
+    }
     set({ activeTab });
   },
 
@@ -44,6 +48,12 @@ export const useChatstore = create((set,get) => ({
     if (!userId) return;
     const saved = localStorage.getItem(`active_conversations_${userId}`);
     set({ activeConversations: saved ? JSON.parse(saved) : [] });
+
+    // Restore active tab
+    const savedTab = localStorage.getItem(`active_tab_${userId}`);
+    if (savedTab) {
+      set({ activeTab: savedTab });
+    }
 
     // Restore selected user if saved
     const savedSelectedId = localStorage.getItem(`selected_user_${userId}`);
