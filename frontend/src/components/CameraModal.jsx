@@ -471,6 +471,12 @@ const CameraModal = ({
         const mediaContent = isVideo ? capturedVideo : capturedImage;
         const mediaType = isVideo ? "video" : "image";
 
+        // Show a persistent loading toast for video uploads since they take longer
+        let loadingToastId;
+        if (isVideo) {
+          loadingToastId = toast.loading("Uploading video... please wait ⏳", { duration: Infinity });
+        }
+
         // 1. Post to Story
         if (sendToStory) {
           promises.push(
@@ -544,12 +550,14 @@ const CameraModal = ({
         });
 
         if (promises.length === 0) {
+          if (loadingToastId) toast.dismiss(loadingToastId);
           toast.error("Please select at least one destination to share.");
           setIsSending(false);
           return;
         }
 
         const results = await Promise.all(promises);
+        if (loadingToastId) toast.dismiss(loadingToastId);
         const allSuccessful = results.every(res => res !== false);
 
         if (allSuccessful) {
@@ -559,6 +567,7 @@ const CameraModal = ({
           toast.error("Failed to share to some destinations. Please try again.");
         }
       }
+
     } catch (err) {
       console.error("Error sharing content:", err);
       const errorMsg = err.response?.data?.error || err.response?.data?.message || "Failed to share.";

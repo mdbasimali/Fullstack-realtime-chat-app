@@ -85,8 +85,8 @@ const __dirname = path.resolve(); //dirname
 // app.use(express.json());
 
 // ✅ iske jagah ye use karo
-app.use(express.json({ limit: "50mb" }));//main image ka high quality se upload krn ake liye ye  use kiya
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use(express.json({ limit: "200mb" })); // 200mb to handle base64-encoded video uploads
+app.use(express.urlencoded({ limit: "200mb", extended: true }));
 
 app.use(cookieParser());
 

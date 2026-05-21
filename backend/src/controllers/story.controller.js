@@ -21,10 +21,20 @@ export const createStory = async (req, res) => {
       const uploadOptions = {
         folder: "stories",
         resource_type: type === "video" ? "video" : "image",
+        timeout: 120000, // 2 minute timeout for large video uploads
       };
 
       try {
-        const uploadResponse = await cloudinary.uploader.upload(content, uploadOptions);
+        let uploadResponse;
+        if (type === "video") {
+          // Use upload_large for video to handle files > 10MB reliably
+          uploadResponse = await cloudinary.uploader.upload_large(content, {
+            ...uploadOptions,
+            chunk_size: 6000000, // 6MB chunks
+          });
+        } else {
+          uploadResponse = await cloudinary.uploader.upload(content, uploadOptions);
+        }
         finalContent = uploadResponse.secure_url;
         console.log(`[Story] Cloudinary success: ${finalContent}`);
       } catch (uploadError) {

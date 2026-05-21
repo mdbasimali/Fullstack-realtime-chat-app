@@ -23,7 +23,13 @@ export const useStoryStore = create((set, get) => ({
   postStory: async (storyData) => {
     set({ isUploadingStory: true });
     try {
-      const res = await axiosInstance.post("/stories", storyData);
+      const isVideo = storyData.type === "video";
+      const res = await axiosInstance.post("/stories", storyData, {
+        // Videos can take a long time to upload — extend timeout to 3 minutes
+        timeout: isVideo ? 180000 : 30000,
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+      });
       
       // Update local state
       const { stories } = get();
