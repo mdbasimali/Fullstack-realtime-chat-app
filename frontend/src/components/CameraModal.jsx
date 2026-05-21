@@ -17,16 +17,20 @@ const CameraModal = ({
   sendMessage,
   sendGroupMessage,
   setShowStoryCreator,
-  setActiveTab
+  setActiveTab,
+  initialMode = "camera"
 }) => {
   const [stream, setStream] = useState(null);
   const [facingMode, setFacingMode] = useState("user"); // "user" | "environment"
   const [capturedImage, setCapturedImage] = useState(null);
+  const [capturedVideo, setCapturedVideo] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTimer, setRecordingTimer] = useState(0);
   const [flashActive, setFlashActive] = useState(false);
   const [caption, setCaption] = useState("");
   
   // Text mode states
-  const [activeMode, setActiveMode] = useState("camera"); // "camera" | "text"
+  const [activeMode, setActiveMode] = useState(initialMode); // "camera" | "text"
   const [statusText, setStatusText] = useState("");
   const [textBgColorIndex, setTextBgColorIndex] = useState(0);
   const [showTextSharePanel, setShowTextSharePanel] = useState(false);
@@ -52,6 +56,17 @@ const CameraModal = ({
 
   const videoRef = useRef(null);
   const fileInputRef = useRef(null);
+  const holdTimeoutRef = useRef(null);
+  const timerIntervalRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const videoChunksRef = useRef([]);
+  const isHoldingRef = useRef(false);
+
+  const formatRecordingDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const startCamera = async () => {
     // Stop any existing stream tracks first
@@ -60,21 +75,38 @@ const CameraModal = ({
     }
 
     try {
+      // Attempt to request video and audio
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode,
           width: { ideal: 1280 },
           height: { ideal: 720 }
         },
-        audio: false
+        audio: true
       });
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
     } catch (err) {
-      console.error("Camera access error:", err);
-      toast.error("Could not access camera. Please make sure camera permission is granted.");
+      console.warn("Could not access microphone, falling back to video only:", err);
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        });
+        setStream(mediaStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      } catch (err2) {
+        console.error("Camera access error:", err2);
+        toast.error("Could not access camera. Please make sure camera permission is granted.");
+      }
     }
   };
 
@@ -86,7 +118,7 @@ const CameraModal = ({
   };
 
   useEffect(() => {
-    if (isOpen && !capturedImage && activeMode === "camera") {
+    if (isOpen && !capturedImage && !capturedVideo && activeMode === "camera") {
       startCamera();
     } else {
       stopCamera();
@@ -94,7 +126,7 @@ const CameraModal = ({
     return () => {
       stopCamera();
     };
-  }, [isOpen, facingMode, capturedImage, activeMode]);
+  }, [isOpen, facingMode, capturedImage, capturedVideo, activeMode]);
 
   // Safely bind camera stream to video element whenever stream changes
   useEffect(() => {
@@ -107,6 +139,7 @@ const CameraModal = ({
   useEffect(() => {
     if (isOpen) {
       setCapturedImage(null);
+      setCapturedVideo(null);
       setCaption("");
       setSendToStory(false);
       setSendToActive(true);
@@ -115,14 +148,134 @@ const CameraModal = ({
       setSearchQuery("");
       setIsSending(false);
       setShowShareDrawer(false);
-      setActiveMode("camera");
+      setActiveMode(initialMode);
       setStatusText("");
       setTextBgColorIndex(0);
       setShowTextSharePanel(false);
+      setIsRecording(false);
+      setRecordingTimer(0);
+      isHoldingRef.current = false;
+      if (holdTimeoutRef.current) {
+        clearTimeout(holdTimeoutRef.current);
+        holdTimeoutRef.current = null;
+      }
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
     } else {
       stopCamera();
     }
-  }, [isOpen]);
+  }, [isOpen, initialMode]);
+
+  useEffect(() => {
+    return () => {
+      if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    };
+  }, []);
+
+  const startRecordingVideo = () => {
+    if (!stream) return;
+    setIsRecording(true);
+    setRecordingTimer(0);
+    videoChunksRef.current = [];
+
+    // Select supported mimeType dynamically
+    let selectedMimeType = "";
+    const mimeTypes = [
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp8,opus",
+      "video/webm;codecs=h264,opus",
+      "video/webm",
+      "video/mp4;codecs=h264,aac",
+      "video/mp4",
+      "video/quicktime"
+    ];
+
+    for (const type of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        selectedMimeType = type;
+        break;
+      }
+    }
+
+    const options = selectedMimeType ? { mimeType: selectedMimeType } : {};
+
+    try {
+      const mediaRecorder = new MediaRecorder(stream, options);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          videoChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const mimeType = mediaRecorder.mimeType || "video/webm";
+        const videoBlob = new Blob(videoChunksRef.current, { type: mimeType });
+        const reader = new FileReader();
+        reader.readAsDataURL(videoBlob);
+        reader.onloadend = () => {
+          setCapturedVideo(reader.result);
+          stopCamera();
+        };
+      };
+
+      mediaRecorder.start(250);
+
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingTimer(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Error starting video recording:", err);
+      toast.error("Failed to start video recording.");
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecordingVideo = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+
+    setIsRecording(false);
+  };
+
+  const handleShutterPress = (e) => {
+    if (e) e.preventDefault();
+    if (isHoldingRef.current) return;
+    isHoldingRef.current = true;
+
+    holdTimeoutRef.current = setTimeout(() => {
+      if (isHoldingRef.current) {
+        startRecordingVideo();
+      }
+    }, 500);
+  };
+
+  const handleShutterRelease = (e) => {
+    if (e) e.preventDefault();
+    if (!isHoldingRef.current) return;
+    isHoldingRef.current = false;
+
+    if (holdTimeoutRef.current) {
+      clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+
+    if (isRecording) {
+      stopRecordingVideo();
+    } else {
+      capturePhoto();
+    }
+  };
 
   const capturePhoto = () => {
     if (!videoRef.current) return;
@@ -263,13 +416,17 @@ const CameraModal = ({
         onClose();
 
       } else {
-        // Camera/Photo Mode
+        // Camera/Photo/Video Mode
+        const isVideo = !!capturedVideo;
+        const mediaContent = isVideo ? capturedVideo : capturedImage;
+        const mediaType = isVideo ? "video" : "image";
+
         // 1. Post to Story
         if (sendToStory) {
           promises.push(
             postStory({
-              content: capturedImage,
-              type: "image",
+              content: mediaContent,
+              type: mediaType,
               caption: caption.trim()
             })
           );
@@ -281,7 +438,8 @@ const CameraModal = ({
           promises.push(
             sendMessage({
               text: caption.trim(),
-              image: capturedImage
+              [isVideo ? "video" : "image"]: mediaContent,
+              messageType: mediaType
             })
           );
           sentDestNames.push(selectedUser.fullName);
@@ -292,7 +450,8 @@ const CameraModal = ({
           promises.push(
             sendGroupMessage({
               text: caption.trim(),
-              image: capturedImage
+              [isVideo ? "video" : "image"]: mediaContent,
+              messageType: mediaType
             })
           );
           sentDestNames.push(selectedGroup.name);
@@ -308,7 +467,8 @@ const CameraModal = ({
             promises.push(
               axiosInstance.post(`/messages/send/${userId}`, {
                 text: caption.trim(),
-                image: capturedImage
+                [isVideo ? "video" : "image"]: mediaContent,
+                messageType: mediaType
               })
             );
             sentDestNames.push(dmUser.fullName);
@@ -325,7 +485,8 @@ const CameraModal = ({
             promises.push(
               axiosInstance.post(`/groups/${groupId}/send`, {
                 text: caption.trim(),
-                image: capturedImage
+                [isVideo ? "video" : "image"]: mediaContent,
+                messageType: mediaType
               })
             );
             sentDestNames.push(groupObj.name);
@@ -339,7 +500,7 @@ const CameraModal = ({
         }
 
         await Promise.all(promises);
-        toast.success(`Photo shared successfully!`);
+        toast.success(`${isVideo ? "Video" : "Photo"} shared successfully!`);
         onClose();
       }
     } catch (err) {
@@ -392,7 +553,7 @@ const CameraModal = ({
     <div className="fixed inset-0 z-[999] bg-black/75 backdrop-blur-md text-white select-none flex items-center justify-center animate-in fade-in duration-300">
       <div className="relative w-full h-full md:max-w-[420px] md:max-h-[850px] md:h-[92vh] md:rounded-[40px] md:border-8 md:border-neutral-800 md:shadow-2xl bg-black overflow-hidden flex flex-col justify-between">
       
-      {!capturedImage ? (
+      {!capturedImage && !capturedVideo ? (
         // Camera Viewport & Live Stream / Text composer with portrait mockup layout - edge-to-edge
         <div className="flex-1 w-full flex flex-col justify-between h-full">
           
@@ -415,6 +576,16 @@ const CameraModal = ({
                   facingMode === "user" ? "scale-x-[-1]" : ""
                 }`}
               />
+
+              {/* Pulsing REC indicator and timer overlay */}
+              {isRecording && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-red-500/30 animate-pulse">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
+                  <span className="text-xs font-mono font-bold text-red-500 tracking-wider">
+                    REC {formatRecordingDuration(recordingTimer)}
+                  </span>
+                </div>
+              )}
 
               {/* Top-Right Flash Icon as in user screenshot */}
               <div className="absolute top-4 right-4 z-30">
@@ -456,14 +627,24 @@ const CameraModal = ({
                   <RefreshCw size={22} className="text-white" />
                 </button>
 
-                {/* White Double Shutter Button */}
+                {/* Shutter Button supporting click/hold for recording and tap for photo */}
                 <button
                   type="button"
-                  onClick={capturePhoto}
-                  className="w-[76px] h-[76px] rounded-full border-4 border-white flex items-center justify-center bg-transparent active:scale-90 transition-transform cursor-pointer"
-                  title="Capture"
+                  onMouseDown={handleShutterPress}
+                  onMouseUp={handleShutterRelease}
+                  onMouseLeave={handleShutterRelease}
+                  onTouchStart={handleShutterPress}
+                  onTouchEnd={handleShutterRelease}
+                  className={`w-[76px] h-[76px] rounded-full border-4 flex items-center justify-center bg-transparent transition-all duration-300 cursor-pointer ${
+                    isRecording ? "border-red-500 scale-110" : "border-white active:scale-90"
+                  }`}
+                  title="Hold to Record, Tap to Take Photo"
                 >
-                  <div className="w-[58px] h-[58px] rounded-full bg-white hover:bg-neutral-100 transition-colors" />
+                  <div className={`transition-all duration-300 ${
+                    isRecording 
+                      ? "w-[36px] h-[36px] rounded bg-red-600 animate-pulse" 
+                      : "w-[58px] h-[58px] rounded-full bg-white hover:bg-neutral-100"
+                  }`} />
                 </button>
 
                 {/* Hidden Input for Gallery selection */}
@@ -754,19 +935,33 @@ const CameraModal = ({
           </div>
         </div>
       ) : (
-        // Captured Image Preview Screen
+        // Captured Image/Video Preview Screen
         <div className="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden bg-black">
-          <img 
-            src={capturedImage} 
-            alt="Captured Preview" 
-            className="w-full h-full object-cover md:object-contain"
-          />
+          {capturedVideo ? (
+            <video 
+              src={capturedVideo} 
+              controls 
+              autoPlay 
+              loop 
+              playsInline 
+              className="w-full h-full object-cover md:object-contain"
+            />
+          ) : (
+            <img 
+              src={capturedImage} 
+              alt="Captured Preview" 
+              className="w-full h-full object-cover md:object-contain"
+            />
+          )}
 
           {/* Top navigation overlay for preview */}
           <div className="absolute top-4 inset-x-0 px-4 flex justify-between items-center z-30">
             <button 
               type="button"
-              onClick={() => setCapturedImage(null)}
+              onClick={() => {
+                setCapturedImage(null);
+                setCapturedVideo(null);
+              }}
               className="w-10 h-10 rounded-full bg-black/45 text-white flex items-center justify-center border border-white/5 active:scale-95 transition-transform cursor-pointer"
               title="Retake"
             >

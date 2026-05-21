@@ -14,10 +14,14 @@ export const createStory = async (req, res) => {
 
     let finalContent = content;
 
-    if (type === "image") {
-      const uploadResponse = await cloudinary.uploader.upload(content, {
+    if (type === "image" || type === "video") {
+      const uploadOptions = {
         folder: "stories",
-      });
+      };
+      if (type === "video") {
+        uploadOptions.resource_type = "video";
+      }
+      const uploadResponse = await cloudinary.uploader.upload(content, uploadOptions);
       finalContent = uploadResponse.secure_url;
     }
 

@@ -9,7 +9,7 @@ import {
   MessageSquare, Phone, Plus, Check, User, Settings, 
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
   Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban,
-  Layers, Compass, Loader2
+  Layers, Compass, Loader2, Pencil, Lock
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -41,6 +41,20 @@ const formatLastMessageTime = (dateString) => {
     return date.toLocaleDateString([], { weekday: 'short' });
   }
   
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
+const formatStoryTime = (createdAt) => {
+  if (!createdAt) return "";
+  const date = new Date(createdAt);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMins / 60);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} minutes ago`;
+  if (diffHrs < 24) return `${diffHrs} hours ago`;
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 };
 
@@ -319,6 +333,8 @@ const Sidebar = () => {
   const [showMyUpdatesHistory, setShowMyUpdatesHistory] = useState(false);
   const [storyType, setStoryType] = useState("text"); // "text" or "image"
   const storyFileInputRef = useRef(null);
+  const [cameraInitialMode, setCameraInitialMode] = useState("camera");
+  const [activeStoryMenuId, setActiveStoryMenuId] = useState(null);
 
   // Call Logs State
   const [callLogs, setCallLogs] = useState(() => {
@@ -1256,12 +1272,24 @@ const Sidebar = () => {
             {/* My Story Node */}
             <div 
               onClick={() => {
-                setShowCameraModal(true);
+                if (myGroupedStories?.stories?.length > 0) {
+                  setShowMyUpdatesHistory(true);
+                } else {
+                  setCameraInitialMode("camera");
+                  setShowCameraModal(true);
+                }
               }}
               className="flex items-center justify-between bg-base-200/40 p-3 rounded-2xl border border-base-300/50 hover:bg-base-200/60 cursor-pointer transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="relative">
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCameraInitialMode("camera");
+                    setShowCameraModal(true);
+                  }}
+                  className="relative cursor-pointer"
+                >
                   {authUser?.profilePic ? (
                     <img 
                       src={authUser.profilePic} 
@@ -1274,7 +1302,11 @@ const Sidebar = () => {
                     </div>
                   )}
                   <button 
-                    onClick={(e) => { e.stopPropagation(); setShowCameraModal(true); }}
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setCameraInitialMode("camera");
+                      setShowCameraModal(true); 
+                    }}
                     className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary text-primary-content rounded-full flex items-center justify-center ring-2 ring-base-100 hover:scale-105 transition-transform"
                     title="Add to story"
                   >
@@ -1598,6 +1630,7 @@ const Sidebar = () => {
         {activeTab === "stories" && (
           <button 
             onClick={() => {
+              setCameraInitialMode("camera");
               setShowCameraModal(true);
             }}
             className="w-14 h-14 rounded-full bg-white dark:bg-zinc-800 hover:bg-neutral-50 dark:hover:bg-zinc-700 text-neutral-600 dark:text-neutral-300 flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.15)] border border-neutral-100 dark:border-zinc-700 transition-all hover:scale-105 active:scale-95 cursor-pointer"
@@ -2360,6 +2393,7 @@ const Sidebar = () => {
       <CameraModal 
         isOpen={showCameraModal}
         onClose={() => setShowCameraModal(false)}
+        initialMode={cameraInitialMode}
         authUser={authUser}
         selectedUser={selectedUser}
         selectedGroup={selectedGroup}
@@ -2389,12 +2423,11 @@ const Sidebar = () => {
               <ArrowLeft size={21} />
             </button>
             <div className="text-left">
-              <h2 className="text-lg font-bold">My Statuses</h2>
-              <p className="text-xs text-base-content/50">Your active updates list</p>
+              <h2 className="text-lg font-bold">My status</h2>
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar pb-24 relative">
             {!myGroupedStories || myGroupedStories.stories.length === 0 ? (
               <div className="text-center py-20 px-4 space-y-3">
                 <div className="w-16 h-16 rounded-full bg-base-200 flex items-center justify-center mx-auto text-base-content/40">
@@ -2404,7 +2437,7 @@ const Sidebar = () => {
                 <p className="text-xs text-base-content/50 max-w-[200px] mx-auto">Statuses you share will appear here for 24 hours.</p>
               </div>
             ) : (
-              <div className="space-y-3 animate-fade-in">
+              <div className="space-y-4 animate-fade-in">
                 <div className="flex justify-between items-center px-1">
                   <span className="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Your Updates</span>
                   <span className="text-xs font-semibold text-base-content/50">
@@ -2412,45 +2445,115 @@ const Sidebar = () => {
                   </span>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {myGroupedStories.stories.map((story) => (
                     <div 
                       key={story._id}
-                      className="p-3 bg-base-200/50 rounded-2xl flex items-center justify-between group border border-base-300/35 hover:bg-base-200 transition-all duration-200"
+                      className="p-3.5 bg-base-200/40 rounded-2xl flex items-center justify-between border border-base-300/30 hover:bg-base-200/60 transition-all duration-200"
                     >
-                      <div className="flex items-center gap-3 truncate">
-                        {story.type === 'image' ? (
-                          <img src={story.content} className="w-11 h-11 rounded-lg object-cover" alt="" />
-                        ) : (
-                          <div className="w-11 h-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-                            Aa
-                          </div>
-                        )}
-                        <div className="text-left truncate">
-                          <p className="text-sm font-semibold truncate text-base-content">
-                            {story.type === 'text' ? story.content : (story.caption || 'Image Status')}
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        {/* User Avatar */}
+                        <div className="flex-shrink-0">
+                          {authUser?.profilePic ? (
+                            <img 
+                              src={authUser.profilePic} 
+                              alt="me" 
+                              className="w-12 h-12 rounded-full object-cover border border-base-300 shadow-sm"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-base shadow-sm">
+                              {getInitials(authUser?.fullName)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-left min-w-0">
+                          <p className="text-sm font-bold text-base-content">
+                            {story.views?.length || 0} {story.views?.length === 1 ? 'view' : 'views'}
                           </p>
-                          <p className="text-[10px] text-base-content/50 mt-0.5">
-                            {new Date(story.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          <p className="text-xs text-base-content/55 mt-0.5">
+                            {formatStoryTime(story.createdAt)}
                           </p>
                         </div>
                       </div>
                       
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          deleteStory(story._id); 
-                        }}
-                        className="p-2 rounded-full hover:bg-base-300 text-error/70 hover:text-error transition-all"
-                        title="Delete story"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="relative">
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setActiveStoryMenuId(activeStoryMenuId === story._id ? null : story._id); 
+                          }}
+                          className="p-2 rounded-full hover:bg-base-300 text-base-content/75 hover:text-base-content transition-all"
+                          title="Options"
+                        >
+                          <MoreVertical size={20} />
+                        </button>
+
+                        {/* Story delete popover menu */}
+                        {activeStoryMenuId === story._id && (
+                          <>
+                            <div 
+                              className="fixed inset-0 z-45" 
+                              onClick={(e) => { e.stopPropagation(); setActiveStoryMenuId(null); }}
+                            />
+                            <div className="absolute right-0 mt-1 w-32 bg-base-100 border border-base-300 rounded-xl shadow-xl z-50 py-1 text-left">
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  setActiveStoryMenuId(null);
+                                  const confirmDelete = window.confirm("Are you sure you want to permanently delete this status update?");
+                                  if (confirmDelete) {
+                                    await deleteStory(story._id);
+                                  }
+                                }}
+                                className="flex items-center gap-2 w-full px-4 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-500 text-xs font-bold transition-colors text-left"
+                              >
+                                <Trash2 size={14} />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Encryption Disclaimer */}
+            <div className="flex items-start justify-center gap-2 py-6 text-center max-w-xs mx-auto text-[11px] text-base-content/45 font-semibold">
+              <Lock size={12} className="shrink-0 mt-0.5 text-base-content/40" />
+              <span>
+                Your status updates are <span className="text-emerald-600 dark:text-emerald-400 font-bold">end-to-end encrypted</span>. They will disappear after 24 hours.
+              </span>
+            </div>
+          </div>
+
+          {/* Floating Action Buttons for Status overlay */}
+          <div className="absolute bottom-6 right-6 flex flex-col items-center gap-3.5 z-20">
+            {/* Pencil FAB */}
+            <button 
+              onClick={() => {
+                setCameraInitialMode("text");
+                setShowCameraModal(true);
+              }}
+              className="w-11 h-11 rounded-full bg-white dark:bg-zinc-800 hover:bg-neutral-50 dark:hover:bg-zinc-700 text-neutral-600 dark:text-neutral-300 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-neutral-100 dark:border-zinc-700 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              title="Add text status"
+            >
+              <Pencil size={18} className="stroke-[2.5]" />
+            </button>
+
+            {/* Camera FAB */}
+            <button 
+              onClick={() => {
+                setCameraInitialMode("camera");
+                setShowCameraModal(true);
+              }}
+              className="w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.2)] transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              title="Add photo status"
+            >
+              <Camera size={22} className="stroke-[2.5]" />
+            </button>
           </div>
         </div>
       )}

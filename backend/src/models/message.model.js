@@ -28,7 +28,7 @@ const messageSchema = new mongoose.Schema(
         },
         messageType: {
             type: String,
-            enum: ["text", "image", "voice_call", "video_call", "audio"],
+            enum: ["text", "image", "video", "voice_call", "video_call", "audio"],
             default: "text",
         },
         callStatus: {

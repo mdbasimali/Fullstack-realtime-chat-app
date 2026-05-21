@@ -285,7 +285,7 @@ export const sendGroupMessage = async (req, res) => {
     if (image) {
       // Audio or general image file upload to Cloudinary
       const options = {};
-      if (messageType === "audio") {
+      if (messageType === "audio" || messageType === "video") {
         options.resource_type = "video";
       }
       const uploadResponse = await cloudinary.uploader.upload(image, options);

@@ -13,7 +13,7 @@ const storySchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["text", "image"],
+      enum: ["text", "image", "video"],
       default: "text",
     },
     caption: {
