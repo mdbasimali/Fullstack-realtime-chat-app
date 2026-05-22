@@ -26,6 +26,7 @@ export const useAuthStore = create((set,get) => ({
   isFetchingDevices: false,
   isAppLocked: false,
   isVerifyingPin: false,
+  _hasInitializedLockListener: false,
 
   checkAuth: async () => {
     try {
@@ -136,6 +137,9 @@ export const useAuthStore = create((set,get) => ({
   createPin: async (pin) => {
     try {
       const res = await axiosInstance.put("/auth/create-pin", { pin });
+      set((state) => ({ 
+        authUser: state.authUser ? { ...state.authUser, pin: "enabled" } : null 
+      }));
       return { success: true, message: res.data.message };
     } catch (error) {
       console.error("Error creating PIN:", error);
@@ -178,11 +182,14 @@ export const useAuthStore = create((set,get) => ({
   },
 
   initAppLockListener: () => {
+    if (get()._hasInitializedLockListener) return;
+    set({ _hasInitializedLockListener: true });
+
     // Listen for Web Visibility API
     document.addEventListener("visibilitychange", () => {
       const authUser = get().authUser;
       if (document.visibilityState === "visible") {
-        if (authUser?.pin) {
+        if (authUser && authUser.pin) {
           set({ isAppLocked: true });
         }
       }
@@ -192,7 +199,7 @@ export const useAuthStore = create((set,get) => ({
     try {
       App.addListener("appStateChange", ({ isActive }) => {
         const authUser = get().authUser;
-        if (isActive && authUser?.pin) {
+        if (isActive && authUser && authUser.pin) {
           set({ isAppLocked: true });
         }
       });
