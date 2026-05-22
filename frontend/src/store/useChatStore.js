@@ -66,6 +66,21 @@ export const useChatstore = create((set,get) => ({
   selectedUserId: null,
   setSelectedUserId: (id) => set({ selectedUserId: id }),
 
+  globalUsers: [],
+  isGlobalSearching: false,
+  searchGlobalUsers: async (query) => {
+    set({ isGlobalSearching: true });
+    try {
+      const res = await axiosInstance.get(`/messages/global-search?q=${query}`);
+      set({ globalUsers: res.data });
+    } catch (error) {
+      console.error("Global search error:", error);
+    } finally {
+      set({ isGlobalSearching: false });
+    }
+  },
+  clearGlobalSearch: () => set({ globalUsers: [] }),
+
   getUsers: async () => {
     set({ isUsersLoading: true });
     try {

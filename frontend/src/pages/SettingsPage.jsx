@@ -5,7 +5,7 @@ import { THEMES } from "../constants";
 import { 
   ArrowLeft, CircleUser, MonitorSmartphone, Heart, Sun, 
   MessageCircle, Copy, Bell, Lock, History, Info, ShieldCheck, LogOut,
-  PieChart, CreditCard, HelpCircle, Mail
+  PieChart, CreditCard, HelpCircle, Mail, Search, MoreVertical, Camera
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -73,16 +73,21 @@ const SettingsPage = () => {
     <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col bg-base-100 select-none overflow-hidden font-sans">
       
       {/* Header */}
-      <header className="px-4 py-3 safe-top flex items-center gap-6 bg-base-100 sticky top-0 z-10">
+      <header className="px-4 py-3 safe-top flex items-center justify-between bg-base-100 sticky top-0 z-10">
         <Link 
           to="/" 
           className="p-2 -ml-2 rounded-full hover:bg-base-200 text-base-content transition-colors"
         >
           <ArrowLeft size={24} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-[22px] font-normal text-base-content">
-          Settings
-        </h1>
+        <div className="flex items-center gap-2">
+          <button className="p-2 rounded-full hover:bg-base-200 text-base-content transition-colors">
+            <Search size={24} strokeWidth={2} />
+          </button>
+          <button className="p-2 -mr-2 rounded-full hover:bg-base-200 text-base-content transition-colors">
+            <MoreVertical size={24} strokeWidth={2} />
+          </button>
+        </div>
       </header>
 
       {/* Main Settings Panel */}
@@ -91,33 +96,32 @@ const SettingsPage = () => {
         {/* Profile Summary */}
         <div 
           onClick={() => navigate('/profile')}
-          className="flex items-center gap-5 px-6 py-6 cursor-pointer hover:bg-base-200 transition-colors"
+          className="flex flex-col items-center justify-center pt-6 pb-8 px-4 cursor-pointer hover:bg-base-200 transition-colors"
         >
-          {authUser?.profilePic ? (
-            <img 
-              src={authUser.profilePic} 
-              alt={authUser.fullName} 
-              className="w-[84px] h-[84px] rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-[84px] h-[84px] rounded-full bg-[#f4e6ff] text-[#9b2cfa] flex items-center justify-center font-normal text-[36px]">
-              {getInitials(authUser?.fullName)}
+          <div className="relative mb-4">
+            {authUser?.profilePic ? (
+              <img 
+                src={authUser.profilePic} 
+                alt={authUser.fullName} 
+                className="w-[110px] h-[110px] rounded-full object-cover shadow-sm"
+              />
+            ) : (
+              <div className="w-[110px] h-[110px] rounded-full bg-[#f4e6ff] text-[#9b2cfa] flex items-center justify-center font-normal text-[48px] shadow-sm">
+                {getInitials(authUser?.fullName)}
+              </div>
+            )}
+            <div className="absolute bottom-0 right-0 w-[34px] h-[34px] bg-[#1e88e5] rounded-full flex items-center justify-center ring-4 ring-base-100 shadow-sm text-white">
+              <Camera size={18} strokeWidth={2} />
             </div>
-          )}
+          </div>
 
-          <div className="text-left flex-1 min-w-0">
-            <h2 className="text-[20px] font-normal text-base-content truncate">
-              {(authUser?.fullName || "").toLowerCase()}
+          <div className="text-center flex flex-col items-center max-w-full">
+            <h2 className="text-[24px] font-semibold text-base-content leading-tight mb-1 truncate px-4">
+              {authUser?.fullName || "Masudur Rahaman"}
             </h2>
-            {authUser?.phoneNumber ? (
-              <p className="text-[14px] text-base-content/60 mt-0.5 font-medium truncate">
-                {authUser.phoneNumber}
-              </p>
-            ) : authUser?.email ? (
-              <p className="text-[14px] text-base-content/60 mt-0.5 font-medium truncate">
-                {authUser.email}
-              </p>
-            ) : null}
+            <p className="text-[15px] text-base-content/60 font-medium truncate px-4">
+              {authUser?.phoneNumber || "+91 6294983054"} • @{authUser?.username || "ig_princeae"}
+            </p>
           </div>
         </div>
 

@@ -9,9 +9,9 @@ import {
   MessageSquare, Phone, Plus, Check, User, Settings, 
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
   Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban,
-  Layers, Compass, Loader2, Pencil, Lock
+  Layers, Compass, Loader2, Pencil, Lock, Megaphone, ListFilter
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import StoryViewer from "./StoryViewer";
 import CameraModal from "./CameraModal";
@@ -59,9 +59,10 @@ const formatStoryTime = (createdAt) => {
 };
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation, syncContacts, sendMessage } = useChatstore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation, syncContacts, sendMessage, globalUsers, isGlobalSearching, searchGlobalUsers, clearGlobalSearch } = useChatstore();
   const { authUser, onlineUsers } = useAuthStore();
   const { initiateCall } = useCallStore();
+  const navigate = useNavigate();
 
   const unreadChatsCount = users.filter(u => u.lastMessage && !u.lastMessage.isRead && u.lastMessage.senderId !== authUser?._id).length;
 
@@ -289,18 +290,26 @@ const Sidebar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showThreeDotMenu, setShowThreeDotMenu] = useState(false);
   const [addContactInput, setAddContactInput] = useState("");
 
-  const profileMenuRef = useRef(null);
+  // Global Search Debounce
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (query) {
+      const timer = setTimeout(() => {
+        searchGlobalUsers(query);
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      clearGlobalSearch();
+    }
+  }, [searchQuery, searchGlobalUsers, clearGlobalSearch]);
+
   const threeDotMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
-        setShowProfileMenu(false);
-      }
       if (threeDotMenuRef.current && !threeDotMenuRef.current.contains(event.target)) {
         setShowThreeDotMenu(false);
       }
@@ -637,173 +646,121 @@ const Sidebar = () => {
     <div className="h-full w-full flex flex-col bg-base-100 select-none relative">
       
       {/* 1. Sleek Signal Header */}
-      <header className="p-4 safe-top border-b border-base-300 flex items-center justify-between bg-base-100/90 backdrop-blur sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          {/* Reactive Initials Profile Avatar */}
-          <div className="relative group" ref={profileMenuRef}>
-            <div className="cursor-pointer" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-              {authUser?.profilePic ? (
-                <img 
-                  src={authUser.profilePic} 
-                  alt={authUser.fullName} 
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary transition-all"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 flex items-center justify-center font-bold text-base shadow-sm hover:brightness-95 transition-all">
-                  {getInitials(authUser?.fullName)}
+      <header className="safe-top bg-base-100/90 backdrop-blur sticky top-0 z-10 flex flex-col">
+        
+        {/* Top Row: Avatar, Title, Actions */}
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Reactive Initials Profile Avatar */}
+            <div className="relative group">
+              <div className="cursor-pointer" onClick={() => navigate('/settings')}>
+                {authUser?.profilePic ? (
+                  <img 
+                    src={authUser.profilePic} 
+                    alt={authUser.fullName} 
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary transition-all"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 flex items-center justify-center font-bold text-base shadow-sm hover:brightness-95 transition-all">
+                    {getInitials(authUser?.fullName)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Dynamic Header Title based on Active Tab */}
+            <h1 className="text-xl font-bold tracking-tight text-[#1e88e5]">
+              {activeTab === "chats" && "ChatZone"}
+              {activeTab === "calls" && "Calls"}
+              {activeTab === "friends" && "Friends"}
+              {activeTab === "stories" && "Stories"}
+            </h1>
+          </div>
+
+          {/* Header Actions */}
+          <div className="flex items-center gap-3">
+            {activeTab === "friends" && (
+              <button 
+                onClick={() => setShowRecentlyUnfriendedModal(true)}
+                className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors animate-fade-in"
+                title="Recently Unfriended"
+              >
+                <UserX size={21} />
+              </button>
+            )}
+            
+            <div className="relative" ref={threeDotMenuRef}>
+              <button 
+                onClick={() => {
+                  setShowThreeDotMenu(!showThreeDotMenu);
+                }}
+                className="p-2 -mr-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
+                title="Menu"
+              >
+                <MoreVertical size={24} />
+              </button>
+
+              {/* Premium Signal 3-Dot Dropdown Menu Card */}
+              {showThreeDotMenu && (
+                <div className="absolute right-0 mt-2.5 top-11 w-56 bg-base-100 dark:bg-base-200 border border-base-200/80 dark:border-base-700 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-50 overflow-hidden py-3 flex flex-col space-y-1 text-left animate-fade-in">
+                  <button 
+                    onClick={() => { setShowThreeDotMenu(false); handleNewGroup(); }}
+                    className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
+                  >
+                    New group
+                  </button>
+                  <button 
+                    onClick={() => { setShowThreeDotMenu(false); handleMarkAllRead(); }}
+                    className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
+                  >
+                    Mark all read
+                  </button>
+                  <button 
+                    onClick={() => { setShowThreeDotMenu(false); handleInviteFriends(); }}
+                    className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
+                  >
+                    Invite friends
+                  </button>
+                  <button 
+                    onClick={() => { setShowThreeDotMenu(false); handleFilterUnread(); }}
+                    className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
+                  >
+                    Filter unread chats
+                  </button>
+                  <Link 
+                    to="/settings"
+                    onClick={() => setShowThreeDotMenu(false)}
+                    className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors block"
+                  >
+                    Settings
+                  </Link>
+                  <button 
+                    onClick={() => { setShowThreeDotMenu(false); handleNotificationProfile(); }}
+                    className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
+                  >
+                    Notification profile
+                  </button>
                 </div>
               )}
             </div>
-            
-            {/* Custom Settings/Profile dropdown */}
-            {showProfileMenu && (
-              <div className="absolute left-0 mt-3 w-64 bg-base-100 border border-base-200/80 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-50 overflow-hidden py-1 divide-y divide-base-200 text-left">
-                <div className="px-5 py-3">
-                  <p className="font-bold text-[15px] text-slate-800 dark:text-slate-200 tracking-tight truncate">{authUser?.fullName || "Masudur Rahaman"}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">{authUser?.email || "masudurrahamanrm@gmail.com"}</p>
-                </div>
-                <div className="py-1">
-                  <Link 
-                    to="/profile" 
-                    className="flex items-center gap-3.5 px-5 py-3.5 text-sm hover:bg-base-200 text-slate-700 dark:text-slate-300 font-medium transition-colors"
-                    onClick={() => setShowProfileMenu(false)}
-                  >
-                    <User size={18} className="text-slate-500 dark:text-slate-400" /> 
-                    <span>My Profile</span>
-                  </Link>
-                  <Link 
-                    to="/settings" 
-                    className="flex items-center gap-3.5 px-5 py-3.5 text-sm hover:bg-base-200 text-slate-700 dark:text-slate-300 font-medium transition-colors"
-                    onClick={() => setShowProfileMenu(false)}
-                  >
-                    <Settings size={18} className="text-slate-500 dark:text-slate-400" /> 
-                    <span>Settings</span>
-                  </Link>
-                </div>
-              </div>
-            )}
           </div>
-
-          {/* Dynamic Header Title based on Active Tab */}
-          <h1 className="text-xl font-bold tracking-tight text-base-content">
-            {activeTab === "chats" && "ChatZone"}
-            {activeTab === "calls" && "Calls"}
-            {activeTab === "friends" && "Friends"}
-            {activeTab === "stories" && "Stories"}
-          </h1>
         </div>
 
-        {/* Header Actions */}
-        <div className="flex items-center gap-3">
-          {/* Toggle search input */}
-          <div className="relative flex items-center">
+        {/* Bottom Row: Persistent Search Bar */}
+        <div className="px-4 pb-3">
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-base-200/70 rounded-full transition-colors hover:bg-base-200">
+            <Search size={20} className="text-base-content/50 shrink-0" />
             <input 
               type="text"
               name="sidebar-search"
               autoComplete="off"
               autoCorrect="off"
               spellCheck="false"
-              placeholder="Search..."
+              placeholder="Search Chats"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onBlur={() => {
-                if (!searchQuery.trim()) {
-                  setIsSearchOpen(false);
-                }
-              }}
-              ref={searchInputRef}
-              className={`transition-all duration-300 text-sm bg-base-200 border border-transparent focus:border-base-300 rounded-full outline-none ${
-                isSearchOpen 
-                  ? "w-36 sm:w-44 px-3 py-1 opacity-100" 
-                  : "w-0 px-0 py-0 opacity-0 pointer-events-none"
-              }`}
-              id="search-input"
+              className="w-full bg-transparent text-[16px] focus:outline-none placeholder:text-base-content/50"
             />
-            <button 
-              onClick={() => {
-                setIsSearchOpen((prev) => {
-                  const next = !prev;
-                  if (next) {
-                    setTimeout(() => searchInputRef.current?.focus(), 100);
-                  } else {
-                    setSearchQuery("");
-                  }
-                  return next;
-                });
-              }}
-              className={`p-2 rounded-full transition-colors cursor-pointer ${
-                isSearchOpen ? "bg-base-300 text-primary" : "hover:bg-base-200 text-base-content/80"
-              }`}
-              title="Search"
-            >
-              <Search size={21} />
-            </button>
-          </div>
-          
-          {activeTab === "friends" && (
-            <button 
-              onClick={() => setShowRecentlyUnfriendedModal(true)}
-              className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors animate-fade-in"
-              title="Recently Unfriended"
-            >
-              <UserX size={21} />
-            </button>
-          )}
-          
-          <div className="relative" ref={threeDotMenuRef}>
-            <button 
-              onClick={() => {
-                setShowThreeDotMenu(!showThreeDotMenu);
-                setShowProfileMenu(false); // dismiss other dropdowns
-              }}
-              className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
-              title="Menu"
-            >
-              <MoreVertical size={21} />
-            </button>
-
-            {/* Premium Signal 3-Dot Dropdown Menu Card */}
-            {showThreeDotMenu && (
-              <div className="absolute right-0 mt-2.5 top-11 w-56 bg-base-100 dark:bg-base-200 border border-base-200/80 dark:border-base-700 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-50 overflow-hidden py-3 flex flex-col space-y-1 text-left animate-fade-in">
-                <button 
-                  onClick={() => { setShowThreeDotMenu(false); handleNewGroup(); }}
-                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
-                >
-                  New group
-                </button>
-                <button 
-                  onClick={() => { setShowThreeDotMenu(false); handleMarkAllRead(); }}
-                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
-                >
-                  Mark all read
-                </button>
-                <button 
-                  onClick={() => { setShowThreeDotMenu(false); handleInviteFriends(); }}
-                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
-                >
-                  Invite friends
-                </button>
-                <button 
-                  onClick={() => { setShowThreeDotMenu(false); handleFilterUnread(); }}
-                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
-                >
-                  Filter unread chats
-                </button>
-                <Link 
-                  to="/settings"
-                  onClick={() => setShowThreeDotMenu(false)}
-                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors block"
-                >
-                  Settings
-                </Link>
-                <button 
-                  onClick={() => { setShowThreeDotMenu(false); handleNotificationProfile(); }}
-                  className="w-full text-left px-6 py-2.5 text-sm font-semibold hover:bg-base-200 text-base-content/85 transition-colors"
-                >
-                  Notification profile
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </header>
@@ -1755,113 +1712,170 @@ const Sidebar = () => {
       {/* 5. Contact List / Message Select Modal Drawer */}
       {showContactsModal && (
         <div className="absolute inset-0 bg-base-100 z-50 flex flex-col animate-slide-up">
-          <header className="p-4 border-b border-base-300 flex items-center gap-4 bg-base-100">
-            <button 
-              onClick={() => { setShowContactsModal(false); setSearchQuery(""); }}
-              className="p-1.5 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
-            >
-              <ArrowLeft size={21} />
-            </button>
-            <div className="text-left">
-              <h2 className="text-lg font-bold">Select Contact</h2>
-              <p className="text-xs text-base-content/50">Start a chat with any teammate</p>
+          <header className="p-4 flex items-center justify-between bg-base-100">
+            <div className="flex items-center gap-6">
+              <button 
+                onClick={() => { setShowContactsModal(false); setSearchQuery(""); }}
+                className="hover:bg-base-200 p-1 -ml-1 rounded-full text-base-content transition-colors"
+              >
+                <ArrowLeft size={24} strokeWidth={2.5} />
+              </button>
+              <h2 className="text-[18px] font-semibold text-base-content">New Message</h2>
             </div>
+            <button className="text-base-content hover:bg-base-200 p-1 -mr-1 rounded-full transition-colors">
+              <ListFilter size={22} strokeWidth={2.5} />
+            </button>
           </header>
 
-          {/* Search Contacts */}
-          <div className="p-3 bg-base-200/50 border-b border-base-300 space-y-3">
-            <div className="flex items-center gap-2 px-3 py-2 bg-base-100 border border-base-300 rounded-full">
-              <Search size={18} className="text-base-content/40" />
-              <input 
-                type="text" 
-                placeholder="Search name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent text-sm focus:outline-none"
-              />
+          <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
+            {/* Search Box */}
+            <div className="px-4 py-2">
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-base-200/60 rounded-xl">
+                <Search size={20} className="text-base-content/40" />
+                <input 
+                  type="text" 
+                  placeholder="Search Contacts"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent text-[16px] focus:outline-none placeholder:text-base-content/40"
+                />
+              </div>
             </div>
 
-            {/* Premium "Add Contact" Area */}
-            <div className="flex gap-2 items-center px-1">
-               <input 
-                type="text" 
-                placeholder="Add by email, phone, or @username..."
-                value={addContactInput}
-                onChange={(e) => setAddContactInput(e.target.value)}
-                className="flex-1 px-4 py-2 rounded-xl bg-base-100 border border-base-300 text-xs font-semibold focus:outline-none focus:border-primary transition-colors"
-              />
-              <button 
-                onClick={async () => {
-                  if (!addContactInput.trim()) {
-                    toast.error("Please enter an email, phone, or username");
-                    return;
-                  }
-                  const success = await addContact(addContactInput);
-                  if (success) {
-                    setAddContactInput("");
-                  }
-                }}
-                className="btn btn-primary rounded-xl px-4 py-2 text-xs font-bold h-auto min-h-0 normal-case"
-              >
-                + Add
-              </button>
-            </div>
-          </div>
-
-          {/* Contact List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-            {isUsersLoading ? (
-              <div className="text-center text-sm text-base-content/60 py-10">Loading contacts...</div>
-            ) : filteredContacts.length === 0 ? (
-              <div className="text-center text-sm text-base-content/60 py-10">No contacts found</div>
-            ) : (
-              <div className="space-y-1">
-                {filteredContacts.map((user) => (
-                  <div 
-                    key={user._id}
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setShowContactsModal(false);
-                      setSearchQuery("");
-                      setActiveTab("chats");
-                      // Add to active chat list in localStorage
-                      if (!activeConversations.includes(user._id)) {
-                        const updated = [...activeConversations, user._id];
-                        setActiveConversations(updated);
-                        localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
-                      }
-                    }}
-                    className="p-3 flex items-center justify-between rounded-xl hover:bg-base-200 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* Avatar */}
-                      <div className="relative">
-                        {user.profilePic ? (
-                          <img
-                            src={user.profilePic}
-                            alt={user.fullName}
-                            className="w-11 h-11 object-cover rounded-full border border-base-300"
-                          />
-                        ) : (
-                          <div className="w-11 h-11 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
-                            {getInitials(user.fullName)}
-                          </div>
-                        )}
-                        {onlineUsers.includes(user._id) && (
-                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full ring-2 ring-base-100" />
-                        )}
-                      </div>
-                      <div className="text-left">
-                        <h4 className="font-semibold text-sm text-base-content">{user.fullName}</h4>
-                        <p className="text-xs text-base-content/50">{user.email}</p>
-                      </div>
-                    </div>
-
-                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      <Plus size={16} />
-                    </div>
+            {/* Actions */}
+            {searchQuery.length === 0 && (
+              <div className="px-4 pb-4 pt-2 border-b border-base-200 space-y-4">
+                <button className="flex items-center gap-4 w-full group text-left">
+                  <div className="w-[40px] h-[40px] rounded-full bg-[#1e88e5] text-white flex items-center justify-center shrink-0 shadow-sm group-active:scale-95 transition-transform">
+                    <Users size={20} className="fill-current" />
                   </div>
-                ))}
+                  <span className="text-[15px] font-medium text-base-content tracking-tight">New Group</span>
+                </button>
+                <button className="flex items-center gap-4 w-full group text-left">
+                  <div className="w-[40px] h-[40px] rounded-full bg-[#34c759] text-white flex items-center justify-center shrink-0 shadow-sm group-active:scale-95 transition-transform">
+                    <Megaphone size={20} className="fill-current" />
+                  </div>
+                  <span className="text-[15px] font-medium text-base-content tracking-tight">New Channel</span>
+                </button>
+              </div>
+            )}
+
+            {/* Contact List / Global Search */}
+            {searchQuery.trim().length > 0 ? (
+              <div className="px-4 py-3 space-y-2 animate-fade-in">
+                <h3 className="text-[13px] font-semibold text-base-content/50 mb-3 tracking-wide">Global search</h3>
+                
+                {isGlobalSearching ? (
+                  <div className="text-center text-sm text-base-content/60 py-10 flex flex-col items-center justify-center gap-2">
+                    <Loader2 size={24} className="animate-spin text-primary" />
+                    Searching...
+                  </div>
+                ) : globalUsers.length === 0 ? (
+                  <div className="text-center text-sm text-base-content/60 py-10">No users found</div>
+                ) : (
+                  <div className="bg-base-100 rounded-2xl shadow-sm border border-base-200 overflow-hidden">
+                    {globalUsers.map((user) => {
+                      const isOnline = onlineUsers.includes(user._id);
+                      return (
+                        <div 
+                          key={user._id}
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setShowContactsModal(false);
+                            setSearchQuery("");
+                            setActiveTab("chats");
+                            if (!activeConversations.includes(user._id)) {
+                              const updated = [...activeConversations, user._id];
+                              setActiveConversations(updated);
+                              localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
+                            }
+                          }}
+                          className="p-3 flex items-center justify-between hover:bg-base-200 cursor-pointer transition-colors border-b border-base-200 last:border-0"
+                        >
+                          <div className="flex items-center gap-4">
+                            {/* Avatar */}
+                            <div className="relative shrink-0">
+                              {user.profilePic ? (
+                                <img
+                                  src={user.profilePic}
+                                  alt={user.fullName}
+                                  className="w-[46px] h-[46px] object-cover rounded-full"
+                                />
+                              ) : (
+                                <div className="w-[46px] h-[46px] rounded-full bg-[#f4a034] text-white flex items-center justify-center font-medium text-[18px]">
+                                  {getInitials(user.fullName)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-left flex flex-col justify-center">
+                              <h4 className="font-semibold text-[15px] text-base-content leading-snug mb-[1px]">{user.fullName}</h4>
+                              <p className="text-[14px] text-[#1e88e5] leading-snug">
+                                @{user.username}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="px-4 py-3 space-y-2">
+                <h3 className="text-[13px] font-semibold text-[#1e88e5] mb-3 tracking-wide">Sorted by last seen time</h3>
+                
+                {isUsersLoading ? (
+                  <div className="text-center text-sm text-base-content/60 py-10">Loading contacts...</div>
+                ) : filteredContacts.length === 0 ? (
+                  <div className="text-center text-sm text-base-content/60 py-10">No contacts found</div>
+                ) : (
+                  <div className="space-y-0.5">
+                    {filteredContacts.map((user) => {
+                      const isOnline = onlineUsers.includes(user._id);
+                      return (
+                        <div 
+                          key={user._id}
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setShowContactsModal(false);
+                            setSearchQuery("");
+                            setActiveTab("chats");
+                            // Add to active chat list in localStorage
+                            if (!activeConversations.includes(user._id)) {
+                              const updated = [...activeConversations, user._id];
+                              setActiveConversations(updated);
+                              localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
+                            }
+                          }}
+                          className="p-2 -mx-2 flex items-center justify-between rounded-xl hover:bg-base-200 cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            {/* Avatar */}
+                            <div className="relative shrink-0">
+                              {user.profilePic ? (
+                                <img
+                                  src={user.profilePic}
+                                  alt={user.fullName}
+                                  className="w-[46px] h-[46px] object-cover rounded-full"
+                                />
+                              ) : (
+                                <div className="w-[46px] h-[46px] rounded-full bg-[#f4a034] text-white flex items-center justify-center font-medium text-[18px]">
+                                  {getInitials(user.fullName)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-left flex flex-col justify-center">
+                              <h4 className="font-semibold text-[15px] text-base-content leading-snug mb-[1px]">{user.fullName}</h4>
+                              <p className={`text-[13px] leading-snug ${isOnline ? "text-[#1e88e5]" : "text-base-content/50"}`}>
+                                {isOnline ? "online" : "last seen recently"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>

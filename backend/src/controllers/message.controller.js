@@ -460,8 +460,31 @@ export const getAllMediaMessages = async (req, res) => {
     .lean();
 
     res.status(200).json(mediaMessages);
+    } catch (error) {
+      console.error("Error in getAllMediaMessages: ", error.message);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+  
+export const globalSearch = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || !q.trim()) return res.status(200).json([]);
+    
+    // search for username starting with q or fullName matching q
+    const searchRegex = new RegExp(q, 'i');
+    
+    const users = await User.find({
+      _id: { $ne: req.user._id },
+      $or: [
+        { username: searchRegex },
+        { fullName: searchRegex }
+      ]
+    }).select("-password").limit(20);
+    
+    res.status(200).json(users);
   } catch (error) {
-    console.error("Error in getAllMediaMessages:", error.message);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error in globalSearch: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
   }
 };

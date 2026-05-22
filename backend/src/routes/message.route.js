@@ -1,11 +1,12 @@
 import express from "express"
 import { protectRoute } from "../middleware/auth.middleware.js";
-import { getMessages, getUsersForSidebar, sendMessage, addContact, removeContact, blockContact, deleteConversation, deleteMessage, clearCallLogs, syncContacts, downloadFile, getAllMediaMessages } from "../controllers/message.controller.js";
+import { getMessages, getUsersForSidebar, sendMessage, addContact, removeContact, blockContact, deleteConversation, deleteMessage, clearCallLogs, syncContacts, downloadFile, getAllMediaMessages, globalSearch } from "../controllers/message.controller.js";
 
 const router = express.Router();
 
 
 router.get("/users",protectRoute, getUsersForSidebar);
+router.get("/global-search", protectRoute, globalSearch);
 router.get("/media/all", protectRoute, getAllMediaMessages);
 router.get("/download", protectRoute, downloadFile);
 router.post("/add-contact", protectRoute, addContact);
