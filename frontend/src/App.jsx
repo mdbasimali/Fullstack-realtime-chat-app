@@ -38,11 +38,13 @@ const AppIconPage = React.lazy(() => import("./pages/AppIconPage"));
 const StoriesPage = React.lazy(() => import("./pages/StoriesPage"));
 const MyStoryPage = React.lazy(() => import("./pages/MyStoryPage"));
 const StoryConnectionsPage = React.lazy(() => import("./pages/StoryConnectionsPage"));
+const StoryUserSelectionPage = React.lazy(() => import("./pages/StoryUserSelectionPage"));
 const NotificationsPage = React.lazy(() => import("./pages/NotificationsPage"));
 const PrivacyPage = React.lazy(() => import("./pages/PrivacyPage"));
 const BackupsPage = React.lazy(() => import("./pages/BackupsPage"));
 const ChatsPage = React.lazy(() => import("./pages/ChatsPage"));
 const ChatsSettingsPage = React.lazy(() => import("./pages/ChatsSettingsPage"));
+const StorySettingsPage = React.lazy(() => import("./pages/StorySettingsPage"));
 const DataStoragePage = React.lazy(() => import("./pages/DataStoragePage"));
 const StoragePage = React.lazy(() => import("./pages/StoragePage"));
 const ReviewStoragePage = React.lazy(() => import("./pages/ReviewStoragePage"));
@@ -318,7 +320,7 @@ const App = () => {
     </div>
   );
 
-  const showNavbar = !["/", "/settings", "/settings/account", "/settings/account/change-pin", "/settings/chats", "/settings/appearance", "/settings/appearance/chat-color", "/settings/appearance/app-icon", "/settings/devices", "/settings/chats", "/settings/stories", "/settings/stories/my-story", "/settings/stories/connections", "/settings/notifications", "/settings/privacy", "/settings/backups", "/settings/data-storage", "/settings/data-storage/storage", "/settings/data-storage/storage/review", "/settings/invite", "/settings/help", "/settings/help/contact", "/settings/help/terms", "/profile", "/join-group", "/login", "/signup", "/create-pin"].includes(location.pathname);
+  const showNavbar = !["/", "/settings", "/settings/account", "/settings/account/change-pin", "/settings/chats", "/settings/appearance", "/settings/appearance/chat-color", "/settings/appearance/app-icon", "/settings/devices", "/settings/chats", "/settings/stories", "/settings/stories/my-story", "/settings/stories/connections", "/settings/stories/privacy-except", "/settings/stories/privacy-only", "/settings/notifications", "/settings/privacy", "/settings/backups", "/settings/data-storage", "/settings/data-storage/storage", "/settings/data-storage/storage/review", "/settings/invite", "/settings/help", "/settings/help/contact", "/settings/help/terms", "/profile", "/join-group", "/login", "/signup", "/create-pin"].includes(location.pathname);
 
   return (
     <div data-theme={theme} className="h-screen flex flex-col">
@@ -344,6 +346,8 @@ const App = () => {
               <Route path="/settings/stories" element={<PageWrapper>{authUser ? <StoriesPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/stories/my-story" element={<PageWrapper>{authUser ? <MyStoryPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/stories/connections" element={<PageWrapper>{authUser ? <StoryConnectionsPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/stories/privacy-except" element={<PageWrapper>{authUser ? <StoryUserSelectionPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/stories/privacy-only" element={<PageWrapper>{authUser ? <StoryUserSelectionPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/notifications" element={<PageWrapper>{authUser ? <NotificationsPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/privacy" element={<PageWrapper>{authUser ? <PrivacyPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/backups" element={<PageWrapper>{authUser ? <BackupsPage /> : <Navigate to="/login" />}</PageWrapper>} />

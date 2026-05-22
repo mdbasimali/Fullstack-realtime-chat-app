@@ -15,6 +15,7 @@ import pushRoutes from "./routes/push.route.js";
 import storyRoutes from "./routes/story.route.js";
 import groupRoutes from "./routes/group.route.js";
 import settingsRoutes from "./routes/settings.route.js";
+import storySettingsRoutes from "./routes/storySettings.route.js";
 import { app, server} from "./lib/socket.js";
 import webpush from "web-push";
 
@@ -97,6 +98,7 @@ app.use("/api/push", pushRoutes);
     app.use("/api/stories", storyRoutes);
     app.use("/api/groups", groupRoutes);
     app.use("/api/settings", settingsRoutes);
+    app.use("/api/story-settings", storySettingsRoutes);
 
 if(process.env.NODE_ENV==="production"){
     app.use(express.static(path.join(__dirname, "../frontend/dist")));
