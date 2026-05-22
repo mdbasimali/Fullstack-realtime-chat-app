@@ -773,8 +773,10 @@ const Sidebar = () => {
         {activeTab === "chats" && (
           <div className="space-y-4">
             
-            {/* If no active conversations, show premium "No Chats Yet" empty state */}
-            {chatUsers.length === 0 ? (
+            {/* If loading users, show skeleton */}
+            {isUsersLoading ? (
+              <ContactListSkeleton count={6} />
+            ) : chatUsers.length === 0 ? (
               searchQuery.trim().length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center space-y-2 animate-fade-in">
                   <h2 className="text-xl font-semibold text-base-content">No chats yet.</h2>

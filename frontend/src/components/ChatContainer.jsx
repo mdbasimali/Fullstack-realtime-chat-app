@@ -232,16 +232,6 @@ const ChatContainer = () => {
     }
   }, [messages]);
 
-  if (isMessagesLoading) {
-    return (
-      <div className="flex-1 flex flex-col overflow-auto bg-base-100">
-        <ChatHeader />
-        <MessageSkeleton />
-        <MessageInput />
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 flex overflow-hidden h-full relative bg-base-100">
       {/* Main Chat Panel */}
