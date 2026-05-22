@@ -163,7 +163,6 @@ const ProfilePage = () => {
   const [selectedImg, setSelectedImg] = useState(authUser?.profilePic || "");
   const [selectedAvatarId, setSelectedAvatarId] = useState("");
   const [fullName, setFullName] = useState(authUser?.fullName || "");
-  const [aboutText, setAboutText] = useState(authUser?.about || "Available");
   const [usernameText, setUsernameText] = useState(authUser?.username || "");
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState("idle");
@@ -265,8 +264,7 @@ const ProfilePage = () => {
       await updateProfile({
         profilePic: selectedImg,
         fullName: fullName.trim(),
-        username: usernameText.trim(),
-        about: aboutText.trim()
+        username: usernameText.trim()
       });
       navigate("/"); // return to home dashboard
     } catch (err) {
@@ -312,27 +310,42 @@ const ProfilePage = () => {
           onChange={handleImageUpload}
         />
 
-        {/* 2. Medium Avatar Circle */}
-        <div className="flex flex-col items-center justify-center space-y-3.5">
-          {selectedImg ? (
-            <img 
-              src={selectedImg} 
-              alt="Profile avatar" 
-              className="w-28 h-28 rounded-full object-cover shadow-sm ring-1 ring-base-200"
-            />
-          ) : (
-            <div className="w-28 h-28 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold text-3xl shadow-xs ring-1 ring-purple-200/20 capitalize">
-              {getInitials(fullName)}
-            </div>
-          )}
+        {/* 2. Medium Avatar Circle & Info */}
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="relative">
+            {selectedImg ? (
+              <img 
+                src={selectedImg} 
+                alt="Profile avatar" 
+                className="w-[120px] h-[120px] rounded-full object-cover shadow-sm ring-1 ring-base-200"
+              />
+            ) : (
+              <div className="w-[120px] h-[120px] rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold text-4xl shadow-xs ring-1 ring-purple-200/20 capitalize">
+                {getInitials(fullName)}
+              </div>
+            )}
 
-          {/* Edit photo button */}
-          <button 
-            onClick={() => setShowAvatarSelector(!showAvatarSelector)}
-            className="px-4 py-1.5 bg-base-200 hover:bg-base-300 text-base-content font-bold text-xs rounded-full transition-all"
-          >
-            Edit photo
-          </button>
+            {/* Camera Icon Button */}
+            <button 
+              onClick={() => setShowAvatarSelector(!showAvatarSelector)}
+              className="absolute bottom-0 right-0 p-2 bg-[#1e88e5] text-white rounded-full border-[3px] border-base-100 hover:bg-[#1565c0] transition-all shadow-sm"
+            >
+              <Camera size={20} strokeWidth={2} />
+            </button>
+          </div>
+
+          {/* Name & About */}
+          <div className="text-center flex flex-col items-center">
+            <h2 className="text-[22px] font-medium text-base-content tracking-tight">
+              {fullName || "Your Name"}
+            </h2>
+            <p className="text-[15px] text-base-content/80 font-medium mt-0.5">
+              {authUser?.about || "Available"}
+            </p>
+            <p className="text-[13px] text-base-content/50 font-medium mt-0.5">
+              {authUser?.phoneNumber || "No phone number added"} • @{usernameText || "username"}
+            </p>
+          </div>
         </div>
 
         {/* 3. Sliding Vector Avatar Grid Drawer */}
@@ -395,16 +408,15 @@ const ProfilePage = () => {
           </div>
 
           {/* Row 2: About / Custom Status */}
-          <div className="flex items-center gap-5 py-3 border-b border-base-200">
+          <div 
+            onClick={() => navigate("/profile/about")}
+            className="flex items-center gap-5 py-3 border-b border-base-200 cursor-pointer hover:bg-base-200/50 px-1 -mx-1 rounded-xl transition-colors"
+          >
             <Pencil size={22} className="text-base-content/50" />
-            <div className="flex-1">
-              <input 
-                type="text" 
-                value={aboutText}
-                onChange={(e) => setAboutText(e.target.value)}
-                className="w-full bg-transparent border-none outline-none focus:outline-none text-[15px] font-semibold text-base-content"
-                placeholder="About"
-              />
+            <div className="flex-1 flex flex-col justify-center">
+              <span className="text-[15px] font-semibold text-base-content">
+                {authUser?.about || "Available"}
+              </span>
             </div>
           </div>
 

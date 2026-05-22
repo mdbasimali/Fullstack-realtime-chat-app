@@ -119,7 +119,10 @@ const SettingsPage = () => {
             <h2 className="text-[24px] font-semibold text-base-content leading-tight mb-1 truncate px-4">
               {authUser?.fullName || "User"}
             </h2>
-            <p className="text-[15px] text-base-content/60 font-medium truncate px-4">
+            <p className="text-[15px] text-base-content/80 font-medium truncate px-4 mt-0.5">
+              {authUser?.about || "Available"}
+            </p>
+            <p className="text-[13px] text-base-content/50 font-medium truncate px-4 mt-0.5">
               {authUser?.phoneNumber ? (
                 <span>{authUser.phoneNumber}</span>
               ) : (

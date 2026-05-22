@@ -55,6 +55,7 @@ const HelpPage = React.lazy(() => import("./pages/HelpPage"));
 const ContactUsPage = React.lazy(() => import("./pages/ContactUsPage"));
 const TermsPrivacyPage = React.lazy(() => import("./pages/TermsPrivacyPage"));
 const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
+const AboutPage = React.lazy(() => import("./pages/AboutPage"));
 const LinkedDevicesPage = React.lazy(() => import("./pages/LinkedDevicesPage"));
 // import axios from "axios";
 
@@ -323,7 +324,7 @@ const App = () => {
     </div>
   );
 
-  const showNavbar = !["/", "/settings", "/settings/account", "/settings/account/change-pin", "/settings/account/add-number", "/settings/chats", "/settings/appearance", "/settings/appearance/chat-color", "/settings/appearance/app-icon", "/settings/devices", "/settings/chats", "/settings/stories", "/settings/stories/my-story", "/settings/stories/connections", "/settings/stories/privacy-except", "/settings/stories/privacy-only", "/settings/notifications", "/settings/privacy", "/settings/backups", "/settings/data-storage", "/settings/data-storage/storage", "/settings/data-storage/storage/review", "/settings/invite", "/settings/help", "/settings/help/contact", "/settings/help/terms", "/profile", "/join-group", "/login", "/signup", "/create-pin"].includes(location.pathname);
+  const showNavbar = !["/", "/settings", "/settings/account", "/settings/account/change-pin", "/settings/account/add-number", "/settings/chats", "/settings/appearance", "/settings/appearance/chat-color", "/settings/appearance/app-icon", "/settings/devices", "/settings/chats", "/settings/stories", "/settings/stories/my-story", "/settings/stories/connections", "/settings/stories/privacy-except", "/settings/stories/privacy-only", "/settings/notifications", "/settings/privacy", "/settings/backups", "/settings/data-storage", "/settings/data-storage/storage", "/settings/data-storage/storage/review", "/settings/invite", "/settings/help", "/settings/help/contact", "/settings/help/terms", "/profile", "/profile/about", "/join-group", "/login", "/signup", "/create-pin"].includes(location.pathname);
 
   return (
     <div data-theme={theme} className="h-screen flex flex-col">
@@ -365,6 +366,7 @@ const App = () => {
               <Route path="/settings/help/contact" element={<PageWrapper>{authUser ? <ContactUsPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/help/terms" element={<PageWrapper>{authUser ? <TermsPrivacyPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/profile" element={<PageWrapper>{authUser ? <ProfilePage />:<Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/profile/about" element={<PageWrapper>{authUser ? <AboutPage />:<Navigate to="/login" />}</PageWrapper>} />
             </Routes>
           </AnimatePresence>
         </React.Suspense>
