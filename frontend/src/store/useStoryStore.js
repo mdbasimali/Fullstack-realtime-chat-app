@@ -163,33 +163,49 @@ export const useStoryStore = create((set, get) => ({
   },
 
   likeStory: async (storyId) => {
+    const { stories } = get();
+    const authUser = useAuthStore.getState().authUser;
+    if (!authUser) return;
+
+    // Save previous state for rollback
+    const previousStories = [...stories];
+    
+    // 1. Optimistic Update
+    const updatedStoriesOptimistic = stories.map(group => ({
+      ...group,
+      stories: group.stories.map(story => {
+        if (story._id.toString() === storyId.toString()) {
+          const currentlyLiked = story.likes.some(l => (l._id?.toString() || l.toString()) === authUser._id.toString());
+          const isLiked = !currentlyLiked;
+          
+          let updatedLikes = [...story.likes];
+          if (isLiked) {
+            // Add user if not already present
+            if (!updatedLikes.some(l => (l._id?.toString() || l.toString()) === authUser._id.toString())) {
+              updatedLikes.push(authUser);
+            }
+          } else {
+            // Remove user
+            updatedLikes = updatedLikes.filter(l => (l._id?.toString() || l.toString()) !== authUser._id.toString());
+          }
+          return { ...story, likes: updatedLikes };
+        }
+        return story;
+      })
+    }));
+
+    set({ stories: updatedStoriesOptimistic });
+
     try {
       const res = await axiosInstance.post(`/stories/${storyId}/like`);
-      // Local update for immediate feedback
-      const { stories } = get();
-      const authUser = useAuthStore.getState().authUser;
-      
-      const updatedStories = stories.map(group => ({
-        ...group,
-        stories: group.stories.map(story => {
-          if (story._id.toString() === storyId.toString()) {
-            let updatedLikes = [...story.likes];
-            if (res.data.isLiked) {
-              if (!updatedLikes.some(l => l._id?.toString() === authUser._id?.toString() || l.toString() === authUser._id?.toString())) {
-                updatedLikes.push(authUser);
-              }
-            } else {
-              updatedLikes = updatedLikes.filter(l => (l._id?.toString() || l.toString()) !== authUser._id?.toString());
-            }
-            return { ...story, likes: updatedLikes };
-          }
-          return story;
-        })
-      }));
-      set({ stories: updatedStories });
+      // Server returns { isLiked, likesCount } - we can keep our optimistic state
+      // unless we want to sync the full list, but sockets will handle that.
       return res.data;
     } catch (error) {
       console.error("Like story error:", error);
+      // 2. Rollback on error
+      set({ stories: previousStories });
+      toast.error("Failed to update reaction");
     }
   }
 }));
