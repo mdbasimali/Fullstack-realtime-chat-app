@@ -89,7 +89,10 @@ const SettingsPage = () => {
       <div className="flex-1 w-full mx-auto pb-16 overflow-y-auto custom-scrollbar">
         
         {/* Profile Summary */}
-        <div className="flex items-center gap-5 px-6 py-6">
+        <div 
+          onClick={() => navigate('/profile')}
+          className="flex items-center gap-5 px-6 py-6 cursor-pointer hover:bg-base-200 transition-colors"
+        >
           {authUser?.profilePic ? (
             <img 
               src={authUser.profilePic} 
@@ -189,12 +192,12 @@ const SettingsPage = () => {
           <MenuItem 
             icon={HelpCircle} 
             label="Help" 
-            onClick={() => console.log("Help clicked")}
+            onClick={() => navigate('/settings/help')}
           />
           <MenuItem 
             icon={Mail} 
             label="Invite your friends" 
-            onClick={() => console.log("Invite clicked")}
+            onClick={() => navigate('/settings/invite')}
           />
 
           <MenuItem 

@@ -1,8 +1,35 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useChatstore } from "../store/useChatStore";
 
 const DataStoragePage = () => {
+  const navigate = useNavigate();
+  const { allMediaMessages, getAllMediaMessages } = useChatstore();
+
+  useEffect(() => {
+    getAllMediaMessages();
+  }, [getAllMediaMessages]);
+
+  const totalBytes = useMemo(() => {
+    let total = 0;
+    allMediaMessages.forEach(msg => {
+      if (msg.messageType === "image") total += 2.5 * 1024 * 1024;
+      else if (msg.messageType === "video") total += 15 * 1024 * 1024;
+      else if (msg.messageType === "audio" || msg.messageType === "voice_call") total += 1 * 1024 * 1024;
+      else if (msg.messageType === "document" || msg.messageType === "file") total += 5 * 1024 * 1024;
+    });
+    return total;
+  }, [allMediaMessages]);
+
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return "0 KB";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
   return (
     <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col bg-base-100 select-none overflow-hidden font-sans">
       {/* Header */}
@@ -23,9 +50,12 @@ const DataStoragePage = () => {
         
         {/* Top items */}
         <div className="flex flex-col mt-2 mb-2">
-          <button className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left">
+          <button 
+            onClick={() => navigate('/settings/data-storage/storage')}
+            className="w-full px-5 py-4 flex flex-col hover:bg-base-200 transition-colors text-left"
+          >
             <span className="text-[16px] text-base-content font-medium">Manage storage</span>
-            <span className="text-[14px] text-base-content/60 mt-0.5">496 KB</span>
+            <span className="text-[14px] text-base-content/60 mt-0.5">{formatBytes(totalBytes)}</span>
           </button>
         </div>
 

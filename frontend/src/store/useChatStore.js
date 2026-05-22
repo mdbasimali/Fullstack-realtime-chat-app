@@ -370,4 +370,18 @@ export const useChatstore = create((set,get) => ({
       }
     }
   },
+
+  allMediaMessages: [],
+  isAllMediaLoading: false,
+  getAllMediaMessages: async () => {
+    set({ isAllMediaLoading: true });
+    try {
+      const res = await axiosInstance.get("/messages/media/all");
+      set({ allMediaMessages: res.data });
+    } catch (error) {
+      console.error("getAllMediaMessages error:", error);
+    } finally {
+      set({ isAllMediaLoading: false });
+    }
+  },
 }));

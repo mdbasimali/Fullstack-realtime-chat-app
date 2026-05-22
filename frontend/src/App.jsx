@@ -28,6 +28,12 @@ const PrivacyPage = React.lazy(() => import("./pages/PrivacyPage"));
 const BackupsPage = React.lazy(() => import("./pages/BackupsPage"));
 const ChatsPage = React.lazy(() => import("./pages/ChatsPage"));
 const DataStoragePage = React.lazy(() => import("./pages/DataStoragePage"));
+const StoragePage = React.lazy(() => import("./pages/StoragePage"));
+const ReviewStoragePage = React.lazy(() => import("./pages/ReviewStoragePage"));
+const InviteFriendsPage = React.lazy(() => import("./pages/InviteFriendsPage"));
+const HelpPage = React.lazy(() => import("./pages/HelpPage"));
+const ContactUsPage = React.lazy(() => import("./pages/ContactUsPage"));
+const TermsPrivacyPage = React.lazy(() => import("./pages/TermsPrivacyPage"));
 const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
 const LinkedDevicesPage = React.lazy(() => import("./pages/LinkedDevicesPage"));
 // import axios from "axios";
@@ -292,7 +298,7 @@ const App = () => {
     </div>
   );
 
-  const showNavbar = !["/", "/settings", "/settings/account", "/settings/appearance", "/settings/appearance/chat-color", "/settings/appearance/app-icon", "/settings/devices", "/settings/chats", "/settings/stories", "/settings/stories/my-story", "/settings/stories/connections", "/settings/notifications", "/settings/privacy", "/settings/backups", "/settings/data-storage", "/profile", "/join-group", "/login", "/signup"].includes(location.pathname);
+  const showNavbar = !["/", "/settings", "/settings/account", "/settings/appearance", "/settings/appearance/chat-color", "/settings/appearance/app-icon", "/settings/devices", "/settings/chats", "/settings/stories", "/settings/stories/my-story", "/settings/stories/connections", "/settings/notifications", "/settings/privacy", "/settings/backups", "/settings/data-storage", "/settings/data-storage/storage", "/settings/data-storage/storage/review", "/settings/invite", "/settings/help", "/settings/help/contact", "/settings/help/terms", "/profile", "/join-group", "/login", "/signup"].includes(location.pathname);
 
   return (
     <div data-theme={theme} className="h-screen flex flex-col">
@@ -322,6 +328,12 @@ const App = () => {
             <Route path="/settings/privacy" element={authUser ? <PrivacyPage /> : <Navigate to="/login" />} />
             <Route path="/settings/backups" element={authUser ? <BackupsPage /> : <Navigate to="/login" />} />
             <Route path="/settings/data-storage" element={authUser ? <DataStoragePage /> : <Navigate to="/login" />} />
+            <Route path="/settings/data-storage/storage" element={authUser ? <StoragePage /> : <Navigate to="/login" />} />
+            <Route path="/settings/data-storage/storage/review" element={authUser ? <ReviewStoragePage /> : <Navigate to="/login" />} />
+            <Route path="/settings/invite" element={authUser ? <InviteFriendsPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/help" element={authUser ? <HelpPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/help/contact" element={authUser ? <ContactUsPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/help/terms" element={authUser ? <TermsPrivacyPage /> : <Navigate to="/login" />} />
             <Route path="/profile" element={authUser ? <ProfilePage />:<Navigate to="/login" />} />
           </Routes>
         </React.Suspense>

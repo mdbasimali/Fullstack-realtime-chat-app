@@ -437,3 +437,31 @@ export const syncContacts = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const getAllMediaMessages = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Find all groups the user is a part of
+    const userGroups = await Group.find({ members: userId }).select("_id");
+    const groupIds = userGroups.map((g) => g._id);
+
+    // Find messages with media for this user
+    const mediaMessages = await Message.find({
+      $or: [
+        { senderId: userId },
+        { receiverId: userId },
+        { groupId: { $in: groupIds } }
+      ],
+      messageType: { $in: ["image", "video", "audio"] },
+      image: { $exists: true, $ne: null }
+    })
+    .sort({ createdAt: -1 })
+    .lean();
+
+    res.status(200).json(mediaMessages);
+  } catch (error) {
+    console.error("Error in getAllMediaMessages:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

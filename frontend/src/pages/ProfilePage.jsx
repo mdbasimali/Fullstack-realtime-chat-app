@@ -280,13 +280,13 @@ const ProfilePage = () => {
       {/* 1. Sleek Profile Header */}
       <header className="p-4 safe-top border-b border-base-300 flex items-center justify-between bg-base-100/95 sticky top-0 z-10">
         <div className="flex items-center gap-3.5">
-          <Link 
-            to="/" 
+          <button 
+            onClick={() => navigate(-1)} 
             className="p-1.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
             title="Back"
           >
             <ArrowLeft size={24} />
-          </Link>
+          </button>
           <h1 className="font-bold text-xl text-base-content">Profile</h1>
         </div>
         
