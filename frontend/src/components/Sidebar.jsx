@@ -773,12 +773,14 @@ const Sidebar = () => {
             
             {/* If no active conversations, show premium "No Chats Yet" empty state */}
             {chatUsers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center space-y-2 animate-fade-in">
-                <h2 className="text-xl font-semibold text-base-content">No chats yet.</h2>
-                <p className="text-sm text-base-content/60 max-w-[280px]">
-                  Get started by messaging a friend.
-                </p>
-              </div>
+              searchQuery.trim().length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center space-y-2 animate-fade-in">
+                  <h2 className="text-xl font-semibold text-base-content">No chats yet.</h2>
+                  <p className="text-sm text-base-content/60 max-w-[280px]">
+                    Get started by messaging a friend.
+                  </p>
+                </div>
+              ) : null
             ) : (
               /* Active Chat List styled beautifully like Signal */
               <div className="space-y-1">
@@ -906,6 +908,73 @@ const Sidebar = () => {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* GLOBAL SEARCH RESULTS FOR CHATS TAB */}
+            {searchQuery.trim().length > 0 && activeTab === "chats" && (
+              <div className="pt-2 animate-fade-in">
+                <h3 className="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-1 mb-3">Global search</h3>
+                
+                {isGlobalSearching ? (
+                  <div className="text-center text-sm text-base-content/60 py-6 flex flex-col items-center justify-center gap-2">
+                    <Loader2 size={24} className="animate-spin text-primary" />
+                    Searching...
+                  </div>
+                ) : globalUsers.length === 0 ? (
+                  <div className="text-center text-sm text-base-content/60 py-6">No users found</div>
+                ) : (
+                  <div className="space-y-1">
+                    {globalUsers.map((user) => {
+                      const isOnline = onlineUsers.includes(user._id);
+                      return (
+                        <div 
+                          key={user._id}
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setSearchQuery("");
+                            if (!activeConversations.includes(user._id)) {
+                              const updated = [...activeConversations, user._id];
+                              setActiveConversations(updated);
+                              localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
+                            }
+                          }}
+                          className="group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none hover:bg-base-200 border border-transparent"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0 flex-1 mr-2">
+                            {/* Avatar */}
+                            <div className="relative flex-shrink-0 cursor-pointer">
+                              {user.profilePic ? (
+                                <img
+                                  src={user.profilePic}
+                                  alt={user.fullName}
+                                  className="w-12 h-12 object-cover rounded-full border border-base-300"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-base border border-indigo-100 dark:border-indigo-900/20 shadow-sm">
+                                  {getInitials(user.fullName)}
+                                </div>
+                              )}
+                              {isOnline && (
+                                <span className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full ring-2 ring-base-100 animate-pulse" />
+                              )}
+                            </div>
+                            
+                            {/* Name and Username */}
+                            <div className="text-left min-w-0 flex-1 flex flex-col justify-center">
+                              <h4 className="font-bold text-base-content text-sm md:text-base truncate group-hover:text-primary transition-colors">
+                                {user.fullName}
+                              </h4>
+                              <p className="text-[13px] text-[#1e88e5] truncate mt-0.5">
+                                @{user.username}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
