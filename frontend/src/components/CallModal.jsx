@@ -484,7 +484,8 @@ const CallModal = () => {
       if (el.srcObject !== remoteStream) {
         el.srcObject = remoteStream;
       }
-      applyAudioOutput(el, isSpeakerOn);
+      // Rely on the OS to handle WebRTC routing (usually earpiece) natively upon connection.
+      // Only programmatically override the sink ID if the user explicitly toggles the speaker button.
       el.play().catch((err) => console.log("remoteAudioRef play error:", err));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -936,13 +937,14 @@ const CallModal = () => {
   return (
     <div className="fixed inset-0 z-[999] flex flex-col bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
       
-      {/* Hidden audio element to play remote stream audio in all call types */}
+      {/* Audio element to play remote stream audio in all call types. 
+          Using 0-size instead of 'hidden' ensures mobile browsers don't treat it as background media. */}
       {remoteStream && (
         <audio 
           ref={remoteAudioRef} 
           autoPlay 
           playsInline 
-          className="hidden" 
+          style={{ width: 0, height: 0, position: 'absolute', opacity: 0, pointerEvents: 'none' }}
         />
       )}
 
