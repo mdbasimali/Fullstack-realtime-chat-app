@@ -165,37 +165,58 @@ export const useChatstore = create((set,get) => ({
   },
 
   sendMessage: async (messageData) => {
-    const { selectedUser, messages, getUsers } = get();
+    const { selectedUser, messages, getUsers, activeConversations } = get();
     const authUser = useAuthStore.getState().authUser;
-    if (!authUser || !selectedUser) return;
+    
+    // Support explicit receiverId (e.g., from story reply) or fallback to selectedUser
+    const targetUserId = messageData.receiverId || selectedUser?._id;
+    if (!authUser || !targetUserId) return;
 
     // 1. Create an Optimistic Message for Instant UI Feedback
     const optimisticMessage = {
       _id: Date.now().toString(), // temporary ID
       senderId: authUser._id,
-      receiverId: selectedUser._id,
+      receiverId: targetUserId,
       text: messageData.text,
       image: messageData.image,
+      messageType: messageData.messageType || (messageData.image ? "image" : "text"),
+      storyId: messageData.storyId,
       createdAt: new Date().toISOString(),
-      isOptimistic: true, // flag to show it's still sending (optional styling)
+      isOptimistic: true, 
     };
 
-    // 2. Update local state immediately
-    set({ messages: [...messages, optimisticMessage] });
+    // 2. Update local state immediately if we are in the correct chat window
+    const isCurrentChat = selectedUser && selectedUser._id === targetUserId;
+    if (isCurrentChat) {
+      set({ messages: [...messages, optimisticMessage] });
+    }
 
     try {
-      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
+      const res = await axiosInstance.post(`/messages/send/${targetUserId}`, messageData);
       
-      // 3. Replace the optimistic message with the actual one from server
-      const updatedMessages = get().messages.map(m => 
-        m._id === optimisticMessage._id ? res.data : m
-      );
-      set({ messages: updatedMessages });
+      // 3. Replace the optimistic message if it was added
+      if (isCurrentChat) {
+        const updatedMessages = get().messages.map(m => 
+          m._id === optimisticMessage._id ? res.data : m
+        );
+        set({ messages: updatedMessages });
+      }
       
+      // 4. Register as active conversation if not already
+      const activeKey = `active_conversations_${authUser._id}`;
+      if (!activeConversations.includes(targetUserId)) {
+        const updated = [...activeConversations, targetUserId];
+        localStorage.setItem(activeKey, JSON.stringify(updated));
+        set({ activeConversations: updated });
+      }
+
       getUsers(); // Refresh sidebar for lastMessage preview
+      return true;
     } catch (error) {
-      // 4. If sending fails, remove the optimistic message
-      set({ messages: get().messages.filter(m => m._id !== optimisticMessage._id) });
+      // 5. If sending fails, remove the optimistic message
+      if (isCurrentChat) {
+        set({ messages: get().messages.filter(m => m._id !== optimisticMessage._id) });
+      }
       console.error("SendMessage error:", error);
       throw error;
     }

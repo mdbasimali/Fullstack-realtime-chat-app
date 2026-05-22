@@ -537,20 +537,28 @@ const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => 
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {currentStory.views.map((viewer) => (
-                    <div key={viewer._id} className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center font-bold text-sm text-slate-600 border border-slate-200 shrink-0">
-                        {viewer.profilePic ? (
-                          <img src={viewer.profilePic} className="w-full h-full object-cover" alt={viewer.fullName} />
-                        ) : (
-                          <span className="uppercase">{getInitials(viewer.fullName)}</span>
+                  {currentStory.views.map((viewer) => {
+                    const likedThis = currentStory?.likes?.some(l => (l._id?.toString() || l.toString()) === viewer._id?.toString());
+                    return (
+                      <div key={viewer._id} className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center font-bold text-sm text-slate-600 border border-slate-200 shrink-0">
+                          {viewer.profilePic ? (
+                            <img src={viewer.profilePic} className="w-full h-full object-cover" alt={viewer.fullName} />
+                          ) : (
+                            <span className="uppercase">{getInitials(viewer.fullName)}</span>
+                          )}
+                        </div>
+                        <div className="flex-1 text-left">
+                          <h5 className="font-semibold text-sm text-slate-800 leading-none">{viewer.fullName}</h5>
+                        </div>
+                        {likedThis && (
+                          <div className="shrink-0">
+                            <Heart size={16} className="text-rose-500 fill-rose-500" />
+                          </div>
                         )}
                       </div>
-                      <div className="flex-1 text-left">
-                        <h5 className="font-semibold text-sm text-slate-800 leading-none">{viewer.fullName}</h5>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

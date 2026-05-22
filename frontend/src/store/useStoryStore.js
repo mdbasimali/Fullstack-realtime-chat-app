@@ -105,6 +105,12 @@ export const useStoryStore = create((set, get) => ({
     });
 
     socket.on("storyLiked", ({ storyId, liker, isLiked }) => {
+      if (isLiked) {
+        toast(`${liker.fullName} liked your status update`, {
+          icon: "❤️",
+          duration: 3000,
+        });
+      }
       const { stories } = get();
       const updatedStories = stories.map(group => ({
         ...group,
