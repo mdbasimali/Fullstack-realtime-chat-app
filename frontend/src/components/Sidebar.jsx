@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Capacitor } from "@capacitor/core";
+import { Contacts } from "@capacitor-community/contacts";
 import StoryViewer from "./StoryViewer";
 import CameraModal from "./CameraModal";
 import ProfileModal, { getNickname } from "./ProfileModal";
@@ -122,39 +124,76 @@ const Sidebar = () => {
   };
 
   const handleNativeContactSync = async () => {
-    if (!navigator.contacts || !navigator.contacts.select) {
-      setSyncStep("fallback");
-      return;
-    }
-
     setIsSyncingContacts(true);
     setSyncStep("syncing");
 
     try {
-      const props = ["name", "email", "tel"];
-      const opts = { multiple: true };
-      const nativeContacts = await navigator.contacts.select(props, opts);
-      
-      const formatted = nativeContacts.map(c => ({
-        name: c.name?.[0] || "",
-        email: c.email?.[0] || "",
-        phoneNumber: c.tel?.[0] || ""
-      }));
+      if (Capacitor.isNativePlatform()) {
+        const permission = await Contacts.requestPermissions();
+        if (permission.contacts !== 'granted') {
+          toast.error("Contact permission denied");
+          setSyncStep("fallback");
+          setIsSyncingContacts(false);
+          return;
+        }
 
-      if (formatted.length === 0) {
-        toast.error("No contacts selected");
-        setSyncStep("ask");
-        setIsSyncingContacts(false);
-        return;
-      }
+        const result = await Contacts.getContacts({
+          projection: { name: true, phones: true, emails: true }
+        });
 
-      const res = await syncContacts(formatted);
-      if (res.success) {
-        setMatchedContacts(res.matchedUsers || []);
-        setSyncStep("matched");
+        const formatted = result.contacts.map(c => ({
+          name: c.name?.display || "",
+          email: c.emails?.[0]?.address || "",
+          phoneNumber: c.phones?.[0]?.number || ""
+        }));
+
+        if (formatted.length === 0) {
+          toast.error("No contacts found on device");
+          setSyncStep("ask");
+          setIsSyncingContacts(false);
+          return;
+        }
+
+        const res = await syncContacts(formatted);
+        if (res.success) {
+          setMatchedContacts(res.matchedUsers || []);
+          setSyncStep("matched");
+        } else {
+          toast.error(res.error || "Sync failed");
+          setSyncStep("ask");
+        }
       } else {
-        toast.error(res.error || "Sync failed");
-        setSyncStep("ask");
+        // Web Fallback
+        if (!navigator.contacts || !navigator.contacts.select) {
+          setSyncStep("fallback");
+          setIsSyncingContacts(false);
+          return;
+        }
+        const props = ["name", "email", "tel"];
+        const opts = { multiple: true };
+        const nativeContacts = await navigator.contacts.select(props, opts);
+        
+        const formatted = nativeContacts.map(c => ({
+          name: c.name?.[0] || "",
+          email: c.email?.[0] || "",
+          phoneNumber: c.tel?.[0] || ""
+        }));
+
+        if (formatted.length === 0) {
+          toast.error("No contacts selected");
+          setSyncStep("ask");
+          setIsSyncingContacts(false);
+          return;
+        }
+
+        const res = await syncContacts(formatted);
+        if (res.success) {
+          setMatchedContacts(res.matchedUsers || []);
+          setSyncStep("matched");
+        } else {
+          toast.error(res.error || "Sync failed");
+          setSyncStep("ask");
+        }
       }
     } catch (err) {
       console.error("Native Contact Picker failed:", err);
@@ -1836,11 +1875,7 @@ const Sidebar = () => {
                 <button 
                   onClick={() => {
                     setShowSyncModal(true);
-                    if (navigator.contacts && navigator.contacts.select) {
-                      handleNativeContactSync();
-                    } else {
-                      setSyncStep("fallback");
-                    }
+                    handleNativeContactSync();
                   }}
                   className="flex items-center gap-4 w-full group text-left px-1 py-1.5 hover:bg-base-200 rounded-xl transition-colors"
                 >
