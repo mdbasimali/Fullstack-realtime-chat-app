@@ -9,7 +9,8 @@ import {
   MessageSquare, Phone, Plus, Check, User, Settings, 
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
   Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban,
-  Layers, Compass, Loader2, Pencil, Lock, Megaphone, ListFilter
+  Layers, Compass, Loader2, Pencil, Lock, Megaphone, ListFilter,
+  Grip, AtSign, Hash
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -1789,42 +1790,48 @@ const Sidebar = () => {
               >
                 <ArrowLeft size={24} strokeWidth={2.5} />
               </button>
-              <h2 className="text-[18px] font-semibold text-base-content">New Message</h2>
+              <h2 className="text-[18px] font-semibold text-base-content">New message</h2>
             </div>
             <button className="text-base-content hover:bg-base-200 p-1 -mr-1 rounded-full transition-colors">
-              <ListFilter size={22} strokeWidth={2.5} />
+              <MoreVertical size={22} strokeWidth={2.5} />
             </button>
           </header>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
             {/* Search Box */}
             <div className="px-4 py-2">
-              <div className="flex items-center gap-3 px-4 py-2.5 bg-base-200/60 rounded-xl">
-                <Search size={20} className="text-base-content/40" />
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-base-200/50 rounded-2xl">
                 <input 
                   type="text" 
-                  placeholder="Search Contacts"
+                  placeholder="Name, username or number"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent text-[16px] focus:outline-none placeholder:text-base-content/40"
+                  className="w-full bg-transparent text-[16px] focus:outline-none placeholder:text-base-content/50"
                 />
+                <Grip size={20} className="text-base-content/50 shrink-0" />
               </div>
             </div>
 
             {/* Actions */}
             {searchQuery.length === 0 && (
-              <div className="px-4 pb-4 pt-2 border-b border-base-200 space-y-4">
-                <button className="flex items-center gap-4 w-full group text-left">
-                  <div className="w-[40px] h-[40px] rounded-full bg-[#1e88e5] text-white flex items-center justify-center shrink-0 shadow-sm group-active:scale-95 transition-transform">
-                    <Users size={20} className="fill-current" />
+              <div className="px-4 pb-4 pt-2 space-y-2">
+                <button className="flex items-center gap-4 w-full group text-left px-1 py-1.5 hover:bg-base-200 rounded-xl transition-colors">
+                  <div className="w-[44px] h-[44px] rounded-full bg-base-200 text-base-content/80 flex items-center justify-center shrink-0 border border-base-300">
+                    <Users size={22} className="stroke-[1.5]" />
                   </div>
-                  <span className="text-[15px] font-medium text-base-content tracking-tight">New Group</span>
+                  <span className="text-[16px] font-medium text-base-content tracking-tight">New group</span>
                 </button>
-                <button className="flex items-center gap-4 w-full group text-left">
-                  <div className="w-[40px] h-[40px] rounded-full bg-[#34c759] text-white flex items-center justify-center shrink-0 shadow-sm group-active:scale-95 transition-transform">
-                    <Megaphone size={20} className="fill-current" />
+                <button className="flex items-center gap-4 w-full group text-left px-1 py-1.5 hover:bg-base-200 rounded-xl transition-colors">
+                  <div className="w-[44px] h-[44px] rounded-full bg-base-200 text-base-content/80 flex items-center justify-center shrink-0 border border-base-300">
+                    <AtSign size={22} className="stroke-[1.5]" />
                   </div>
-                  <span className="text-[15px] font-medium text-base-content tracking-tight">New Channel</span>
+                  <span className="text-[16px] font-medium text-base-content tracking-tight">Find by username</span>
+                </button>
+                <button className="flex items-center gap-4 w-full group text-left px-1 py-1.5 hover:bg-base-200 rounded-xl transition-colors">
+                  <div className="w-[44px] h-[44px] rounded-full bg-base-200 text-base-content/80 flex items-center justify-center shrink-0 border border-base-300">
+                    <Hash size={22} className="stroke-[1.5]" />
+                  </div>
+                  <span className="text-[16px] font-medium text-base-content tracking-tight">Find by phone number</span>
                 </button>
               </div>
             )}
@@ -1890,29 +1897,41 @@ const Sidebar = () => {
                 )}
               </div>
             ) : (
-              <div className="px-4 py-3 space-y-2">
-                <h3 className="text-[13px] font-semibold text-[#1e88e5] mb-3 tracking-wide">Sorted by last seen time</h3>
-                
+              <div className="px-4 py-3">
                 {isUsersLoading ? (
                   <div className="text-center text-sm text-base-content/60 py-10">Loading contacts...</div>
                 ) : filteredContacts.length === 0 ? (
                   <div className="text-center text-sm text-base-content/60 py-10">No contacts found</div>
                 ) : (
-                  <div className="space-y-0.5">
-                    {filteredContacts.map((user) => {
-                      const isOnline = onlineUsers.includes(user._id);
-                      return (
-                        <div 
-                          key={user._id}
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setShowContactsModal(false);
-                            setSearchQuery("");
-                            setActiveTab("chats");
-                            // Add to active chat list in localStorage
-                            if (!activeConversations.includes(user._id)) {
-                              const updated = [...activeConversations, user._id];
-                              setActiveConversations(updated);
+                  <div className="space-y-4">
+                    {(() => {
+                      const grouped = {};
+                      [...filteredContacts]
+                        .sort((a, b) => a.fullName.localeCompare(b.fullName))
+                        .forEach(user => {
+                          const letter = user.fullName.charAt(0).toUpperCase();
+                          if (!grouped[letter]) grouped[letter] = [];
+                          grouped[letter].push(user);
+                        });
+                      
+                      return Object.keys(grouped).sort().map(letter => (
+                        <div key={letter} className="mb-2">
+                          <h4 className="text-[14px] font-bold text-base-content mb-3 px-1">{letter}</h4>
+                          <div className="space-y-1">
+                            {grouped[letter].map(user => {
+                              const isOnline = onlineUsers.includes(user._id);
+                              return (
+                                <div 
+                                  key={user._id}
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setShowContactsModal(false);
+                                    setSearchQuery("");
+                                    setActiveTab("chats");
+                                    // Add to active chat list in localStorage
+                                    if (!activeConversations.includes(user._id)) {
+                                      const updated = [...activeConversations, user._id];
+                                      setActiveConversations(updated);
                               localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
                             }
                           }}
@@ -1942,7 +1961,11 @@ const Sidebar = () => {
                           </div>
                         </div>
                       );
-                    })}
+                            })}
+                          </div>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 )}
               </div>
