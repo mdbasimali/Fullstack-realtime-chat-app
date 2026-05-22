@@ -16,7 +16,10 @@ import {
   Monitor,
   Maximize2,
   Minimize2,
-  Loader2, UserPlus
+  Loader2, 
+  UserPlus,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 
 const ParticipantAudioTile = React.memo(({ stream }) => {
@@ -391,6 +394,42 @@ const CallModal = () => {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [memberIdentifier, setMemberIdentifier] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(false); // default: earpiece
+  const remoteAudioElRef = useRef(null);
+
+  // Route audio to earpiece or loudspeaker
+  const applyAudioOutput = async (audioEl, speakerOn) => {
+    if (!audioEl) return;
+    try {
+      if (typeof audioEl.setSinkId === "function") {
+        if (speakerOn) {
+          // Route to default loudspeaker
+          await audioEl.setSinkId("");
+        } else {
+          // Try to find the earpiece/receiver device
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const earpiece = devices.find(
+            (d) => d.kind === "audiooutput" &&
+              (d.label.toLowerCase().includes("earpiece") ||
+               d.label.toLowerCase().includes("receiver") ||
+               d.label.toLowerCase().includes("ear speaker"))
+          );
+          await audioEl.setSinkId(earpiece ? earpiece.deviceId : "");
+        }
+      } else {
+        // setSinkId not supported (e.g. Safari/iOS) — nothing we can do via web
+        console.info("setSinkId not supported on this browser.");
+      }
+    } catch (err) {
+      console.warn("Audio output routing error:", err);
+    }
+  };
+
+  const toggleSpeaker = () => {
+    const next = !isSpeakerOn;
+    setIsSpeakerOn(next);
+    applyAudioOutput(remoteAudioElRef.current, next);
+  };
 
   const handleAddMemberSubmit = async (e) => {
     e.preventDefault();
@@ -430,12 +469,16 @@ const CallModal = () => {
   }, [remoteStream]);
 
   const remoteAudioRef = React.useCallback((el) => {
+    remoteAudioElRef.current = el;
     if (el && remoteStream) {
       if (el.srcObject !== remoteStream) {
         el.srcObject = remoteStream;
       }
+      // Apply default earpiece routing when element mounts
+      applyAudioOutput(el, isSpeakerOn);
       el.play().catch((err) => console.log("remoteAudioRef play error:", err));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remoteStream]);
 
   const [duration, setDuration] = useState(0);
@@ -652,7 +695,6 @@ const CallModal = () => {
 
   // Group Call View with responsive mesh video/audio grid
   if (isGroupCall) {
-    // Collect all participants (including local user "self")
     const participantsList = Object.entries(groupPeers).map(([socketId, peer]) => ({
       id: socketId,
       fullName: peer.fullName,
@@ -661,24 +703,6 @@ const CallModal = () => {
       isVideoOff: false,
       isMuted: false,
     }));
-    /* const ignoredList = [
-      {
-        id: "self",
-        fullName: "You",
-        profilePic: authUser?.profilePic,
-        stream: localStream,
-        isVideoOff: isVideoOff,
-        isMuted: isMuted,
-      },
-      ...Object.entries(groupPeers).map(([socketId, peer]) => ({
-        id: socketId,
-        fullName: peer.fullName,
-        profilePic: peer.profilePic,
-        stream: peer.stream,
-        isVideoOff: false,
-        isMuted: false,
-      }))
-    ]; */
 
     return (
       <div className="fixed inset-0 z-[999] flex flex-col bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
@@ -719,71 +743,6 @@ const CallModal = () => {
               <p className="text-xs text-white/55">The call will automatically start as soon as participants join.</p>
             </div>
           ) : (
-            <div className={`grid gap-4 w-full h-full max-w-6xl mx-auto items-center justify-center ${
-            participantsList.length === 1 ? "grid-cols-1 max-h-[80vh]" :
-            participantsList.length === 2 ? "grid-cols-1 md:grid-cols-2 max-h-[80vh]" :
-            participantsList.length <= 4 ? "grid-cols-2 max-h-[85vh]" :
-            "grid-cols-2 md:grid-cols-3 max-h-[85vh]"
-          }`}>
-            {participantsList.map((participant) => (
-              <ParticipantVideoTile 
-                key={participant.id}
-                id={participant.id}
-                fullName={participant.fullName}
-                profilePic={participant.profilePic}
-                stream={participant.stream}
-                isVideoOff={participant.isVideoOff}
-                isMuted={participant.isMuted}
-                isActiveSpeaker={activeSpeakerId === participant.id}
-                isLocal={false}
-                callType={callType}
-              />
-            ))}
-          </div>
-          )}
-        </div>
-
-        {/* Floating Capsule Control Panel */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg bg-[#1c1f26]/80 backdrop-blur-xl border border-white/10 rounded-full py-3 px-6 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-around z-30 transition-all duration-300">
-          {/* Video Toggle Button */}
-          <button
-            onClick={toggleVideo}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
-              isVideoOff 
-                ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
-                : "bg-white/10 hover:bg-white/20 text-white"
-            }`}
-            title={isVideoOff ? "Turn video on" : "Turn video off"}
-          >
-            {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
-          </button>
-
-          {/* Microphone Toggle Button */}
-          <button
-            onClick={toggleMic}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
-              isMuted 
-                ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
-                : "bg-white/10 hover:bg-white/20 text-white"
-            }`}
-            title={isMuted ? "Unmute mic" : "Mute mic"}
-          >
-            {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
-          </button>
-
-          {/* Camera Switch (Flip) for Mobile */}
-          <button
-            onClick={switchCamera}
-            className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
-            title="Switch Camera"
-          >
-            <RefreshCw size={18} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
-          </button>
-
-          {/* Add Participant Button */}
-          <button
-            onClick={() => setShowAddMemberModal(true)}
-            className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
             title="Add Participant"
           >
             <UserPlus size={18} />
@@ -1057,6 +1016,19 @@ const CallModal = () => {
             <Monitor size={18} />
           </button>
         )}
+
+        {/* Speaker / Earpiece Toggle */}
+        <button
+          onClick={toggleSpeaker}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+            isSpeakerOn
+              ? "bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30"
+              : "bg-white/10 hover:bg-white/20 text-white"
+          }`}
+          title={isSpeakerOn ? "Switch to Earpiece" : "Switch to Speaker"}
+        >
+          {isSpeakerOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
+        </button>
 
         {/* End Call / Hang Up Button */}
         <button
