@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { MessageSquare, Loader2, Mail, Lock, Eye, EyeOff, User, AtSign, Phone } from "lucide-react";
+import { MessageSquare, Loader2, Mail, Lock, Eye, EyeOff, User, AtSign, Phone, Sparkles } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
@@ -16,6 +16,7 @@ const SignUpPage = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
 
   const handleGoogleCredentialResponse = async (response) => {
     const res = await googleLogin(response.credential);
@@ -52,9 +53,7 @@ const SignUpPage = () => {
     const fetchClientId = async () => {
       try {
         const res = await axiosInstance.get("/auth/google-client-id");
-        if (res.data?.clientId) {
-          setGoogleClientId(res.data.clientId);
-        }
+        if (res.data?.clientId) setGoogleClientId(res.data.clientId);
       } catch (err) {
         console.error("Failed to fetch Google Client ID:", err);
       }
@@ -71,19 +70,13 @@ const SignUpPage = () => {
       else if (error === "no_email") toast.error("Google account did not provide an email address");
       else if (error === "server_error") toast.error("Internal server error during Google login");
       else toast.error("Google Authentication failed");
-      
-      // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
   useEffect(() => {
     const existingScript = document.getElementById("google-gsi-client");
-    if (existingScript) {
-      setScriptLoaded(true);
-      return;
-    }
-
+    if (existingScript) { setScriptLoaded(true); return; }
     const script = document.createElement("script");
     script.id = "google-gsi-client";
     script.src = "https://accounts.google.com/gsi/client";
@@ -97,29 +90,17 @@ const SignUpPage = () => {
     if (scriptLoaded && googleClientId && window.google) {
       try {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        const initOptions = {
-          client_id: googleClientId,
-          auto_select: false,
-        };
-
+        const initOptions = { client_id: googleClientId, auto_select: false };
         if (isStandalone) {
           initOptions.ux_mode = "redirect";
           initOptions.login_uri = `${axiosInstance.defaults.baseURL}/auth/google-redirect`;
         } else {
           initOptions.callback = handleGoogleCredentialResponse;
         }
-
         window.google.accounts.id.initialize(initOptions);
-
         window.google.accounts.id.renderButton(
           document.getElementById("googleBtnContainer"),
-          { 
-            theme: "outline", 
-            size: "large", 
-            width: "320",
-            text: "signup_with",
-            shape: "pill"
-          }
+          { theme: "outline", size: "large", width: "192", text: "signup_with", shape: "pill" }
         );
       } catch (err) {
         console.error("Error rendering Google Sign-In button:", err);
@@ -127,172 +108,311 @@ const SignUpPage = () => {
     }
   }, [scriptLoaded, googleClientId]);
 
+  const inputStyle = (field) => ({
+    background: "rgba(255,255,255,0.04)",
+    border: focusedField === field
+      ? "1px solid rgba(167,139,250,0.6)"
+      : "1px solid rgba(255,255,255,0.08)",
+    boxShadow: focusedField === field
+      ? "0 0 0 3px rgba(124,58,237,0.12), 0 0 20px rgba(124,58,237,0.08)"
+      : "none"
+  });
+
+  const iconColor = (field) => focusedField === field ? "#a78bfa" : "#4b5563";
+
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-center items-center p-5 md:p-4 relative overflow-hidden">
-      
-      {/* Glowing background auroras - optimized for mobile */}
-      <div className="absolute top-1/4 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-primary/20 rounded-full blur-[80px] md:blur-[100px] animate-pulse pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-64 md:w-96 h-64 md:h-96 bg-secondary/15 rounded-full blur-[100px] md:blur-[120px] pointer-events-none" />
+    <div
+      className="min-h-screen flex flex-col justify-center items-center p-4 md:p-6 relative overflow-auto"
+      style={{ background: "linear-gradient(135deg, #050510 0%, #0d0d2b 40%, #0a0a1f 70%, #0f0524 100%)" }}
+    >
+      {/* Animated background orbs */}
+      <div
+        className="fixed pointer-events-none animate-float"
+        style={{
+          top: "5%", right: "12%", width: "360px", height: "360px",
+          background: "radial-gradient(circle, rgba(124,58,237,0.16) 0%, transparent 70%)",
+          borderRadius: "50%", filter: "blur(40px)"
+        }}
+      />
+      <div
+        className="fixed pointer-events-none animate-float-delayed"
+        style={{
+          bottom: "8%", left: "10%", width: "340px", height: "340px",
+          background: "radial-gradient(circle, rgba(6,182,212,0.13) 0%, transparent 70%)",
+          borderRadius: "50%", filter: "blur(40px)"
+        }}
+      />
 
-      <div className="w-full max-w-[440px] bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-[36px] px-7 py-10 md:p-12 shadow-2xl flex flex-col items-center space-y-8 animate-scale-up z-10">
-        <div className="relative">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-2xl blur opacity-75 animate-pulse" />
-          <div className="relative size-16 rounded-2xl bg-slate-900 border border-white/20 flex items-center justify-center">
-            <MessageSquare className="size-8 text-primary" />
+      {/* Subtle grid */}
+      <div
+        className="fixed inset-0 pointer-events-none opacity-[0.025]"
+        style={{
+          backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+          backgroundSize: "60px 60px"
+        }}
+      />
+
+      {/* Card */}
+      <div
+        className="relative w-full max-w-[480px] animate-scale-up z-10 my-6"
+        style={{
+          background: "rgba(255,255,255,0.03)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          borderRadius: "28px",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset, 0 1px 0 rgba(255,255,255,0.08) inset"
+        }}
+      >
+        {/* Top accent bar */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 h-px"
+          style={{ width: "60%", background: "linear-gradient(90deg, transparent, rgba(167,139,250,0.5), transparent)" }}
+        />
+
+        <div className="px-8 py-10 md:px-10 flex flex-col gap-7">
+
+          {/* Logo + title */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div
+                className="absolute -inset-2 rounded-3xl animate-spin-slow opacity-50"
+                style={{ background: "conic-gradient(from 0deg, #7c3aed, #06b6d4, #ec4899, #7c3aed)", borderRadius: "22px" }}
+              />
+              <div
+                className="relative size-16 rounded-2xl flex items-center justify-center"
+                style={{ background: "linear-gradient(135deg, #1a0a3e 0%, #0a1a3e 100%)", border: "1px solid rgba(255,255,255,0.12)" }}
+              >
+                <MessageSquare size={28} style={{ color: "#a78bfa" }} />
+              </div>
+            </div>
+            <div className="text-center">
+              <h1 className="text-3xl font-black tracking-tight text-white">
+                Create Account
+              </h1>
+              <p className="text-sm mt-1.5 font-medium" style={{ color: "#6b7280" }}>
+                Join{" "}
+                <span style={{ background: "linear-gradient(90deg,#a78bfa,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 900 }}>
+                  ChatZone
+                </span>
+                {" "}and start chatting instantly.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="text-center space-y-1.5">
-          <h1 className="text-3xl font-black text-white tracking-tight">
-            Create Account
-          </h1>
-          <p className="text-[13px] text-slate-400 font-medium">
-            Join ChatZone instantly.
-          </p>
-        </div>
+          {/* Form */}
+          <form onSubmit={handleEmailSignup} className="flex flex-col gap-4">
 
-        {/* Welcome message and Signup Form */}
-        <div className="space-y-6 w-full flex flex-col justify-center">
-          <form onSubmit={handleEmailSignup} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+            {/* Full Name + Username row */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Full Name */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#6b7280" }}>
+                  Full Name
+                </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                    <User className="size-4" />
-                  </div>
+                  <User size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: iconColor("fullName") }} />
                   <input
+                    id="signup-fullname"
                     type="text"
                     placeholder="John Doe"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-10 pr-3 py-3.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
+                    onFocus={() => setFocusedField("fullName")}
+                    onBlur={() => setFocusedField(null)}
+                    className="auth-input w-full pl-9 pr-3 py-3 text-xs font-semibold text-white placeholder-gray-700 rounded-xl outline-none transition-all duration-200"
+                    style={inputStyle("fullName")}
                     required
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Username</label>
+              {/* Username */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#6b7280" }}>
+                  Username
+                </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                    <AtSign className="size-4" />
-                  </div>
+                  <AtSign size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: iconColor("username") }} />
                   <input
+                    id="signup-username"
                     type="text"
                     placeholder="johndoe"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-10 pr-3 py-3.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
+                    onFocus={() => setFocusedField("username")}
+                    onBlur={() => setFocusedField(null)}
+                    className="auth-input w-full pl-9 pr-3 py-3 text-xs font-semibold text-white placeholder-gray-700 rounded-xl outline-none transition-all duration-200"
+                    style={inputStyle("username")}
                     required
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+            {/* Email */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#6b7280" }}>
+                Email Address
+              </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4.5 flex items-center pointer-events-none text-slate-500">
-                  <Mail className="size-4" />
-                </div>
+                <Mail size={15} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: iconColor("email") }} />
                 <input
+                  id="signup-email"
                   type="email"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
+                  onFocus={() => setFocusedField("email")}
+                  onBlur={() => setFocusedField(null)}
+                  className="auth-input w-full pl-11 pr-4 py-3.5 text-sm font-semibold text-white placeholder-gray-600 rounded-2xl outline-none transition-all duration-200"
+                  style={inputStyle("email")}
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+            {/* Phone */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#6b7280" }}>
+                Phone Number
+              </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4.5 flex items-center pointer-events-none text-slate-500">
-                  <Phone className="size-4" />
-                </div>
+                <Phone size={15} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: iconColor("phone") }} />
                 <input
+                  id="signup-phone"
                   type="tel"
-                  placeholder="+1234567890"
+                  placeholder="+91 98765 43210"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
+                  onFocus={() => setFocusedField("phone")}
+                  onBlur={() => setFocusedField(null)}
+                  className="auth-input w-full pl-11 pr-4 py-3.5 text-sm font-semibold text-white placeholder-gray-600 rounded-2xl outline-none transition-all duration-200"
+                  style={inputStyle("phone")}
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
+            {/* Password */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#6b7280" }}>
+                Password
+              </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4.5 flex items-center pointer-events-none text-slate-500">
-                  <Lock className="size-4" />
-                </div>
+                <Lock size={15} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: iconColor("password") }} />
                 <input
+                  id="signup-password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
+                  placeholder="Min. 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-12 pr-12 py-3.5 text-sm font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField(null)}
+                  className="auth-input w-full pl-11 pr-12 py-3.5 text-sm font-semibold text-white placeholder-gray-600 rounded-2xl outline-none transition-all duration-200"
+                  style={inputStyle("password")}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-200"
+                  style={{ color: "#4b5563" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#a78bfa"}
+                  onMouseLeave={e => e.currentTarget.style.color = "#4b5563"}
                 >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+
+              {/* Password strength bar */}
+              {password.length > 0 && (
+                <div className="flex items-center gap-2 mt-1">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-1 flex-1 rounded-full transition-all duration-300"
+                      style={{
+                        background: i < Math.min(Math.floor(password.length / 2), 4)
+                          ? (password.length < 4 ? "#ef4444" : password.length < 6 ? "#f59e0b" : "#10b981")
+                          : "rgba(255,255,255,0.08)"
+                      }}
+                    />
+                  ))}
+                  <span className="text-[10px] font-bold ml-1" style={{
+                    color: password.length < 4 ? "#ef4444" : password.length < 6 ? "#f59e0b" : "#10b981"
+                  }}>
+                    {password.length < 4 ? "Weak" : password.length < 6 ? "Fair" : "Strong"}
+                  </span>
+                </div>
+              )}
             </div>
 
+            {/* Submit */}
             <button
+              id="signup-submit-btn"
               type="submit"
               disabled={isSigningUp}
-              className="w-full btn btn-primary rounded-2xl py-4 h-auto text-[15px] font-black flex items-center justify-center gap-2.5 shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
+              className="relative w-full py-4 rounded-2xl text-sm font-black text-white mt-1 overflow-hidden transition-all duration-200 disabled:opacity-60"
+              style={{
+                background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 50%, #0891b2 100%)",
+                boxShadow: "0 8px 32px rgba(124,58,237,0.35), 0 2px 8px rgba(0,0,0,0.3)"
+              }}
+              onMouseEnter={e => { if (!isSigningUp) e.currentTarget.style.transform = "translateY(-1px) scale(1.01)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ""; }}
+              onMouseDown={e => { e.currentTarget.style.transform = "scale(0.98)"; }}
+              onMouseUp={e => { e.currentTarget.style.transform = ""; }}
             >
-              {isSigningUp ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Creating account...</span>
-                </>
-              ) : (
-                <span>Create Account</span>
-              )}
+              <span className="relative flex items-center justify-center gap-2">
+                {isSigningUp ? (
+                  <><Loader2 size={16} className="animate-spin" /> Creating account…</>
+                ) : (
+                  <><Sparkles size={16} /> Create Account</>
+                )}
+              </span>
             </button>
           </form>
 
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-white/5"></div>
-            <span className="flex-shrink mx-4 text-[10px] text-slate-500 font-extrabold tracking-[0.2em] uppercase">OR</span>
-            <div className="flex-grow border-t border-white/5"></div>
+          {/* Divider */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: "#374151" }}>or</span>
+            <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
           </div>
 
-          <div className="flex justify-center min-h-[50px]">
+          {/* Google Button */}
+          <div className="flex justify-center min-h-[46px]">
             {isLoggingIn ? (
-              <div className="flex flex-col items-center space-y-2">
-                <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                <span className="text-[10px] text-slate-400 font-semibold">Signing in...</span>
+              <div className="flex items-center gap-2">
+                <Loader2 size={16} className="animate-spin" style={{ color: "#a78bfa" }} />
+                <span className="text-xs font-semibold" style={{ color: "#6b7280" }}>Signing in…</span>
               </div>
             ) : (
-              <div id="googleBtnContainer" className="flex justify-center transition-all duration-300 active:scale-95" />
+              <div id="googleBtnContainer" className="flex justify-center transition-transform duration-200 active:scale-95" />
             )}
           </div>
 
-          <div className="text-center pt-2">
-            <p className="text-sm text-slate-400">
+          {/* Footer */}
+          <div className="text-center space-y-3">
+            <p className="text-sm font-medium" style={{ color: "#6b7280" }}>
               Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:text-primary-focus font-black transition-colors">
-                Log in
+              <Link
+                to="/login"
+                className="font-black transition-colors duration-150"
+                style={{ color: "#a78bfa" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#c4b5fd"}
+                onMouseLeave={e => e.currentTarget.style.color = "#a78bfa"}
+              >
+                Log in →
               </Link>
             </p>
+            <p className="text-[11px] font-medium leading-relaxed" style={{ color: "#374151" }}>
+              By continuing, you agree to ChatZone's{" "}
+              <span className="underline underline-offset-2 cursor-pointer" style={{ color: "#4b5563" }}>Terms of Service</span>
+              {" "}and{" "}
+              <span className="underline underline-offset-2 cursor-pointer" style={{ color: "#4b5563" }}>Privacy Policy</span>.
+            </p>
           </div>
-        </div>
-
-        <div className="text-[11px] text-slate-500 text-center font-bold leading-relaxed px-4">
-          By continuing, you agree to ChatZone's <span className="text-slate-400 hover:text-primary transition-colors cursor-pointer underline decoration-slate-700 underline-offset-4">Terms of Service</span> and <span className="text-slate-400 hover:text-primary transition-colors cursor-pointer underline decoration-slate-700 underline-offset-4">Privacy Policy</span>.
         </div>
       </div>
     </div>

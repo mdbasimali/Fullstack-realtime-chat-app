@@ -6,7 +6,7 @@ import { io, getReceiverSocketId } from "../lib/socket.js";
 export const createStory = async (req, res) => {
   const userId = req.user._id;
   const { content, type, caption, bgColor } = req.body;
-  
+
   console.log(`[Story] Create attempt - User: ${userId}, Type: ${type}, Content size: ${content?.length || 0}`);
 
   try {
@@ -93,10 +93,10 @@ export const createStory = async (req, res) => {
     return res.status(201).json(populatedStory);
   } catch (error) {
     console.error("[Story] Final catch error:", error);
-    return res.status(500).json({ 
-      error: "Internal server error", 
+    return res.status(500).json({
+      error: "Internal server error",
       message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
@@ -104,7 +104,7 @@ export const createStory = async (req, res) => {
 export const getStories = async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     // 1. Get contacts
     const user = await User.findById(userId);
     const contactIds = user.contacts || [];
@@ -116,8 +116,8 @@ export const getStories = async (req, res) => {
 
     // 3. Combine unique IDs (Self + Contacts + Interactions)
     const targetUserIds = [...new Set([
-      userId.toString(), 
-      ...contactIds.map(id => id.toString()), 
+      userId.toString(),
+      ...contactIds.map(id => id.toString()),
       ...interactedUserIds.map(id => id.toString())
     ])];
 
