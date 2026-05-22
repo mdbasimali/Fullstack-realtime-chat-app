@@ -869,7 +869,7 @@ const Sidebar = () => {
                               {user.lastMessage ? (
                                 <>
                                   {user.lastMessage.senderId === authUser._id ? (
-                                    <span className="inline-flex items-center align-middle mr-1.5 select-none">
+                                    <span className="inline-flex items-center align-middle mr-1.5 select-none -translate-y-[10%]">
                                       {user.lastMessage.isRead ? (
                                         <span className="flex -space-x-1 text-sky-500 dark:text-sky-400">
                                           <Check size={14} className="stroke-[3.5]" />
