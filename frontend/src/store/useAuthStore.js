@@ -27,6 +27,7 @@ export const useAuthStore = create((set,get) => ({
   isAppLocked: false,
   isVerifyingPin: false,
   _hasInitializedLockListener: false,
+  _lastBackgroundTime: null,
 
   checkAuth: async () => {
     try {
@@ -185,13 +186,23 @@ export const useAuthStore = create((set,get) => ({
     if (get()._hasInitializedLockListener) return;
     set({ _hasInitializedLockListener: true });
 
+    const LOCK_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+
     // Listen for Web Visibility API (triggers on minimize/tab switch)
     document.addEventListener("visibilitychange", () => {
       const authUser = get().authUser;
       if (document.visibilityState === "hidden") {
-        if (authUser && authUser.pin) {
-          set({ isAppLocked: true });
+        // Record the time when app goes to background
+        set({ _lastBackgroundTime: Date.now() });
+      } else if (document.visibilityState === "visible") {
+        // Check if 3 minutes have passed since it went to background
+        const lastTime = get()._lastBackgroundTime;
+        if (lastTime && (Date.now() - lastTime >= LOCK_TIMEOUT_MS)) {
+          if (authUser && authUser.pin) {
+            set({ isAppLocked: true });
+          }
         }
+        set({ _lastBackgroundTime: null });
       }
     });
 
@@ -199,8 +210,16 @@ export const useAuthStore = create((set,get) => ({
     try {
       App.addListener("appStateChange", ({ isActive }) => {
         const authUser = get().authUser;
-        if (!isActive && authUser && authUser.pin) {
-          set({ isAppLocked: true });
+        if (!isActive) {
+          set({ _lastBackgroundTime: Date.now() });
+        } else {
+          const lastTime = get()._lastBackgroundTime;
+          if (lastTime && (Date.now() - lastTime >= LOCK_TIMEOUT_MS)) {
+            if (authUser && authUser.pin) {
+              set({ isAppLocked: true });
+            }
+          }
+          set({ _lastBackgroundTime: null });
         }
       });
     } catch (e) {
