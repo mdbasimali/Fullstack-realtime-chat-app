@@ -4,6 +4,7 @@ import { useGroupStore } from "../store/useGroupStore";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
+import ContactDetailsSidebar from "./ContactDetailsSidebar";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { useCallStore } from "../store/useCallStore";
@@ -44,6 +45,7 @@ const ChatContainer = () => {
     getMessages,
     isMessagesLoading: isDmMessagesLoading,
     selectedUser,
+    showContactDetailsSidebar,
     deleteMessage,
   } = useChatstore();
 
@@ -797,6 +799,11 @@ const ChatContainer = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* User Contact Details Sidebar Slider */}
+      {selectedUser && showContactDetailsSidebar && (
+        <ContactDetailsSidebar />
       )}
     </div>
   );

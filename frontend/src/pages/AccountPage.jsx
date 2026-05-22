@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useAuthStore } from "../store/useAuthStore";
 
 const AccountPage = () => {
   const navigate = useNavigate();
+  const { authUser } = useAuthStore();
   const [pinReminders, setPinReminders] = useState(true);
   const [registrationLock, setRegistrationLock] = useState(false);
 
@@ -79,8 +81,13 @@ const AccountPage = () => {
             <span className="text-[14px] font-bold text-base-content">Account</span>
           </div>
 
-          <button className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left">
-            <span className="text-[16px] text-base-content font-medium">Change phone number</span>
+          <button 
+            onClick={() => navigate('/settings/account/add-number')}
+            className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left"
+          >
+            <span className="text-[16px] text-base-content font-medium">
+              {authUser?.phoneNumber ? "Change number" : "Add number"}
+            </span>
           </button>
 
           <button className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left">

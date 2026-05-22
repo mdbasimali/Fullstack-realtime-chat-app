@@ -7,7 +7,7 @@ import { useGroupStore } from "../store/useGroupStore";
 import { getNickname } from "./ProfileModal";
 
 const ChatHeader = () => {
-  const { selectedUser, setSelectedUser } = useChatstore();
+  const { selectedUser, setSelectedUser, setShowContactDetailsSidebar } = useChatstore();
   const { 
     selectedGroup, 
     setSelectedGroup, 
@@ -75,45 +75,57 @@ const ChatHeader = () => {
           <ArrowLeft size={21} />
         </button>
 
-        {/* Avatar */}
-        <div className="avatar shrink-0">
-          <div className="size-10 rounded-full relative flex items-center justify-center bg-indigo-100 dark:bg-indigo-950/40 text-primary font-bold">
-            {selectedGroup ? (
-              selectedGroup.avatar ? (
-                <img
-                  src={selectedGroup.avatar}
-                  alt={selectedGroup.name}
-                  className="rounded-full object-cover w-full h-full"
-                />
+        {/* Clickable Profile Block */}
+        <div 
+          onClick={() => {
+            if (selectedGroup) {
+              setShowGroupDetailsSidebar(true);
+            } else {
+              setShowContactDetailsSidebar(true);
+            }
+          }}
+          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer hover:bg-base-200/50 py-1 px-2 -ml-2 rounded-xl transition-colors"
+        >
+          {/* Avatar */}
+          <div className="avatar shrink-0">
+            <div className="size-10 rounded-full relative flex items-center justify-center bg-indigo-100 dark:bg-indigo-950/40 text-primary font-bold">
+              {selectedGroup ? (
+                selectedGroup.avatar ? (
+                  <img
+                    src={selectedGroup.avatar}
+                    alt={selectedGroup.name}
+                    className="rounded-full object-cover w-full h-full"
+                  />
+                ) : (
+                  selectedGroup.name.slice(0, 2).toUpperCase()
+                )
               ) : (
-                selectedGroup.name.slice(0, 2).toUpperCase()
-              )
-            ) : (
-              <img
-                src={selectedUser.profilePic || "/avatar.png"}
-                alt={selectedUser.fullName}
-                className="rounded-full object-cover"
-              />
-            )}
+                <img
+                  src={selectedUser.profilePic || "/avatar.png"}
+                  alt={selectedUser.fullName}
+                  className="rounded-full object-cover"
+                />
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* User / Group info */}
-        <div className="text-left flex-1 min-w-0">
-          <h3 className="font-semibold text-sm md:text-base leading-tight flex items-center gap-1.5 text-base-content">
-            <span className="truncate">
-              {selectedGroup ? selectedGroup.name : (getNickname(authUser?._id, selectedUser._id) || selectedUser.fullName)}
-            </span>
-          </h3>
-          <p className="text-[11px] text-base-content/60 font-semibold mt-0.5 truncate">
-            {selectedGroup ? (
-              `${selectedGroup.membersCount} members`
-            ) : onlineUsers.includes(selectedUser._id) ? (
-              <span className="text-emerald-500">Online</span>
-            ) : (
-              "Offline"
-            )}
-          </p>
+          {/* User / Group info */}
+          <div className="text-left flex-1 min-w-0">
+            <h3 className="font-semibold text-sm md:text-base leading-tight flex items-center gap-1.5 text-base-content">
+              <span className="truncate">
+                {selectedGroup ? selectedGroup.name : (getNickname(authUser?._id, selectedUser._id) || selectedUser.fullName)}
+              </span>
+            </h3>
+            <p className="text-[11px] text-base-content/60 font-semibold mt-0.5 truncate">
+              {selectedGroup ? (
+                `${selectedGroup.membersCount} members`
+              ) : onlineUsers.includes(selectedUser._id) ? (
+                <span className="text-emerald-500">Online</span>
+              ) : (
+                "Offline"
+              )}
+            </p>
+          </div>
         </div>
       </div>
 

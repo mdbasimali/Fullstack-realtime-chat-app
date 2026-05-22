@@ -117,10 +117,23 @@ const SettingsPage = () => {
 
           <div className="text-center flex flex-col items-center max-w-full">
             <h2 className="text-[24px] font-semibold text-base-content leading-tight mb-1 truncate px-4">
-              {authUser?.fullName || "Masudur Rahaman"}
+              {authUser?.fullName || "User"}
             </h2>
             <p className="text-[15px] text-base-content/60 font-medium truncate px-4">
-              {authUser?.phoneNumber || "+91 6294983054"} • @{authUser?.username || "ig_princeae"}
+              {authUser?.phoneNumber ? (
+                <span>{authUser.phoneNumber}</span>
+              ) : (
+                <span 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate('/settings/account/add-number');
+                  }}
+                  className="cursor-pointer hover:text-[#1e88e5] hover:underline transition-colors"
+                >
+                  No phone number added
+                </span>
+              )}
+              {authUser?.username ? <span> • @{authUser.username}</span> : null}
             </p>
           </div>
         </div>

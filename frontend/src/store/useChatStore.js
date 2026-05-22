@@ -33,6 +33,8 @@ export const useChatstore = create((set,get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  showContactDetailsSidebar: false,
+  setShowContactDetailsSidebar: (val) => set({ showContactDetailsSidebar: val }),
   activeTab: "chats",
   setActiveTab: (activeTab) => {
     const authUser = useAuthStore.getState().authUser;
@@ -370,11 +372,11 @@ export const useChatstore = create((set,get) => ({
 
   setSelectedUser: (selectedUser) => {
     if (selectedUser) {
-      set({ selectedUser, messages: [], isMessagesLoading: true });
+      set({ selectedUser, messages: [], isMessagesLoading: true, showContactDetailsSidebar: false });
       // De-select group chat to prevent split screen or message blending
       useGroupStore.getState().setSelectedGroup(null);
     } else {
-      set({ selectedUser: null, messages: [] });
+      set({ selectedUser: null, messages: [], showContactDetailsSidebar: false });
     }
     const authUser = useAuthStore.getState().authUser;
     if (authUser) {
