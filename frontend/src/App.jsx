@@ -339,7 +339,7 @@ const App = () => {
               <Route path="/signup" element={<PageWrapper>{!authUser ? <SignUpPage />:<Navigate to="/" />}</PageWrapper>} />
               <Route path="/create-pin" element={<PageWrapper>{authUser ? <CreatePinPage />:<Navigate to="/login" />}</PageWrapper>} />
               <Route path="/login" element={<PageWrapper>{!authUser ? <LoginPage />:<Navigate to="/" />}</PageWrapper>} />
-              <Route path="/settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
+              <Route path="/settings" element={<PageWrapper>{authUser ? <SettingsPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/account" element={<PageWrapper>{authUser ? <AccountPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/account/change-pin" element={<PageWrapper>{authUser ? <ChangePinPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/chats" element={<PageWrapper>{authUser ? <ChatsSettingsPage /> : <Navigate to="/login" />}</PageWrapper>} />

@@ -188,8 +188,11 @@ export const useAuthStore = create((set,get) => ({
     // Listen for Web Visibility API
     document.addEventListener("visibilitychange", () => {
       const authUser = get().authUser;
-      if (document.visibilityState === "visible") {
+      console.log("Visibility changed to:", document.visibilityState, "authUser:", !!authUser, "pin:", authUser?.pin);
+      // Lock immediately when app goes to background
+      if (document.visibilityState === "hidden") {
         if (authUser && authUser.pin) {
+          console.log("Locking app via Web Visibility API");
           set({ isAppLocked: true });
         }
       }
@@ -199,7 +202,10 @@ export const useAuthStore = create((set,get) => ({
     try {
       App.addListener("appStateChange", ({ isActive }) => {
         const authUser = get().authUser;
-        if (isActive && authUser && authUser.pin) {
+        console.log("Capacitor App state changed to active:", isActive, "authUser:", !!authUser, "pin:", authUser?.pin);
+        // Lock immediately when app goes to background
+        if (!isActive && authUser && authUser.pin) {
+          console.log("Locking app via Capacitor App State");
           set({ isAppLocked: true });
         }
       });
