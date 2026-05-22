@@ -122,7 +122,7 @@ const SignUpPage = () => {
 
   return (
     <div
-      className="min-h-screen flex flex-col justify-center items-center p-4 md:p-6 relative overflow-auto"
+      className="h-full overflow-y-auto flex flex-col justify-start items-center p-4 md:p-6 relative"
       style={{ background: "linear-gradient(135deg, #050510 0%, #0d0d2b 40%, #0a0a1f 70%, #0f0524 100%)" }}
     >
       {/* Animated background orbs */}
