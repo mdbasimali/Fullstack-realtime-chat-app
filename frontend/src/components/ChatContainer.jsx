@@ -9,7 +9,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useCallStore } from "../store/useCallStore";
 import { formatMessageTime } from "../lib/utils";
 import { 
-  User, Phone, Users, Check, Video, PhoneMissed, 
+  Phone, Users, Check, Video, PhoneMissed, 
   PhoneOutgoing, PhoneIncoming, X, Calendar, Crown, Loader2,
   Copy, Download, Trash2
 } from "lucide-react";
@@ -266,9 +266,6 @@ const ChatContainer = () => {
               <div className="space-y-1">
                 <h3 className="font-bold text-lg flex items-center justify-center gap-1.5 text-base-content leading-tight">
                   {selectedUser.fullName}
-                  <span className="p-0.5 rounded-full border border-base-300 bg-base-200/50 inline-flex items-center justify-center text-base-content/60">
-                    <User size={13} />
-                  </span>
                 </h3>
                 {selectedUser.phoneNumber && (
                   <p className="text-xs font-semibold text-base-content/60 flex items-center justify-center gap-1.5">

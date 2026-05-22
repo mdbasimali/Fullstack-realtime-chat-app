@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Video, Phone, MoreVertical, ArrowLeft, User, Trash2, PhoneOff, UserPlus, X, Loader2, Info } from "lucide-react";
+import { Video, Phone, MoreVertical, ArrowLeft, Trash2, PhoneOff, UserPlus, X, Loader2, Info } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatstore } from "../store/useChatStore";
 import { useCallStore } from "../store/useCallStore";
@@ -102,11 +102,6 @@ const ChatHeader = () => {
         <div className="text-left">
           <h3 className="font-semibold text-sm md:text-base leading-tight flex items-center gap-1.5 text-base-content">
             {selectedGroup ? selectedGroup.name : (getNickname(authUser?._id, selectedUser._id) || selectedUser.fullName)}
-            {!selectedGroup && (
-              <span className="p-0.5 rounded-full border border-base-300 bg-base-200/50 inline-flex items-center justify-center text-base-content/60 cursor-pointer">
-                <User size={12} />
-              </span>
-            )}
           </h3>
           <p className="text-[11px] text-base-content/60 font-semibold mt-0.5">
             {selectedGroup ? (
