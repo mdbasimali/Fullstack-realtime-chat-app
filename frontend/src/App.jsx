@@ -154,6 +154,11 @@ const App = () => {
     socket.on("group-call:incoming-invite", handleGroupCallIncomingInvite);
     socket.on("group-call:active-state", handleGroupCallActiveState);
 
+    // Connect ONLY after all listeners are attached to prevent race conditions
+    if (!socket.connected) {
+      socket.connect();
+    }
+
     return () => {
       socket.off("call:incoming");
       socket.off("call:accepted");

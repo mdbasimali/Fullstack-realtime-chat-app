@@ -188,14 +188,14 @@ export const useAuthStore = create((set,get) => ({
 
   connectSocket:()=>{
     const {authUser}=get()
-    if(!authUser || get().socket?.connected)return;
+    if(!authUser || get().socket)return; // Avoid recreating if socket already exists
 
     const socket = io(BASE_URL,{
       query:{
         userId:authUser._id,
       },
+      autoConnect: false, // Prevent race condition with React useEffect
     });
-    socket.connect();
 
     set({socket:socket});
     socket.on("getOnlineUsers", (userIds)=>{
