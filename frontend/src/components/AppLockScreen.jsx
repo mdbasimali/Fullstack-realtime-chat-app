@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore";
+import { useNavigate } from "react-router-dom";
 import { Lock, Loader2, CheckCircle2, ChevronRight, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
 const AppLockScreen = () => {
   const { verifyPin, isVerifyingPin } = useAuthStore();
+  const navigate = useNavigate();
   const [pin, setPin] = useState(["", "", "", ""]);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorShake, setErrorShake] = useState(false);
@@ -67,6 +69,7 @@ const AppLockScreen = () => {
     if (res.success) {
       setIsSuccess(true);
       toast.success("Unlocked!");
+      navigate("/");
     } else {
       toast.error(res.error || "Incorrect PIN");
       // Trigger shake animation
