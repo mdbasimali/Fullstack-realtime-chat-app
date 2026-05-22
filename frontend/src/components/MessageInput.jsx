@@ -345,19 +345,30 @@ const MessageInput = () => {
           </div>
         )}
 
-        {/* Action Button */}
+        {/* Send / Action Button */}
         <button
           type="submit"
           disabled={isUploadingAudio || (!text.trim() && !imagePreview && !isRecording)}
           onMouseDown={(e) => e.preventDefault()}
-          className="flex-shrink-0 btn btn-circle bg-primary hover:bg-primary/90 text-primary-content border-none flex items-center justify-center size-10 md:size-11"
+          className="flex-shrink-0 flex items-center justify-center size-10 md:size-11 rounded-full transition-all duration-200 active:scale-90"
+          style={{
+            background: (text.trim() || imagePreview || isRecording)
+              ? "linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #0891b2 100%)"
+              : "rgba(0,0,0,0.08)",
+            boxShadow: (text.trim() || imagePreview || isRecording)
+              ? "0 4px 16px rgba(124,58,237,0.4), 0 1px 4px rgba(0,0,0,0.2)"
+              : "none",
+            color: (text.trim() || imagePreview || isRecording) ? "#fff" : "rgba(0,0,0,0.3)",
+            border: "none",
+            cursor: (!text.trim() && !imagePreview && !isRecording) ? "default" : "pointer",
+          }}
         >
           {isUploadingAudio ? (
-            <span className="loading loading-spinner loading-xs"></span>
+            <span className="loading loading-spinner loading-xs" style={{ color: "#fff" }} />
           ) : text.trim() || imagePreview ? (
-            <Send size={18} className="ml-0.5" />
+            <Send size={17} style={{ marginLeft: "2px", filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.2))" }} />
           ) : (
-            <Plus size={22} onClick={() => fileInputRef.current?.click()} />
+            <Plus size={20} onClick={() => fileInputRef.current?.click()} />
           )}
         </button>
       </form>
