@@ -16,6 +16,7 @@ import {
 import VoicePlayer from "./VoicePlayer";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
+import MediaViewerModal from "./MediaViewerModal";
 
 const getSenderColor = (senderId) => {
   const colors = [
@@ -67,6 +68,7 @@ const ChatContainer = () => {
   const isInitialLoadRef = useRef(true);
 
   const [contextMenu, setContextMenu] = useState(null); // { message, x, y, isMobile }
+  const [viewingMedia, setViewingMedia] = useState(null);
   const touchTimeoutRef = useRef(null);
   const touchStartPosRef = useRef({ x: 0, y: 0 });
   const hasTriggeredLongPressRef = useRef(false);
@@ -374,6 +376,15 @@ const ChatContainer = () => {
                     {/* Glassmorphism/premium style message card */}
                     {(() => {
                       const isTextOnly = message.messageType === "text" && !message.image;
+                      const isImageOrVideo = message.image && (message.messageType === "image" || message.messageType === "video");
+                      const isMediaOnly = isImageOrVideo && !message.text;
+
+                      const paddingClass = isTextOnly 
+                        ? "p-2 pb-0.5 px-3.5 pr-[54px]" 
+                        : isMediaOnly 
+                          ? "p-[2px]" // tiny 2px frame or 0? user said "no frame". Let's use p-[2px] for WhatsApp style, or p-0. Let's use p-0.5. Actually, p-0 is safest for "no frame". Wait, if p-0, timestamp needs absolute pos.
+                          : "p-2 px-2";
+
                       return (
                         <div
                           onContextMenu={(e) => handleContextMenu(e, message)}
@@ -388,11 +399,9 @@ const ChatContainer = () => {
                             msUserSelect: "none",
                             userSelect: "none"
                           }}
-                          className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all cursor-pointer select-none active:opacity-95 ${
-                            isTextOnly ? "p-2 pb-0.5 px-3.5 pr-[54px]" : "p-3.5 px-4"
-                          } ${
+                          className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all cursor-pointer select-none active:opacity-95 overflow-hidden ${paddingClass} ${
                             isMyMessage 
-                              ? "bg-primary text-primary-content rounded-tr-[4px]" 
+                              ? "bg-[#6057CA] text-white rounded-tr-[4px]" 
                               : "bg-base-200 text-base-content rounded-tl-[4px]"
                           }`}
                         >
@@ -400,18 +409,17 @@ const ChatContainer = () => {
                             <img
                               src={message.image}
                               alt="Attachment"
-                              className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover pointer-events-none select-none"
+                              onClick={(e) => { e.stopPropagation(); setViewingMedia(message); }}
+                              className={`max-w-[260px] md:max-w-[320px] max-h-[350px] object-cover pointer-events-auto select-none cursor-pointer ${isMediaOnly ? "rounded-[18px]" : "rounded-2xl mb-1"} ${isMediaOnly ? "" : "w-full"}`}
                             />
                           )}
                           {message.image && message.messageType === "video" && (
                             <video
                               src={message.image}
                               controls
-                              autoPlay
-                              loop
-                              muted
                               playsInline
-                              className="max-w-full max-h-[300px] rounded-2xl mb-2 shadow-xs object-cover"
+                              onClick={(e) => { e.stopPropagation(); setViewingMedia(message); }}
+                              className={`max-w-[260px] md:max-w-[320px] max-h-[350px] object-cover cursor-pointer ${isMediaOnly ? "rounded-[18px]" : "rounded-2xl mb-1"} ${isMediaOnly ? "" : "w-full"}`}
                             />
                           )}
                           {message.messageType === "audio" && message.image && (
@@ -446,6 +454,11 @@ const ChatContainer = () => {
 
                           {message.text && (message.messageType === "text" || message.messageType === "story_reply") && (
                             <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed break-words select-none">
+                              {message.text}
+                            </p>
+                          )}
+                          {message.text && isImageOrVideo && (
+                            <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed break-words select-none px-1 pb-1">
                               {message.text}
                             </p>
                           )}
@@ -484,7 +497,9 @@ const ChatContainer = () => {
                           <div className={`${
                             isTextOnly 
                               ? "absolute bottom-1 right-2 flex items-center gap-1 text-[9px] font-semibold opacity-70"
-                              : "flex items-center gap-1 mt-1.5 text-[10px] self-end font-semibold opacity-75"
+                              : isMediaOnly
+                                ? "absolute bottom-1.5 right-2 flex items-center gap-1 text-[9px] font-semibold text-white px-1.5 py-[2px] rounded-full bg-black/40 backdrop-blur-sm shadow-sm"
+                                : "flex items-center gap-1 mt-0.5 mb-0.5 mr-1 text-[10px] self-end font-semibold opacity-75 pr-1"
                           }`}>
                             <span>{formatMessageTime(message.createdAt)}</span>
                             {isMyMessage && (
@@ -495,7 +510,7 @@ const ChatContainer = () => {
                                     <Check size={11} className="stroke-[3.5]" />
                                   </div>
                                 ) : (
-                                  <Check size={11} className="stroke-[3] text-white/50" />
+                                  <Check size={11} className={`stroke-[3] ${isMediaOnly ? "text-white/80" : "text-white/50"}`} />
                                 )}
                               </span>
                             )}
@@ -618,6 +633,14 @@ const ChatContainer = () => {
           </>
         )}
       </div>
+
+      {viewingMedia && (
+        <MediaViewerModal
+          message={viewingMedia}
+          onClose={() => setViewingMedia(null)}
+          onDownload={handleDownloadImage}
+        />
+      )}
 
       {/* Group Details Sidebar */}
       {selectedGroup && showGroupDetailsSidebar && (

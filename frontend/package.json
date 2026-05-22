@@ -16,6 +16,7 @@
     "@capacitor/core": "^8.3.4",
     "axios": "^1.11.0",
     "firebase": "^12.13.0",
+    "framer-motion": "^12.40.0",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.541.0",
     "qrcode": "^1.5.4",

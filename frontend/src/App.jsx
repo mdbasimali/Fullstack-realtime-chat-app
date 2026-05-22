@@ -10,6 +10,19 @@ import { useCallStore } from "./store/useCallStore";
 import CallModal from "./components/CallModal";
 import { Capacitor } from "@capacitor/core";
 import { App as CapApp } from "@capacitor/app";
+import { AnimatePresence, motion } from "framer-motion";
+
+const PageWrapper = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, x: 10 }}
+    animate={{ opacity: 1, x: 0 }}
+    exit={{ opacity: 0, x: -10 }}
+    transition={{ duration: 0.1, ease: "easeOut" }}
+    className="h-full w-full flex flex-col"
+  >
+    {children}
+  </motion.div>
+);
 
 // Lazy load pages for faster initial load
 const HomePage = React.lazy(() => import("./pages/HomePage"));
@@ -304,38 +317,36 @@ const App = () => {
     <div data-theme={theme} className="h-screen flex flex-col">
       {showNavbar && <Navbar />}
       <div className="flex-1 flex flex-col min-h-0">
-        <React.Suspense fallback={
-          <div className="flex items-center justify-center h-full">
-            <Loader className="size-10 animate-spin text-primary opacity-20"/>
-          </div>
-        }>
-          <Routes>
-            <Route path="/" element={authUser ? <HomePage />:<Navigate to="/login" />} />
-            <Route path="/join-group" element={authUser ? <HomePage />:<Navigate to="/login" />} />
-            <Route path="/signup" element={!authUser ? <SignUpPage />:<Navigate to="/" />} />
-            <Route path="/login" element={!authUser ? <LoginPage />:<Navigate to="/" />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/settings/account" element={authUser ? <AccountPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/appearance" element={authUser ? <AppearancePage /> : <Navigate to="/login" />} />
-            <Route path="/settings/appearance/chat-color" element={authUser ? <ChatColorWallpaperPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/appearance/app-icon" element={authUser ? <AppIconPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/devices" element={authUser ? <LinkedDevicesPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/chats" element={authUser ? <ChatsPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/stories" element={authUser ? <StoriesPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/stories/my-story" element={authUser ? <MyStoryPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/stories/connections" element={authUser ? <StoryConnectionsPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/notifications" element={authUser ? <NotificationsPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/privacy" element={authUser ? <PrivacyPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/backups" element={authUser ? <BackupsPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/data-storage" element={authUser ? <DataStoragePage /> : <Navigate to="/login" />} />
-            <Route path="/settings/data-storage/storage" element={authUser ? <StoragePage /> : <Navigate to="/login" />} />
-            <Route path="/settings/data-storage/storage/review" element={authUser ? <ReviewStoragePage /> : <Navigate to="/login" />} />
-            <Route path="/settings/invite" element={authUser ? <InviteFriendsPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/help" element={authUser ? <HelpPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/help/contact" element={authUser ? <ContactUsPage /> : <Navigate to="/login" />} />
-            <Route path="/settings/help/terms" element={authUser ? <TermsPrivacyPage /> : <Navigate to="/login" />} />
-            <Route path="/profile" element={authUser ? <ProfilePage />:<Navigate to="/login" />} />
-          </Routes>
+        <React.Suspense fallback={null}>
+          <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+              <Route path="/" element={<PageWrapper>{authUser ? <HomePage />:<Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/join-group" element={<PageWrapper>{authUser ? <HomePage />:<Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/signup" element={<PageWrapper>{!authUser ? <SignUpPage />:<Navigate to="/" />}</PageWrapper>} />
+              <Route path="/login" element={<PageWrapper>{!authUser ? <LoginPage />:<Navigate to="/" />}</PageWrapper>} />
+              <Route path="/settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
+              <Route path="/settings/account" element={<PageWrapper>{authUser ? <AccountPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/appearance" element={<PageWrapper>{authUser ? <AppearancePage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/appearance/chat-color" element={<PageWrapper>{authUser ? <ChatColorWallpaperPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/appearance/app-icon" element={<PageWrapper>{authUser ? <AppIconPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/devices" element={<PageWrapper>{authUser ? <LinkedDevicesPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/chats" element={<PageWrapper>{authUser ? <ChatsPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/stories" element={<PageWrapper>{authUser ? <StoriesPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/stories/my-story" element={<PageWrapper>{authUser ? <MyStoryPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/stories/connections" element={<PageWrapper>{authUser ? <StoryConnectionsPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/notifications" element={<PageWrapper>{authUser ? <NotificationsPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/privacy" element={<PageWrapper>{authUser ? <PrivacyPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/backups" element={<PageWrapper>{authUser ? <BackupsPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/data-storage" element={<PageWrapper>{authUser ? <DataStoragePage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/data-storage/storage" element={<PageWrapper>{authUser ? <StoragePage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/data-storage/storage/review" element={<PageWrapper>{authUser ? <ReviewStoragePage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/invite" element={<PageWrapper>{authUser ? <InviteFriendsPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/help" element={<PageWrapper>{authUser ? <HelpPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/help/contact" element={<PageWrapper>{authUser ? <ContactUsPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/help/terms" element={<PageWrapper>{authUser ? <TermsPrivacyPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/profile" element={<PageWrapper>{authUser ? <ProfilePage />:<Navigate to="/login" />}</PageWrapper>} />
+            </Routes>
+          </AnimatePresence>
         </React.Suspense>
       </div>
       
