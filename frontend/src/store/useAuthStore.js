@@ -185,14 +185,19 @@ export const useAuthStore = create((set,get) => ({
     if (get()._hasInitializedLockListener) return;
     set({ _hasInitializedLockListener: true });
 
-    // Listen for Web Visibility API
+    // Lock immediately when window loses focus (instant protection)
+    window.addEventListener("blur", () => {
+      const authUser = get().authUser;
+      if (authUser && authUser.pin) {
+        set({ isAppLocked: true });
+      }
+    });
+
+    // Listen for Web Visibility API as backup
     document.addEventListener("visibilitychange", () => {
       const authUser = get().authUser;
-      console.log("Visibility changed to:", document.visibilityState, "authUser:", !!authUser, "pin:", authUser?.pin);
-      // Lock immediately when app goes to background
       if (document.visibilityState === "hidden") {
         if (authUser && authUser.pin) {
-          console.log("Locking app via Web Visibility API");
           set({ isAppLocked: true });
         }
       }
@@ -202,10 +207,7 @@ export const useAuthStore = create((set,get) => ({
     try {
       App.addListener("appStateChange", ({ isActive }) => {
         const authUser = get().authUser;
-        console.log("Capacitor App state changed to active:", isActive, "authUser:", !!authUser, "pin:", authUser?.pin);
-        // Lock immediately when app goes to background
         if (!isActive && authUser && authUser.pin) {
-          console.log("Locking app via Capacitor App State");
           set({ isAppLocked: true });
         }
       });
