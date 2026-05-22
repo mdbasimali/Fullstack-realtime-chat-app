@@ -185,15 +185,7 @@ export const useAuthStore = create((set,get) => ({
     if (get()._hasInitializedLockListener) return;
     set({ _hasInitializedLockListener: true });
 
-    // Lock immediately when window loses focus (instant protection)
-    window.addEventListener("blur", () => {
-      const authUser = get().authUser;
-      if (authUser && authUser.pin) {
-        set({ isAppLocked: true });
-      }
-    });
-
-    // Listen for Web Visibility API as backup
+    // Listen for Web Visibility API (triggers on minimize/tab switch)
     document.addEventListener("visibilitychange", () => {
       const authUser = get().authUser;
       if (document.visibilityState === "hidden") {
