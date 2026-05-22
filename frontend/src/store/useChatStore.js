@@ -369,10 +369,12 @@ export const useChatstore = create((set,get) => ({
 
 
   setSelectedUser: (selectedUser) => {
-    set({ selectedUser });
     if (selectedUser) {
+      set({ selectedUser, messages: [], isMessagesLoading: true });
       // De-select group chat to prevent split screen or message blending
       useGroupStore.getState().setSelectedGroup(null);
+    } else {
+      set({ selectedUser: null, messages: [] });
     }
     const authUser = useAuthStore.getState().authUser;
     if (authUser) {

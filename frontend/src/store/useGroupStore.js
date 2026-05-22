@@ -181,8 +181,8 @@ export const useGroupStore = create((set, get) => ({
   },
 
   setSelectedGroup: (group) => {
-    set({ selectedGroup: group, showGroupDetailsSidebar: false, selectedGroupDetails: null });
     if (group) {
+      set({ selectedGroup: group, showGroupDetailsSidebar: false, selectedGroupDetails: null, messages: [], isMessagesLoading: true });
       // Clean DM selection state to prevent duplicate chat renders
       useChatstore.getState().setSelectedUser(null);
       get().fetchGroupMessages(group._id);
@@ -190,7 +190,7 @@ export const useGroupStore = create((set, get) => ({
       get().fetchGroupDetails(group._id);
     } else {
       get().unsubscribeFromGroupMessages();
-      set({ messages: [] });
+      set({ selectedGroup: null, showGroupDetailsSidebar: false, selectedGroupDetails: null, messages: [] });
     }
   },
 

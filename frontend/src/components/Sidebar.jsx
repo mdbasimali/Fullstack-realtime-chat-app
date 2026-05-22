@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import StoryViewer from "./StoryViewer";
 import CameraModal from "./CameraModal";
 import ProfileModal, { getNickname } from "./ProfileModal";
+import ContactListSkeleton from "./skeletons/ContactListSkeleton";
 
 const formatLastMessageTime = (dateString) => {
   if (!dateString) return "";
@@ -1129,10 +1130,7 @@ const Sidebar = () => {
 
             {/* Loading Indicator */}
             {isGroupsLoading ? (
-              <div className="flex flex-col items-center justify-center py-10 space-y-3">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                <span className="text-xs text-base-content/50">Loading groups...</span>
-              </div>
+              <ContactListSkeleton count={4} />
             ) : (
               <div className="space-y-6">
                 
@@ -1508,7 +1506,7 @@ const Sidebar = () => {
 
             {/* List of Friends */}
             {isUsersLoading ? (
-              <div className="text-center text-sm text-base-content/60 py-10">Loading friends...</div>
+              <ContactListSkeleton count={6} />
             ) : users.length === 0 ? (
               <div className="text-center py-12 px-4 space-y-2 bg-base-200/20 rounded-2xl border border-dashed border-base-300/50">
                 <Users className="mx-auto text-base-content/30" size={36} />
@@ -1842,10 +1840,7 @@ const Sidebar = () => {
                 <h3 className="text-[13px] font-semibold text-base-content/50 mb-3 tracking-wide">Global search</h3>
                 
                 {isGlobalSearching ? (
-                  <div className="text-center text-sm text-base-content/60 py-10 flex flex-col items-center justify-center gap-2">
-                    <Loader2 size={24} className="animate-spin text-primary" />
-                    Searching...
-                  </div>
+                  <ContactListSkeleton count={3} />
                 ) : globalUsers.length === 0 ? (
                   <div className="text-center text-sm text-base-content/60 py-10">No users found</div>
                 ) : (
@@ -1899,7 +1894,7 @@ const Sidebar = () => {
             ) : (
               <div className="px-4 py-3">
                 {isUsersLoading ? (
-                  <div className="text-center text-sm text-base-content/60 py-10">Loading contacts...</div>
+                  <ContactListSkeleton count={6} />
                 ) : filteredContacts.length === 0 ? (
                   <div className="text-center text-sm text-base-content/60 py-10">No contacts found</div>
                 ) : (
