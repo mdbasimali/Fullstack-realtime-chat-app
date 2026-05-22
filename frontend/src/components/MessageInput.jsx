@@ -283,12 +283,37 @@ const MessageInput = () => {
             {/* Emoji Button */}
             <button
               type="button"
-              className={`hover:text-primary transition-colors cursor-pointer ${
+              className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer ${
                 showEmojiPicker ? "text-primary" : "text-base-content/50"
               }`}
               onClick={() => setShowEmojiPicker((prev) => !prev)}
             >
-              <Smile size={21} />
+              <Smile size={20} />
+            </button>
+
+            {/* Image Attachment Button */}
+            <button
+              type="button"
+              disabled={isUploadingAudio}
+              className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer ${
+                imagePreview ? "text-primary" : "text-base-content/50"
+              } ${isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Image size={20} />
+            </button>
+
+            {/* Microphone Button */}
+            <button
+              type="button"
+              disabled={isUploadingAudio}
+              className={`flex-shrink-0 text-base-content/50 hover:text-primary transition-colors cursor-pointer ${
+                isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              onClick={startRecording}
+              title="Record Voice Note"
+            >
+              <Mic size={20} />
             </button>
 
             {/* Text Input */}
@@ -301,7 +326,7 @@ const MessageInput = () => {
               autoCapitalize="sentences"
               spellCheck="true"
               data-lpignore="true"
-              className="flex-1 bg-transparent text-sm md:text-base border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content"
+              className="flex-1 min-w-0 bg-transparent text-sm md:text-base border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content"
               placeholder="ChatZone message"
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -317,31 +342,6 @@ const MessageInput = () => {
               onChange={handleImageChange}
               disabled={isUploadingAudio}
             />
-
-            {/* Image Attachment Button */}
-            <button
-              type="button"
-              disabled={isUploadingAudio}
-              className={`hover:text-primary transition-colors cursor-pointer ${
-                imagePreview ? "text-primary" : "text-base-content/50"
-              } ${isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""}`}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Image size={21} />
-            </button>
-
-            {/* Microphone Button */}
-            <button
-              type="button"
-              disabled={isUploadingAudio}
-              className={`text-base-content/50 hover:text-primary transition-colors cursor-pointer ${
-                isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-              onClick={startRecording}
-              title="Record Voice Note"
-            >
-              <Mic size={21} />
-            </button>
           </div>
         )}
 
