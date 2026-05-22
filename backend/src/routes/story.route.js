@@ -1,6 +1,6 @@
 import express from "express";
 import { protectRoute } from "../middleware/auth.middleware.js";
-import { createStory, getStories, deleteStory, viewStory } from "../controllers/story.controller.js";
+import { createStory, getStories, deleteStory, viewStory, likeStory } from "../controllers/story.controller.js";
 
 const router = express.Router();
 
