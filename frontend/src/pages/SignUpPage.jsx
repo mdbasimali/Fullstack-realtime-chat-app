@@ -128,11 +128,13 @@ const SignUpPage = () => {
   }, [scriptLoaded, googleClientId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-center items-center p-4 relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/15 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-center items-center p-5 md:p-4 relative overflow-hidden">
+      
+      {/* Glowing background auroras - optimized for mobile */}
+      <div className="absolute top-1/4 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-primary/20 rounded-full blur-[80px] md:blur-[100px] animate-pulse pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-64 md:w-96 h-64 md:h-96 bg-secondary/15 rounded-full blur-[100px] md:blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-md bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-[28px] md:rounded-[36px] px-6 py-10 md:p-12 shadow-2xl flex flex-col items-center space-y-6 animate-scale-up z-10">
+      <div className="w-full max-w-[440px] bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-[36px] px-7 py-10 md:p-12 shadow-2xl flex flex-col items-center space-y-8 animate-scale-up z-10">
         <div className="relative">
           <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-2xl blur opacity-75 animate-pulse" />
           <div className="relative size-16 rounded-2xl bg-slate-900 border border-white/20 flex items-center justify-center">
@@ -140,108 +142,108 @@ const SignUpPage = () => {
           </div>
         </div>
 
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">
+        <div className="text-center space-y-1.5">
+          <h1 className="text-3xl font-black text-white tracking-tight">
             Create Account
           </h1>
-          <p className="text-xs text-slate-400 font-medium">
+          <p className="text-[13px] text-slate-400 font-medium">
             Join ChatZone instantly.
           </p>
         </div>
 
         {/* Welcome message and Signup Form */}
-        <div className="space-y-4 w-full flex flex-col justify-center">
-          <form onSubmit={handleEmailSignup} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Full Name</label>
+        <div className="space-y-6 w-full flex flex-col justify-center">
+          <form onSubmit={handleEmailSignup} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                    <User className="size-3.5" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    <User className="size-4" />
                   </div>
                   <input
                     type="text"
                     placeholder="John Doe"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-9 pr-3 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
+                    className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-10 pr-3 py-3.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
                     required
                   />
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Username</label>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Username</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                    <AtSign className="size-3.5" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    <AtSign className="size-4" />
                   </div>
                   <input
                     type="text"
                     placeholder="johndoe"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-9 pr-3 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
+                    className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-10 pr-3 py-3.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
                     required
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <Mail className="size-3.5" />
+                <div className="absolute inset-y-0 left-0 pl-4.5 flex items-center pointer-events-none text-slate-500">
+                  <Mail className="size-4" />
                 </div>
                 <input
                   type="email"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
+                  className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone Number</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <Phone className="size-3.5" />
+                <div className="absolute inset-y-0 left-0 pl-4.5 flex items-center pointer-events-none text-slate-500">
+                  <Phone className="size-4" />
                 </div>
                 <input
                   type="tel"
                   placeholder="+1234567890"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
+                  className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Password</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <Lock className="size-3.5" />
+                <div className="absolute inset-y-0 left-0 pl-4.5 flex items-center pointer-events-none text-slate-500">
+                  <Lock className="size-4" />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-10 pr-10 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
+                  className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-12 pr-12 py-3.5 text-sm font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
             </div>
@@ -249,11 +251,11 @@ const SignUpPage = () => {
             <button
               type="submit"
               disabled={isSigningUp}
-              className="w-full btn btn-primary rounded-2xl py-3 h-auto text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50"
+              className="w-full btn btn-primary rounded-2xl py-4 h-auto text-[15px] font-black flex items-center justify-center gap-2.5 shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
             >
               {isSigningUp ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Creating account...</span>
                 </>
               ) : (
@@ -262,9 +264,9 @@ const SignUpPage = () => {
             </button>
           </form>
 
-          <div className="relative flex py-1 items-center">
+          <div className="relative flex py-2 items-center">
             <div className="flex-grow border-t border-white/5"></div>
-            <span className="flex-shrink mx-3 text-[9px] text-slate-500 font-bold tracking-widest uppercase">OR</span>
+            <span className="flex-shrink mx-4 text-[10px] text-slate-500 font-extrabold tracking-[0.2em] uppercase">OR</span>
             <div className="flex-grow border-t border-white/5"></div>
           </div>
 
@@ -279,18 +281,18 @@ const SignUpPage = () => {
             )}
           </div>
 
-          <div className="text-center">
-            <p className="text-xs text-slate-400">
+          <div className="text-center pt-2">
+            <p className="text-sm text-slate-400">
               Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:underline font-bold">
+              <Link to="/login" className="text-primary hover:text-primary-focus font-black transition-colors">
                 Log in
               </Link>
             </p>
           </div>
         </div>
 
-        <div className="text-[9px] text-slate-500 text-center font-medium leading-relaxed max-w-[260px]">
-          By continuing, you agree to ChatZone's <span className="hover:text-primary transition-colors cursor-pointer underline">Terms of Service</span> and <span className="hover:text-primary transition-colors cursor-pointer underline">Privacy Policy</span>.
+        <div className="text-[11px] text-slate-500 text-center font-bold leading-relaxed px-4">
+          By continuing, you agree to ChatZone's <span className="text-slate-400 hover:text-primary transition-colors cursor-pointer underline decoration-slate-700 underline-offset-4">Terms of Service</span> and <span className="text-slate-400 hover:text-primary transition-colors cursor-pointer underline decoration-slate-700 underline-offset-4">Privacy Policy</span>.
         </div>
       </div>
     </div>

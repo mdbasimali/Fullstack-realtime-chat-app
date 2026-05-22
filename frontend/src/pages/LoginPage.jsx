@@ -222,81 +222,81 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-center items-center p-4 relative overflow-hidden text-white">
+    <div className="min-h-screen bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-center items-center p-5 md:p-4 relative overflow-hidden text-white">
 
-      {/* Glowing background auroras */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/15 rounded-full blur-[120px] pointer-events-none" />
+      {/* Glowing background auroras - optimized for mobile (smaller/less distracting) */}
+      <div className="absolute top-1/4 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-primary/20 rounded-full blur-[80px] md:blur-[100px] animate-pulse pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-64 md:w-96 h-64 md:h-96 bg-secondary/15 rounded-full blur-[100px] md:blur-[120px] pointer-events-none" />
 
       {/* Login Card Grid */}
-      <div className="w-full max-w-md md:max-w-4xl bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-[28px] md:rounded-[36px] shadow-2xl grid md:grid-cols-2 overflow-hidden animate-scale-up z-10">
+      <div className="w-full max-w-[420px] md:max-w-4xl bg-slate-950/40 backdrop-blur-xl border border-white/10 rounded-[36px] shadow-2xl grid md:grid-cols-2 overflow-hidden animate-scale-up z-10">
         
         {/* Left Side: Google Login / Branding */}
-        <div className="px-6 py-10 md:p-12 flex flex-col justify-between space-y-8 border-r-0 md:border-r border-white/5 min-h-[460px] md:min-h-[520px]">
+        <div className="px-7 py-10 md:p-12 flex flex-col justify-between space-y-8 border-r-0 md:border-r border-white/5 min-h-[520px]">
           
           {/* Header Branding */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3.5">
             <div className="relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-secondary rounded-xl blur opacity-60" />
-              <div className="relative size-10 rounded-xl bg-slate-900 flex items-center justify-center border border-white/10">
-                <MessageSquare className="size-5 text-primary" />
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-secondary rounded-2xl blur opacity-60" />
+              <div className="relative size-12 rounded-2xl bg-slate-900 flex items-center justify-center border border-white/10">
+                <MessageSquare className="size-6 text-primary" />
               </div>
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight">Chat<span className="text-primary">Zone</span></span>
-              <span className="block text-[10px] text-slate-500 font-semibold tracking-wider uppercase">India Onboarding</span>
+              <span className="text-2xl font-black tracking-tight">Chat<span className="text-primary">Zone</span></span>
+              <span className="block text-[11px] text-slate-500 font-bold tracking-widest uppercase mt-0.5">India Onboarding</span>
             </div>
           </div>
 
           {/* Welcome back message and Email/Password login */}
-          <div className="space-y-4 flex-1 flex flex-col justify-center">
+          <div className="space-y-6 flex-1 flex flex-col justify-center">
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">
+              <h2 className="text-3xl font-black text-white tracking-tight">
                 Welcome Back
               </h2>
-              <p className="text-xs text-slate-400 mt-1 font-medium leading-relaxed">
+              <p className="text-[13px] text-slate-400 mt-1.5 font-medium leading-relaxed">
                 Log in to your ChatZone account.
               </p>
             </div>
 
-            <form onSubmit={handleEmailLogin} className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
+            <form onSubmit={handleEmailLogin} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                    <Mail className="size-3.5" />
+                  <div className="absolute inset-y-0 left-0 pl-4.5 flex items-center pointer-events-none text-slate-500">
+                    <Mail className="size-4" />
                   </div>
                   <input
                     type="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
+                    className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
                     required
                   />
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Password</label>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                    <Lock className="size-3.5" />
+                  <div className="absolute inset-y-0 left-0 pl-4.5 flex items-center pointer-events-none text-slate-500">
+                    <Lock className="size-4" />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-10 pr-10 py-2.5 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary transition-all shadow-xs"
+                    className="w-full bg-slate-900/60 border border-white/10 rounded-2xl pl-12 pr-12 py-3.5 text-sm font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-xs"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
               </div>
@@ -304,11 +304,11 @@ const LoginPage = () => {
               <button
                 type="submit"
                 disabled={isLoggingIn}
-                className="w-full btn btn-primary rounded-2xl py-3 h-auto text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50"
+                className="w-full btn btn-primary rounded-2xl py-4 h-auto text-[15px] font-black flex items-center justify-center gap-2.5 shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
               >
                 {isLoggingIn ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Logging in...</span>
                   </>
                 ) : (
@@ -317,9 +317,9 @@ const LoginPage = () => {
               </button>
             </form>
 
-            <div className="relative flex py-1 items-center">
+            <div className="relative flex py-2 items-center">
               <div className="flex-grow border-t border-white/5"></div>
-              <span className="flex-shrink mx-3 text-[9px] text-slate-500 font-bold tracking-widest uppercase">OR</span>
+              <span className="flex-shrink mx-4 text-[10px] text-slate-500 font-extrabold tracking-[0.2em] uppercase">OR</span>
               <div className="flex-grow border-t border-white/5"></div>
             </div>
 
@@ -327,10 +327,10 @@ const LoginPage = () => {
               <div id="googleBtnContainer" className="flex justify-center transition-all duration-300 active:scale-95" />
             </div>
 
-            <div className="text-center">
-              <p className="text-xs text-slate-400">
+            <div className="text-center pt-2">
+              <p className="text-sm text-slate-400">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline font-bold">
+                <Link to="/signup" className="text-primary hover:text-primary-focus font-black transition-colors">
                   Sign up
                 </Link>
               </p>
@@ -338,8 +338,8 @@ const LoginPage = () => {
           </div>
 
           {/* Footer Terms */}
-          <div className="text-[10px] text-slate-500 text-center font-medium leading-relaxed">
-            By continuing, you agree to ChatZone's <span className="hover:text-primary transition-colors cursor-pointer underline">Terms of Service</span> and <span className="hover:text-primary transition-colors cursor-pointer underline">Privacy Policy</span>.
+          <div className="text-[11px] text-slate-500 text-center font-bold leading-relaxed px-4">
+            By continuing, you agree to ChatZone's <span className="text-slate-400 hover:text-primary transition-colors cursor-pointer underline decoration-slate-700 underline-offset-4">Terms of Service</span> and <span className="text-slate-400 hover:text-primary transition-colors cursor-pointer underline decoration-slate-700 underline-offset-4">Privacy Policy</span>.
           </div>
         </div>
 
