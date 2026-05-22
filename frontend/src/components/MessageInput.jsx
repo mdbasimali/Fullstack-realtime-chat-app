@@ -213,7 +213,7 @@ const MessageInput = () => {
   };
 
   return (
-    <div className="p-3 md:p-4 w-full bg-base-100 shrink-0 border-t border-base-300 md:border-none">
+    <div className="px-3 py-2 md:px-4 md:py-3 w-full bg-base-100 shrink-0 border-t border-base-300 md:border-none" style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))' }}>
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
@@ -234,7 +234,7 @@ const MessageInput = () => {
         </div>
       )}
 
-      <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+      <form onSubmit={handleSendMessage} className="flex items-center gap-2 min-w-0">
         {isRecording ? (
           /* Glassmorphic Pulse Recording Pill */
           <div className="flex-1 flex items-center justify-between gap-4 px-4 py-2 bg-red-50/70 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-full">
@@ -272,7 +272,7 @@ const MessageInput = () => {
           </div>
         ) : (
           /* Standard Input Bar */
-          <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-base-200/60 dark:bg-base-950/40 border border-base-300/40 rounded-full relative">
+          <div className="flex-1 min-w-0 flex items-center gap-2 px-3 py-2 bg-base-200/60 dark:bg-base-950/40 border border-base-300/40 rounded-full relative">
             {showEmojiPicker && (
               <EmojiPicker
                 onSelect={handleEmojiSelect}
@@ -350,7 +350,7 @@ const MessageInput = () => {
           type="submit"
           disabled={isUploadingAudio || (!text.trim() && !imagePreview && !isRecording)}
           onMouseDown={(e) => e.preventDefault()}
-          className="btn btn-circle bg-primary hover:bg-primary/90 text-primary-content border-none flex items-center justify-center size-11 shrink-0"
+          className="flex-shrink-0 btn btn-circle bg-primary hover:bg-primary/90 text-primary-content border-none flex items-center justify-center size-10 md:size-11"
         >
           {isUploadingAudio ? (
             <span className="loading loading-spinner loading-xs"></span>
