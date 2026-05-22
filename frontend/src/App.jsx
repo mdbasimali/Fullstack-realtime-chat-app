@@ -16,6 +16,18 @@ const HomePage = React.lazy(() => import("./pages/HomePage"));
 const SignUpPage = React.lazy(() => import("./pages/SignUpPage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const SettingsPage = React.lazy(() => import("./pages/SettingsPage"));
+const AccountPage = React.lazy(() => import("./pages/AccountPage"));
+const AppearancePage = React.lazy(() => import("./pages/AppearancePage"));
+const ChatColorWallpaperPage = React.lazy(() => import("./pages/ChatColorWallpaperPage"));
+const AppIconPage = React.lazy(() => import("./pages/AppIconPage"));
+const StoriesPage = React.lazy(() => import("./pages/StoriesPage"));
+const MyStoryPage = React.lazy(() => import("./pages/MyStoryPage"));
+const StoryConnectionsPage = React.lazy(() => import("./pages/StoryConnectionsPage"));
+const NotificationsPage = React.lazy(() => import("./pages/NotificationsPage"));
+const PrivacyPage = React.lazy(() => import("./pages/PrivacyPage"));
+const BackupsPage = React.lazy(() => import("./pages/BackupsPage"));
+const ChatsPage = React.lazy(() => import("./pages/ChatsPage"));
+const DataStoragePage = React.lazy(() => import("./pages/DataStoragePage"));
 const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
 const LinkedDevicesPage = React.lazy(() => import("./pages/LinkedDevicesPage"));
 // import axios from "axios";
@@ -101,7 +113,7 @@ const App = () => {
           }
         }
       });
-      return listener;
+      return backListener;
     };
 
     const listenerPromise = setupBackButton();
@@ -280,7 +292,7 @@ const App = () => {
     </div>
   );
 
-  const showNavbar = !["/", "/settings", "/settings/devices", "/profile", "/join-group", "/login", "/signup"].includes(location.pathname);
+  const showNavbar = !["/", "/settings", "/settings/account", "/settings/appearance", "/settings/appearance/chat-color", "/settings/appearance/app-icon", "/settings/devices", "/settings/chats", "/settings/stories", "/settings/stories/my-story", "/settings/stories/connections", "/settings/notifications", "/settings/privacy", "/settings/backups", "/settings/data-storage", "/profile", "/join-group", "/login", "/signup"].includes(location.pathname);
 
   return (
     <div data-theme={theme} className="h-screen flex flex-col">
@@ -297,7 +309,19 @@ const App = () => {
             <Route path="/signup" element={!authUser ? <SignUpPage />:<Navigate to="/" />} />
             <Route path="/login" element={!authUser ? <LoginPage />:<Navigate to="/" />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/account" element={authUser ? <AccountPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/appearance" element={authUser ? <AppearancePage /> : <Navigate to="/login" />} />
+            <Route path="/settings/appearance/chat-color" element={authUser ? <ChatColorWallpaperPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/appearance/app-icon" element={authUser ? <AppIconPage /> : <Navigate to="/login" />} />
             <Route path="/settings/devices" element={authUser ? <LinkedDevicesPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/chats" element={authUser ? <ChatsPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/stories" element={authUser ? <StoriesPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/stories/my-story" element={authUser ? <MyStoryPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/stories/connections" element={authUser ? <StoryConnectionsPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/notifications" element={authUser ? <NotificationsPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/privacy" element={authUser ? <PrivacyPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/backups" element={authUser ? <BackupsPage /> : <Navigate to="/login" />} />
+            <Route path="/settings/data-storage" element={authUser ? <DataStoragePage /> : <Navigate to="/login" />} />
             <Route path="/profile" element={authUser ? <ProfilePage />:<Navigate to="/login" />} />
           </Routes>
         </React.Suspense>
@@ -307,8 +331,14 @@ const App = () => {
 
       {/* Group Call Member Picker Modal */}
       {showGroupCallModal && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-base-100 border border-base-300 w-full max-w-sm rounded-[28px] overflow-hidden shadow-2xl animate-scale-up">
+        <div 
+          className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setShowGroupCallModal(false)}
+        >
+          <div 
+            className="bg-base-100 border border-base-300 w-full max-w-sm rounded-[28px] overflow-hidden shadow-2xl animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
             <header className="px-6 py-5 border-b border-base-200 flex justify-between items-center bg-base-150">
               <div className="text-left">
                 <h3 className="text-base font-extrabold text-base-content tracking-tight flex items-center gap-2">

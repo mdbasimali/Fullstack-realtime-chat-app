@@ -42,7 +42,8 @@ export const getUsersForSidebar = async(req,res)=>{
 
            return {
              ...user.toObject(),
-             lastMessage: lastMsg || null
+             lastMessage: lastMsg || null,
+             isContact: contactIds.filter(id => id != null).map(id => id.toString()).includes(user._id.toString())
            };
          })
        );

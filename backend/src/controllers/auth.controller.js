@@ -102,13 +102,19 @@ export const signup = async (req, res) => {
 export const login = async(req,res)=>{
     const {email,password}=req.body
     try{
-        const user =await User.findOne({email})
+        // email field can contain either an email or a username
+        const user = await User.findOne({
+            $or: [
+                { email: email }, 
+                { username: { $regex: new RegExp(`^${email}$`, "i") } }
+            ]
+        });
         if(!user){
-            return res.status(400).json({message:"Invalid email or password"})
+            return res.status(400).json({message:"Invalid credentials"})
         }
         const isPasswordCorrect = await bcrypt.compare(password, user.password)
         if(!isPasswordCorrect){
-             return res.status(400).json({message:"Invalid email or password"})
+             return res.status(400).json({message:"Invalid credentials"})
         }
         const token = generateToken(user._id,res)
 
@@ -206,6 +212,33 @@ export const checkAuth = (req,res)=>{
     }
 };
 
+export const checkUsername = async (req, res) => {
+  try {
+    const { username } = req.query;
+    if (!username) {
+      return res.status(400).json({ message: "Username is required" });
+    }
+    
+    // Check if another user has this username
+    const currentUserId = req.user ? req.user._id : null;
+    
+    const query = { username: { $regex: new RegExp(`^${username}$`, "i") } };
+    if (currentUserId) {
+      query._id = { $ne: currentUserId };
+    }
+    
+    const existingUser = await User.findOne(query);
+    if (existingUser) {
+      return res.status(200).json({ available: false, message: "Username is already taken" });
+    }
+    
+    return res.status(200).json({ available: true, message: "Username is available" });
+  } catch (error) {
+    console.error("Error in checkUsername controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 export const googleAuth = async (req, res) => {
   const { credential } = req.body;
   try {
@@ -256,6 +289,12 @@ export const googleAuth = async (req, res) => {
       });
       await user.save();
       await autoLinkMatchedContacts(user);
+    } else {
+      // Update profile picture if user doesn't have one but Google provides one
+      if (picture && !user.profilePic) {
+        user.profilePic = picture;
+        await user.save();
+      }
     }
 
     // Generate JWT token
@@ -344,6 +383,12 @@ export const googleRedirect = async (req, res) => {
       });
       await user.save();
       await autoLinkMatchedContacts(user);
+    } else {
+      // Update profile picture if user doesn't have one but Google provides one
+      if (picture && !user.profilePic) {
+        user.profilePic = picture;
+        await user.save();
+      }
     }
 
     // Generate JWT token

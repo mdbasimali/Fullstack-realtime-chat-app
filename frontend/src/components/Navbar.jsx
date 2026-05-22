@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import { LogOut, MessageSquare, Settings, User } from "lucide-react";
+import { MessageSquare, Settings, User } from "lucide-react";
 
 const Navbar = () => {
-  const { logout, authUser } = useAuthStore();
+  const { authUser } = useAuthStore();
   const location = useLocation();
   const isAuthPage = ["/login", "/signup"].includes(location.pathname);
 
@@ -43,11 +43,6 @@ const Navbar = () => {
                   <User className="size-5" />
                   <span className="hidden sm:inline">Profile</span>
                 </Link>
-
-                <button className="flex gap-2 items-center" onClick={logout}>
-                  <LogOut className="size-5" />
-                  <span className="hidden sm:inline">Logout</span>
-                </button>
               </>
             )}
           </div>

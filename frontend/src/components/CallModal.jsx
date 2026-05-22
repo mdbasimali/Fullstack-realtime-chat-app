@@ -867,8 +867,14 @@ const CallModal = () => {
 
         {/* Add Participant Modal Overlay */}
         {showAddMemberModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in pointer-events-auto">
-            <div className="bg-[#1c1f26] border border-white/10 w-full max-w-sm rounded-[28px] overflow-hidden shadow-2xl animate-scale-up">
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in pointer-events-auto"
+            onClick={() => { setShowAddMemberModal(false); setMemberIdentifier(""); }}
+          >
+            <div 
+              className="bg-[#1c1f26] border border-white/10 w-full max-w-sm rounded-[28px] overflow-hidden shadow-2xl animate-scale-up"
+              onClick={(e) => e.stopPropagation()}
+            >
               <header className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-black/20">
                 <div className="text-left">
                   <h3 className="text-base font-extrabold text-white tracking-tight">Add Call Participant</h3>

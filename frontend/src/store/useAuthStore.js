@@ -130,6 +130,16 @@ export const useAuthStore = create((set,get) => ({
     }
   },
 
+  checkUsername: async (username) => {
+    try {
+      const res = await axiosInstance.get(`/auth/check-username?username=${username}`);
+      return res.data;
+    } catch (error) {
+      console.error("Error in checkUsername:", error);
+      return { available: false, message: error?.response?.data?.message || "Error checking username" };
+    }
+  },
+
   getLinkedDevices: async () => {
     set({ isFetchingDevices: true });
     try {

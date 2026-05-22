@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Camera, ArrowLeft, User, Pencil, Award, AtSign, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -155,7 +155,7 @@ const SIGNAL_AVATARS = [
 ];
 
 const ProfilePage = () => {
-  const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
+  const { authUser, isUpdatingProfile, updateProfile, checkUsername } = useAuthStore();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -166,6 +166,51 @@ const ProfilePage = () => {
   const [aboutText, setAboutText] = useState(authUser?.about || "Available");
   const [usernameText, setUsernameText] = useState(authUser?.username || "");
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState("idle");
+  const [usernameMessage, setUsernameMessage] = useState("");
+
+  useEffect(() => {
+    if (!usernameText) {
+      setUsernameStatus("idle");
+      setUsernameMessage("");
+      return;
+    }
+
+    if (usernameText === authUser?.username) {
+      setUsernameStatus("idle");
+      setUsernameMessage("");
+      return;
+    }
+
+    if (usernameText.length < 4) {
+      setUsernameStatus("too_short");
+      setUsernameMessage("Username must be at least 4 characters");
+      return;
+    }
+
+    const usernameRegex = /^[a-z0-9.\-_]+$/;
+    if (!usernameRegex.test(usernameText)) {
+      setUsernameStatus("invalid_chars");
+      setUsernameMessage("Only letters, numbers, ., -, and _ are allowed");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    setUsernameMessage("Checking availability...");
+
+    const timeoutId = setTimeout(async () => {
+      const result = await checkUsername(usernameText);
+      if (result.available) {
+        setUsernameStatus("available");
+        setUsernameMessage("Username is available");
+      } else {
+        setUsernameStatus("unavailable");
+        setUsernameMessage(result.message || "Username is not available");
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [usernameText, authUser?.username, checkUsername]);
 
   // Extract lowercase initials (e.g. "mr" for masudur rahaman)
   const getInitials = (name) => {
@@ -247,7 +292,7 @@ const ProfilePage = () => {
         
         <button
           onClick={handleSave}
-          disabled={isUpdatingProfile}
+          disabled={isUpdatingProfile || usernameStatus === "checking" || usernameStatus === "unavailable" || usernameStatus === "too_short" || usernameStatus === "invalid_chars"}
           className="btn btn-sm btn-primary rounded-full px-5 font-bold text-xs"
         >
           {isUpdatingProfile ? "Saving..." : "Save"}
@@ -383,18 +428,34 @@ const ProfilePage = () => {
 
         {/* 5. Username Row */}
         <div className="space-y-3.5 text-left">
-          <div className="flex items-center gap-5 py-3 border-b border-base-200">
+          <div className={`flex items-center gap-5 py-3 border-b ${
+            usernameStatus === "unavailable" || usernameStatus === "too_short" || usernameStatus === "invalid_chars" ? "border-error" : 
+            usernameStatus === "available" ? "border-success" : "border-base-200"
+          }`}>
             <AtSign size={22} className="text-base-content/50" />
             <div className="flex-1">
               <input 
                 type="text" 
                 value={usernameText}
-                onChange={(e) => setUsernameText(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value.toLowerCase().replace(/\s/g, '');
+                  setUsernameText(val);
+                }}
                 className="w-full bg-transparent border-none outline-none focus:outline-none text-[15px] font-semibold text-base-content"
                 placeholder="Username"
               />
             </div>
+            {usernameStatus === "checking" && <span className="text-xs text-base-content/50 animate-pulse">Checking...</span>}
           </div>
+
+          {usernameMessage && (
+            <p className={`text-xs font-semibold ${
+              usernameStatus === "unavailable" || usernameStatus === "too_short" || usernameStatus === "invalid_chars" ? "text-error" : 
+              usernameStatus === "available" ? "text-success" : "text-base-content/50"
+            }`}>
+              {usernameMessage}
+            </p>
+          )}
 
           {/* Username description */}
           <p className="text-xs font-semibold text-base-content/40 leading-relaxed">

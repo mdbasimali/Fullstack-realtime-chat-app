@@ -1,12 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { 
-  ArrowLeft, Laptop, Smartphone, Trash2, Camera, X, 
-  ShieldAlert, QrCode, Loader2, Info 
+  ArrowLeft, Laptop, Smartphone, Trash2, X, 
+  ShieldAlert, Loader2, Lock 
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Html5Qrcode } from "html5-qrcode";
 import toast from "react-hot-toast";
+
+const LinkedDevicesIllustration = () => (
+  <svg width="180" height="120" viewBox="0 0 180 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-6 mx-auto">
+    {/* Laptop screen */}
+    <rect x="30" y="30" width="90" height="60" rx="6" fill="#eff6ff" stroke="#4338ca" strokeWidth="2.5" />
+    {/* Laptop base */}
+    <path d="M 15 95 L 135 95" stroke="#4338ca" strokeWidth="4" strokeLinecap="round" />
+    <path d="M 30 90 L 120 90" stroke="#4338ca" strokeWidth="2" />
+    
+    {/* Phone */}
+    <rect x="130" y="45" width="35" height="50" rx="8" fill="#eff6ff" stroke="#4338ca" strokeWidth="2.5" />
+    
+    {/* Chat bubbles */}
+    <rect x="90" y="15" width="55" height="16" rx="8" fill="#eff6ff" stroke="#4338ca" strokeWidth="2.5" />
+    <rect x="75" y="40" width="45" height="16" rx="8" fill="#eff6ff" stroke="#4338ca" strokeWidth="2.5" />
+    <rect x="100" y="65" width="50" height="16" rx="8" fill="#eff6ff" stroke="#4338ca" strokeWidth="2.5" />
+  </svg>
+);
 
 const LinkedDevicesPage = () => {
   const navigate = useNavigate();
@@ -116,58 +134,56 @@ const LinkedDevicesPage = () => {
   const getDeviceIcon = (os = "") => {
     const lowerOS = os.toLowerCase();
     if (lowerOS.includes("windows") || lowerOS.includes("mac") || lowerOS.includes("linux")) {
-      return <Laptop className="size-6 text-primary" />;
+      return <Laptop className="size-6 text-base-content/80" />;
     }
-    return <Smartphone className="size-6 text-primary" />;
+    return <Smartphone className="size-6 text-base-content/80" />;
   };
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col bg-base-100 select-none overflow-hidden text-base-content">
+    <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col bg-base-100 select-none overflow-hidden text-base-content font-sans">
       {/* Header */}
-      <header className="p-4 safe-top border-b border-base-300 flex items-center gap-4 bg-base-100/90 backdrop-blur sticky top-0 z-10">
+      <header className="px-4 py-3 safe-top flex items-center gap-6 bg-base-100 sticky top-0 z-10">
         <Link 
           to="/settings" 
-          className="p-2 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
+          className="p-2 -ml-2 rounded-full hover:bg-base-200 text-base-content transition-colors"
           title="Back to Settings"
         >
-          <ArrowLeft size={22} />
+          <ArrowLeft size={24} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-xl font-bold tracking-tight">Linked Devices</h1>
+        <h1 className="text-[22px] font-normal tracking-tight">Linked devices</h1>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 max-w-xl w-full mx-auto p-5 pb-16 space-y-6 overflow-y-auto custom-scrollbar relative">
-        {/* Intro Info Banner */}
-        <div className="bg-primary/5 border border-primary/20 p-4 rounded-2xl flex gap-3 text-left">
-          <Info className="text-primary size-5 shrink-0 mt-0.5" />
-          <div className="text-xs space-y-1">
-            <h4 className="font-bold text-primary">Multi-Device Link</h4>
-            <p className="text-base-content/75 leading-relaxed">
-              Use ChatZone on other devices (Desktop, Web Browser) without keeping your phone online. Scan the QR code to link a device.
-            </p>
-          </div>
-        </div>
+      <div className="flex-1 w-full mx-auto overflow-y-auto custom-scrollbar flex flex-col">
+        
+        {/* Top Hero Section */}
+        <div className="flex flex-col items-center pt-10 px-6 text-center">
+          <LinkedDevicesIllustration />
 
-        {/* Link Button */}
-        <div className="flex flex-col items-center justify-center py-4">
+          <p className="text-[15px] text-base-content font-medium mb-1">
+            Use this ChatZone account on desktop or iPad.
+          </p>
+          <a href="#" className="text-blue-600 font-medium text-[14px] mb-8 hover:underline">
+            Learn more
+          </a>
+
           <button
             onClick={startScanner}
             disabled={isLinking}
-            className="btn btn-primary rounded-full px-6 font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-102 transition-transform"
+            className="w-full py-3.5 bg-blue-100 text-blue-900 rounded-full font-semibold text-[15px] flex items-center justify-center gap-2 hover:bg-blue-200 transition-colors"
           >
-            {isLinking ? (
-              <Loader2 className="size-5 animate-spin" />
-            ) : (
-              <QrCode className="size-5" />
-            )}
-            Link a Device
+            {isLinking && <Loader2 className="size-5 animate-spin" />}
+            Link a new device
           </button>
         </div>
 
+        {/* Divider */}
+        <div className="w-full border-b border-base-200/60 my-6" />
+
         {/* List Header */}
-        <div className="space-y-3 text-left">
-          <h3 className="text-xs font-bold text-base-content/50 uppercase tracking-wider px-1">
-            Active Devices ({linkedDevices.length})
+        <div className="px-6 flex-1 flex flex-col">
+          <h3 className="text-[16px] font-bold text-base-content mb-6 text-left">
+            My linked devices
           </h3>
 
           {isFetchingDevices ? (
@@ -175,42 +191,45 @@ const LinkedDevicesPage = () => {
               <Loader2 className="size-8 animate-spin text-primary opacity-40" />
             </div>
           ) : linkedDevices.length === 0 ? (
-            <div className="text-center py-10 bg-base-200/30 rounded-2xl border border-dashed border-base-300">
-              <Laptop className="size-10 mx-auto text-base-content/20 mb-2" />
-              <p className="text-sm font-semibold text-base-content/50">No linked devices found</p>
-              <p className="text-xs text-base-content/40 mt-1">Scan QR code on desktop to add one.</p>
+            <div className="text-center py-6 text-[14px] text-base-content/60 font-medium">
+              No linked devices
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-4">
               {linkedDevices.map((device) => (
                 <div 
                   key={device.sessionId}
-                  className="p-4 bg-base-200/50 border border-base-300 rounded-2xl flex items-center justify-between"
+                  className="flex items-center justify-between group"
                 >
-                  <div className="flex items-center gap-3.5">
-                    <div className="p-2.5 bg-base-100 rounded-xl border border-base-300">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-base-200/50 rounded-full">
                       {getDeviceIcon(device.os)}
                     </div>
-                    <div>
-                      <p className="text-sm font-bold">{device.deviceName}</p>
-                      <p className="text-xxs text-base-content/50 mt-0.5">
-                        Last Active: {new Date(device.lastActive).toLocaleDateString()} {new Date(device.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <div className="text-left">
+                      <p className="text-[15px] font-semibold text-base-content">{device.deviceName}</p>
+                      <p className="text-[13px] text-base-content/60 mt-0.5">
+                        Last active {new Date(device.lastActive).toLocaleDateString()}
                       </p>
-                      <p className="text-xxs text-base-content/40 mt-0.5">IP: {device.ip}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => setConfirmRevoke(device.sessionId)}
-                    className="p-2 rounded-xl text-error hover:bg-error/10 transition-colors"
+                    className="p-2 rounded-full text-base-content/40 hover:text-rose-500 hover:bg-rose-50 transition-colors"
                     title="Log out device"
                   >
-                    <Trash2 className="size-4.5" />
+                    <Trash2 className="size-5" />
                   </button>
                 </div>
               ))}
             </div>
           )}
+          
+          <div className="mt-auto pt-10 pb-8 flex items-start justify-center gap-2 text-base-content/60 text-[12px] text-center px-4">
+            <Lock size={14} className="shrink-0 mt-0.5" strokeWidth={2} />
+            <span className="max-w-[250px] leading-tight">Messages and chat info are protected by end-to-end encryption on all devices</span>
+          </div>
         </div>
+
       </div>
 
       {/* Confirmation Dialog Modal */}

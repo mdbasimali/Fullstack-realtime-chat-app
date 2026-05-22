@@ -60,7 +60,7 @@ const formatStoryTime = (createdAt) => {
 
 const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation, syncContacts, sendMessage } = useChatstore();
-  const { authUser, onlineUsers, logout } = useAuthStore();
+  const { authUser, onlineUsers } = useAuthStore();
   const { initiateCall } = useCallStore();
 
   const unreadChatsCount = users.filter(u => u.lastMessage && !u.lastMessage.isRead && u.lastMessage.senderId !== authUser?._id).length;
@@ -292,6 +292,25 @@ const Sidebar = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showThreeDotMenu, setShowThreeDotMenu] = useState(false);
   const [addContactInput, setAddContactInput] = useState("");
+
+  const profileMenuRef = useRef(null);
+  const threeDotMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+      if (threeDotMenuRef.current && !threeDotMenuRef.current.contains(event.target)) {
+        setShowThreeDotMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
   const [dismissedCards, setDismissedCards] = useState(() => {
     const saved = localStorage.getItem(`dismissed_cards_${authUser?._id}`);
     return saved ? JSON.parse(saved) : [];
@@ -357,6 +376,7 @@ const Sidebar = () => {
   const [activeMenuFriendUser, setActiveMenuFriendUser] = useState(null);
   const [friendMenuPosition, setFriendMenuPosition] = useState({ x: 0, y: 0 });
   const friendLongPressTimer = useRef(null);
+  const lastMouseUpTime = useRef(0);
 
   const startFriendLongPress = (e, targetUser) => {
     if (friendLongPressTimer.current) clearTimeout(friendLongPressTimer.current);
@@ -381,6 +401,7 @@ const Sidebar = () => {
 
   const endFriendLongPress = () => {
     if (friendLongPressTimer.current) clearTimeout(friendLongPressTimer.current);
+    lastMouseUpTime.current = Date.now();
   };
 
   const handleFriendContextMenu = (e, targetUser) => {
@@ -538,6 +559,7 @@ const Sidebar = () => {
 
   const endLongPress = () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    lastMouseUpTime.current = Date.now();
   };
 
   const handleContextMenu = (e, userId) => {
@@ -563,7 +585,7 @@ const Sidebar = () => {
 
   // Filter users for contact list drawer
   const filteredContacts = users.filter(user => 
-    user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+    user.isContact && user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Active chats are the users we've exchanged messages with, filtered by search query
@@ -618,18 +640,20 @@ const Sidebar = () => {
       <header className="p-4 safe-top border-b border-base-300 flex items-center justify-between bg-base-100/90 backdrop-blur sticky top-0 z-10">
         <div className="flex items-center gap-3">
           {/* Reactive Initials Profile Avatar */}
-          <div className="relative group cursor-pointer" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-            {authUser?.profilePic ? (
-              <img 
-                src={authUser.profilePic} 
-                alt={authUser.fullName} 
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary transition-all"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 flex items-center justify-center font-bold text-base shadow-sm hover:brightness-95 transition-all">
-                {getInitials(authUser?.fullName)}
-              </div>
-            )}
+          <div className="relative group" ref={profileMenuRef}>
+            <div className="cursor-pointer" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+              {authUser?.profilePic ? (
+                <img 
+                  src={authUser.profilePic} 
+                  alt={authUser.fullName} 
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary transition-all"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 flex items-center justify-center font-bold text-base shadow-sm hover:brightness-95 transition-all">
+                  {getInitials(authUser?.fullName)}
+                </div>
+              )}
+            </div>
             
             {/* Custom Settings/Profile dropdown */}
             {showProfileMenu && (
@@ -655,15 +679,6 @@ const Sidebar = () => {
                     <Settings size={18} className="text-slate-500 dark:text-slate-400" /> 
                     <span>Settings</span>
                   </Link>
-                </div>
-                <div className="py-1">
-                  <button 
-                    onClick={() => { setShowProfileMenu(false); logout(); }} 
-                    className="w-full flex items-center gap-3.5 px-5 py-3.5 text-sm hover:bg-rose-50/30 dark:hover:bg-rose-950/10 text-rose-400 dark:text-rose-300 font-medium transition-colors text-left"
-                  >
-                    <LogOut size={18} className="text-rose-400 dark:text-rose-300" /> 
-                    <span>Logout</span>
-                  </button>
                 </div>
               </div>
             )}
@@ -735,7 +750,7 @@ const Sidebar = () => {
             </button>
           )}
           
-          <div className="relative">
+          <div className="relative" ref={threeDotMenuRef}>
             <button 
               onClick={() => {
                 setShowThreeDotMenu(!showThreeDotMenu);
@@ -941,7 +956,10 @@ const Sidebar = () => {
             {activeMenuUserId && (
               <div 
                 className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[1px]" 
-                onClick={() => setActiveMenuUserId(null)}
+                onClick={() => {
+                  if (Date.now() - lastMouseUpTime.current < 150) return;
+                  setActiveMenuUserId(null);
+                }}
                 onContextMenu={(e) => { e.preventDefault(); setActiveMenuUserId(null); }}
               >
                 <div 
@@ -1174,7 +1192,10 @@ const Sidebar = () => {
             {activeMenuGroupId && (
               <div 
                 className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[1px]" 
-                onClick={() => setActiveMenuGroupId(null)}
+                onClick={() => {
+                  if (Date.now() - lastMouseUpTime.current < 150) return;
+                  setActiveMenuGroupId(null);
+                }}
                 onContextMenu={(e) => { e.preventDefault(); setActiveMenuGroupId(null); }}
               >
                 <div 
@@ -1455,7 +1476,7 @@ const Sidebar = () => {
             {/* Friends Count */}
             <div className="flex justify-between items-center px-1">
               <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Friends list</span>
-              <span className="text-xs text-primary font-bold">({users.length})</span>
+              <span className="text-xs text-primary font-bold">({users.filter(u => u.isContact).length})</span>
             </div>
 
             {/* List of Friends */}
@@ -1470,6 +1491,7 @@ const Sidebar = () => {
             ) : (
               <div className="space-y-2.5">
                 {users
+                  .filter(u => u.isContact)
                   .filter(u => u.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()))
                   .map((user) => {
                     const isOnline = onlineUsers.includes(user._id);
@@ -1571,7 +1593,11 @@ const Sidebar = () => {
             {activeMenuFriendId && activeMenuFriendUser && (
               <div 
                 className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[1px]" 
-                onClick={() => { setActiveMenuFriendId(null); setActiveMenuFriendUser(null); }}
+                onClick={() => { 
+                  if (Date.now() - lastMouseUpTime.current < 150) return;
+                  setActiveMenuFriendId(null); 
+                  setActiveMenuFriendUser(null); 
+                }}
                 onContextMenu={(e) => { e.preventDefault(); setActiveMenuFriendId(null); setActiveMenuFriendUser(null); }}
               >
                 <div 
@@ -2143,8 +2169,14 @@ const Sidebar = () => {
       )}
       {/* Join Group Modal */}
       {showJoinGroupModal && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-base-100 border border-base-300 w-full max-w-md rounded-[28px] overflow-hidden shadow-2xl animate-scale-up">
+        <div 
+          className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => { setShowJoinGroupModal(false); setInviteCodeInput(""); }}
+        >
+          <div 
+            className="bg-base-100 border border-base-300 w-full max-w-md rounded-[28px] overflow-hidden shadow-2xl animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
             <header className="px-6 py-5 border-b border-base-200 flex justify-between items-center bg-base-150">
               <div className="text-left">
                 <h3 className="text-lg font-extrabold text-base-content tracking-tight">Join Private Group</h3>
@@ -2200,8 +2232,14 @@ const Sidebar = () => {
 
       {/* ==================== MODAL: CONTACT SYNC SYSTEM ==================== */}
       {showSyncModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-base-100 border border-base-200/80 dark:border-base-850 w-full max-w-lg rounded-[32px] shadow-[0_24px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden animate-scale-up text-left">
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
+          onClick={() => { setShowSyncModal(false); setSyncStep("ask"); }}
+        >
+          <div 
+            className="bg-base-100 border border-base-200/80 dark:border-base-850 w-full max-w-lg rounded-[32px] shadow-[0_24px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden animate-scale-up text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             {/* Header */}
             <header className="px-6 py-5 border-b border-base-200/60 dark:border-base-800 flex justify-between items-center bg-base-50/50 dark:bg-base-950/20">

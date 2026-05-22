@@ -273,7 +273,7 @@ const LoginPage = () => {
             {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#6b7280" }}>
-                Email Address
+                Email or Username
               </label>
               <div className="relative">
                 <Mail
@@ -283,10 +283,10 @@ const LoginPage = () => {
                 />
                 <input
                   id="login-email"
-                  type="email"
-                  placeholder="you@example.com"
+                  type="text"
+                  placeholder="you@example.com or johndoe"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value.trim())}
                   onFocus={() => setFocusedField("email")}
                   onBlur={() => setFocusedField(null)}
                   className="auth-input w-full pl-11 pr-4 py-3.5 text-sm font-semibold text-white placeholder-gray-600 rounded-2xl transition-all duration-200 outline-none"

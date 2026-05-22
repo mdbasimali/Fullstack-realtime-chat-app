@@ -616,8 +616,14 @@ const CameraModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[999] bg-black/75 backdrop-blur-md text-white select-none flex items-center justify-center animate-in fade-in duration-300">
-      <div className="relative w-full h-full md:max-w-[420px] md:max-h-[850px] md:h-[92vh] md:rounded-[40px] md:border-8 md:border-neutral-800 md:shadow-2xl bg-black overflow-hidden flex flex-col justify-between">
+    <div 
+      className="fixed inset-0 z-[999] bg-black/75 backdrop-blur-md text-white select-none flex items-center justify-center animate-in fade-in duration-300"
+      onClick={onClose}
+    >
+      <div 
+        className="relative w-full h-full md:max-w-[420px] md:max-h-[850px] md:h-[92vh] md:rounded-[40px] md:border-8 md:border-neutral-800 md:shadow-2xl bg-black overflow-hidden flex flex-col justify-between"
+        onClick={(e) => e.stopPropagation()}
+      >
       
       {!capturedImage && !videoPreviewUrl ? (
         // Camera Viewport & Live Stream / Text composer with portrait mockup layout - edge-to-edge

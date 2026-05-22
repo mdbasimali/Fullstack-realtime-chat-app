@@ -6,7 +6,7 @@ import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 
 const SignUpPage = () => {
-  const { signup, googleLogin, isSigningUp, isLoggingIn } = useAuthStore();
+  const { signup, googleLogin, isSigningUp, isLoggingIn, checkUsername } = useAuthStore();
   const navigate = useNavigate();
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [googleClientId, setGoogleClientId] = useState("");
@@ -17,6 +17,45 @@ const SignUpPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [usernameStatus, setUsernameStatus] = useState("idle");
+  const [usernameMessage, setUsernameMessage] = useState("");
+
+  useEffect(() => {
+    if (!username) {
+      setUsernameStatus("idle");
+      setUsernameMessage("");
+      return;
+    }
+
+    if (username.length < 4) {
+      setUsernameStatus("too_short");
+      setUsernameMessage("Username must be at least 4 characters");
+      return;
+    }
+
+    const usernameRegex = /^[a-z0-9.\-_]+$/;
+    if (!usernameRegex.test(username)) {
+      setUsernameStatus("invalid_chars");
+      setUsernameMessage("Only letters, numbers, ., -, and _ are allowed");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    setUsernameMessage("Checking availability...");
+
+    const timeoutId = setTimeout(async () => {
+      const result = await checkUsername(username);
+      if (result.available) {
+        setUsernameStatus("available");
+        setUsernameMessage("Username is available");
+      } else {
+        setUsernameStatus("unavailable");
+        setUsernameMessage(result.message || "Username is not available");
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [username, checkUsername]);
 
   const handleGoogleCredentialResponse = async (response) => {
     const res = await googleLogin(response.credential);
@@ -33,6 +72,10 @@ const SignUpPage = () => {
     e.preventDefault();
     if (!fullName || !username || !email || !password || !phoneNumber) {
       toast.error("Please fill in all fields");
+      return;
+    }
+    if (usernameStatus !== "available") {
+      toast.error("Please provide a valid and available username");
       return;
     }
     if (password.length < 6) {
@@ -239,14 +282,27 @@ const SignUpPage = () => {
                     type="text"
                     placeholder="johndoe"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value.toLowerCase().replace(/\s/g, '');
+                      setUsername(val);
+                    }}
                     onFocus={() => setFocusedField("username")}
                     onBlur={() => setFocusedField(null)}
                     className="auth-input w-full pl-9 pr-3 py-3 text-xs font-semibold text-white placeholder-gray-700 rounded-xl outline-none transition-all duration-200"
-                    style={inputStyle("username")}
+                    style={{
+                      ...inputStyle("username"),
+                      borderColor: (usernameStatus === "unavailable" || usernameStatus === "too_short" || usernameStatus === "invalid_chars") ? "rgba(239,68,68,0.5)" : usernameStatus === "available" ? "rgba(16,185,129,0.5)" : focusedField === "username" ? "rgba(167,139,250,0.6)" : "rgba(255,255,255,0.08)"
+                    }}
                     required
                   />
                 </div>
+                {usernameMessage && (
+                  <span className="text-[10px] font-bold pl-1" style={{
+                    color: (usernameStatus === "unavailable" || usernameStatus === "too_short" || usernameStatus === "invalid_chars") ? "#ef4444" : usernameStatus === "available" ? "#10b981" : "#6b7280"
+                  }}>
+                    {usernameMessage}
+                  </span>
+                )}
               </div>
             </div>
 
