@@ -289,12 +289,12 @@ const LoginPage = () => {
                   onChange={(e) => setEmail(e.target.value.trim())}
                   onFocus={() => setFocusedField("email")}
                   onBlur={() => setFocusedField(null)}
-                  className="auth-input w-full pl-11 pr-4 py-3.5 text-sm font-semibold text-white placeholder-gray-600 rounded-2xl transition-all duration-200 outline-none"
+                  className="auth-input w-full pl-11 pr-4 py-3.5 text-sm font-semibold text-black placeholder-gray-500 rounded-2xl transition-all duration-200 outline-none"
                   style={{
-                    background: "rgba(255,255,255,0.04)",
+                    background: "#ffffff",
                     border: focusedField === "email"
                       ? "1px solid rgba(167,139,250,0.6)"
-                      : "1px solid rgba(255,255,255,0.08)",
+                      : "1px solid transparent",
                     boxShadow: focusedField === "email"
                       ? "0 0 0 3px rgba(124,58,237,0.12), 0 0 20px rgba(124,58,237,0.1)"
                       : "none"
@@ -323,12 +323,12 @@ const LoginPage = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setFocusedField("password")}
                   onBlur={() => setFocusedField(null)}
-                  className="auth-input w-full pl-11 pr-12 py-3.5 text-sm font-semibold text-white placeholder-gray-600 rounded-2xl transition-all duration-200 outline-none"
+                  className="auth-input w-full pl-11 pr-12 py-3.5 text-sm font-semibold text-black placeholder-gray-500 rounded-2xl transition-all duration-200 outline-none"
                   style={{
-                    background: "rgba(255,255,255,0.04)",
+                    background: "#ffffff",
                     border: focusedField === "password"
                       ? "1px solid rgba(167,139,250,0.6)"
-                      : "1px solid rgba(255,255,255,0.08)",
+                      : "1px solid transparent",
                     boxShadow: focusedField === "password"
                       ? "0 0 0 3px rgba(124,58,237,0.12), 0 0 20px rgba(124,58,237,0.1)"
                       : "none"
