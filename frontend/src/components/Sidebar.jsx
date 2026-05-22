@@ -10,7 +10,7 @@ import {
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
   Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban,
   Layers, Compass, Loader2, Pencil, Lock, Megaphone, ListFilter,
-  Grip, AtSign, Hash
+  Grip, AtSign, Hash, RefreshCw
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -869,7 +869,7 @@ const Sidebar = () => {
                               {user.lastMessage ? (
                                 <>
                                   {user.lastMessage.senderId === authUser._id ? (
-                                    <span className="inline-flex items-center align-middle mr-1.5 select-none -translate-y-[10%]">
+                                    <span className="inline-flex items-center align-middle mr-1.5 select-none">
                                       {user.lastMessage.isRead ? (
                                         <span className="flex -space-x-1 text-sky-500 dark:text-sky-400">
                                           <Check size={14} className="stroke-[3.5]" />
@@ -1689,7 +1689,7 @@ const Sidebar = () => {
       </main>
 
       {/* 3. Floating Action Buttons (FABs) on Bottom Right */}
-      <div className="absolute bottom-20 right-5 flex flex-col gap-3.5 z-20">
+      <div className="absolute bottom-[12%] right-5 flex flex-col gap-3.5 z-20">
         {/* Camera FAB */}
         {activeTab === "stories" && (
           <button 
@@ -1832,6 +1832,25 @@ const Sidebar = () => {
                     <Hash size={22} className="stroke-[1.5]" />
                   </div>
                   <span className="text-[16px] font-medium text-base-content tracking-tight">Find by phone number</span>
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowSyncModal(true);
+                    if (navigator.contacts && navigator.contacts.select) {
+                      handleNativeContactSync();
+                    } else {
+                      setSyncStep("fallback");
+                    }
+                  }}
+                  className="flex items-center gap-4 w-full group text-left px-1 py-1.5 hover:bg-base-200 rounded-xl transition-colors"
+                >
+                  <div className="w-[44px] h-[44px] rounded-full bg-base-200 text-base-content/80 flex items-center justify-center shrink-0 border border-base-300">
+                    <RefreshCw size={22} className={`stroke-[1.5] ${isUsersLoading ? "animate-spin" : ""}`} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[16px] font-medium text-base-content tracking-tight">Refresh contacts</span>
+                    <span className="text-[13px] text-base-content/60">Missing someone? Try refreshing</span>
+                  </div>
                 </button>
               </div>
             )}
