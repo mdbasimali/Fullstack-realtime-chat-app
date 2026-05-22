@@ -28,8 +28,12 @@ const messageSchema = new mongoose.Schema(
         },
         messageType: {
             type: String,
-            enum: ["text", "image", "video", "voice_call", "video_call", "audio"],
+            enum: ["text", "image", "video", "voice_call", "video_call", "audio", "story_reply"],
             default: "text",
+        },
+        storyId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Story"
         },
         callStatus: {
             type: String, // "accepted", "rejected", "missed", "ended"

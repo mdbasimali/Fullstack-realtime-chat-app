@@ -420,7 +420,34 @@ const ChatContainer = () => {
                           {message.messageType === "audio" && message.image && (
                             <VoicePlayer url={message.image} isMyMessage={isMyMessage} />
                           )}
-                          {message.text && message.messageType === "text" && (
+
+                          {/* Story Reply Render */}
+                          {message.messageType === "story_reply" && message.storyId && (
+                            <div className="mb-2 rounded-xl overflow-hidden border border-black/5 bg-black/5 dark:bg-white/5 flex flex-col min-w-[140px] max-w-[200px]">
+                               <div className="flex gap-2 p-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-[11px] font-bold truncate ${isMyMessage ? "text-primary-content/80" : "text-primary"}`}>
+                                      {isMyMessage ? "You" : (selectedUser?.fullName || "Contact")} • Status
+                                    </p>
+                                    <p className="text-[10px] line-clamp-2 opacity-70 italic">
+                                      {message.storyId.type === "text" ? message.storyId.content : (message.storyId.caption || "Photo/Video status")}
+                                    </p>
+                                  </div>
+                                  {message.storyId.type !== "text" && (
+                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-black/20 shrink-0 border border-black/5">
+                                      <img 
+                                        src={message.storyId.content} 
+                                        alt="status" 
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                               </div>
+                               <div className={`h-[3px] w-full ${isMyMessage ? "bg-primary-content/20" : "bg-primary/20"}`} />
+                            </div>
+                          )}
+
+                          {message.text && (message.messageType === "text" || message.messageType === "story_reply") && (
                             <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed break-words select-none">
                               {message.text}
                             </p>

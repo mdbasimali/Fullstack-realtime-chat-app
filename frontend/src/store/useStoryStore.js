@@ -103,6 +103,28 @@ export const useStoryStore = create((set, get) => ({
       }));
       set({ stories: updatedStories });
     });
+
+    socket.on("storyLiked", ({ storyId, liker, isLiked }) => {
+      const { stories } = get();
+      const updatedStories = stories.map(group => ({
+        ...group,
+        stories: group.stories.map(story => {
+          if (story._id.toString() === storyId.toString()) {
+            let updatedLikes = [...story.likes];
+            if (isLiked) {
+              if (!updatedLikes.some(l => l._id?.toString() === liker._id?.toString() || l.toString() === liker._id?.toString())) {
+                updatedLikes.push(liker);
+              }
+            } else {
+              updatedLikes = updatedLikes.filter(l => (l._id?.toString() || l.toString()) !== liker._id?.toString());
+            }
+            return { ...story, likes: updatedLikes };
+          }
+          return story;
+        })
+      }));
+      set({ stories: updatedStories });
+    });
   },
 
   unsubscribeFromStories: () => {
@@ -110,6 +132,7 @@ export const useStoryStore = create((set, get) => ({
     if (socket) {
       socket.off("newStory");
       socket.off("storyViewed");
+      socket.off("storyLiked");
     }
   },
 
@@ -130,6 +153,37 @@ export const useStoryStore = create((set, get) => ({
       await axiosInstance.post(`/stories/${storyId}/view`);
     } catch (error) {
       console.error("View story error:", error);
+    }
+  },
+
+  likeStory: async (storyId) => {
+    try {
+      const res = await axiosInstance.post(`/stories/${storyId}/like`);
+      // Local update for immediate feedback
+      const { stories } = get();
+      const authUser = useAuthStore.getState().authUser;
+      
+      const updatedStories = stories.map(group => ({
+        ...group,
+        stories: group.stories.map(story => {
+          if (story._id.toString() === storyId.toString()) {
+            let updatedLikes = [...story.likes];
+            if (res.data.isLiked) {
+              if (!updatedLikes.some(l => l._id?.toString() === authUser._id?.toString() || l.toString() === authUser._id?.toString())) {
+                updatedLikes.push(authUser);
+              }
+            } else {
+              updatedLikes = updatedLikes.filter(l => (l._id?.toString() || l.toString()) !== authUser._id?.toString());
+            }
+            return { ...story, likes: updatedLikes };
+          }
+          return story;
+        })
+      }));
+      set({ stories: updatedStories });
+      return res.data;
+    } catch (error) {
+      console.error("Like story error:", error);
     }
   }
 }));

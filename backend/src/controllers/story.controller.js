@@ -206,3 +206,50 @@ export const viewStory = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const likeStory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const story = await Story.findById(id);
+    if (!story) {
+      return res.status(404).json({ message: "Story not found" });
+    }
+
+    const likeIndex = story.likes.indexOf(userId);
+    let isLiked = false;
+
+    if (likeIndex === -1) {
+      // Like
+      story.likes.push(userId);
+      isLiked = true;
+    } else {
+      // Unlike
+      story.likes.splice(likeIndex, 1);
+      isLiked = false;
+    }
+
+    await story.save();
+
+    // Notify story owner via socket
+    const ownerSocketId = getReceiverSocketId(story.userId.toString());
+    if (ownerSocketId && story.userId.toString() !== userId.toString()) {
+      const liker = await User.findById(userId).select("fullName profilePic");
+      io.to(ownerSocketId).emit("storyLiked", {
+        storyId: story._id,
+        liker: {
+          _id: liker._id,
+          fullName: liker.fullName,
+          profilePic: liker.profilePic
+        },
+        isLiked
+      });
+    }
+
+    res.status(200).json({ isLiked, likesCount: story.likes.length });
+  } catch (error) {
+    console.error("Error in likeStory controller:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

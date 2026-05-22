@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, MoreVertical, Eye, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, MoreVertical, Eye, Trash2, ChevronLeft, ChevronRight, Heart, Send } from "lucide-react";
 import { useStoryStore } from "../store/useStoryStore";
 import { useAuthStore } from "../store/useAuthStore";
+import { useChatstore } from "../store/useChatStore";
+import toast from "react-hot-toast";
 
 const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -12,12 +14,17 @@ const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => 
   const [storyDuration, setStoryDuration] = useState(5000);
   const [showViewsDrawer, setShowViewsDrawer] = useState(false);
   
+  // Like & Reply states
+  const [replyText, setReplyText] = useState("");
+  const [isSendingReply, setIsSendingReply] = useState(false);
+
   // Swipe to close states
   const [touchStart, setTouchStart] = useState(null);
   const [translateY, setTranslateY] = useState(0);
 
-  const { deleteStory, viewStory, getStories, stories: storeStories } = useStoryStore();
+  const { deleteStory, viewStory, getStories, stories: storeStories, likeStory } = useStoryStore();
   const { socket } = useAuthStore();
+  const { sendMessage } = useChatstore();
   const isOwnStory = authUser && user._id === authUser._id;
 
   // Find dynamic version of stories from store to get updated views
@@ -28,6 +35,7 @@ const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => 
   });
   const activeStories = myStoriesGroup ? myStoriesGroup.stories : stories;
   const currentStory = activeStories[currentIndex] || activeStories[0] || stories[0];
+  const isLiked = currentStory?.likes?.some(l => (l._id?.toString() || l.toString()) === authUser?._id?.toString());
 
   // Curated list of premium WhatsApp-style background colors for text status updates
   const getStatusBgColor = (story) => {
@@ -128,6 +136,41 @@ const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => 
       socket.off("storyViewed", handleStoryViewed);
     };
   }, [socket, isOwnStory, user._id]);
+
+  const handleLike = async (e) => {
+    e.stopPropagation();
+    if (isOwnStory) return;
+    await likeStory(currentStory._id);
+  };
+
+  const handleSendReply = async (e) => {
+    if (e) e.preventDefault();
+    if (!replyText.trim() || isSendingReply) return;
+
+    setIsSendingReply(true);
+    setIsPaused(true);
+
+    try {
+      // Send message TO the story owner (user)
+      const success = await sendMessage({
+        text: replyText.trim(),
+        messageType: "story_reply",
+        storyId: currentStory._id,
+        receiverId: user._id
+      });
+
+      if (success) {
+        toast.success("Reply sent!");
+        setReplyText("");
+        setIsPaused(false);
+      }
+    } catch (err) {
+      console.error("Reply error:", err);
+      toast.error("Failed to send reply");
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
 
   const handleDelete = () => {
     setIsPaused(true);
@@ -416,6 +459,49 @@ const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => 
           >
             <Eye size={18} className="text-white/95" />
             <span className="text-sm font-medium leading-none">{currentStory?.views?.length || 0}</span>
+          </button>
+        </div>
+      )}
+
+      {/* 5. Bottom Interaction Area (Like & Reply) */}
+      {!isOwnStory && (
+        <div 
+          className="absolute bottom-0 inset-x-0 p-4 pb-10 z-50 bg-gradient-to-t from-black/60 to-transparent flex items-center gap-3 animate-in slide-in-from-bottom duration-300"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Reply Input Field */}
+          <div className="flex-1 relative">
+             <form onSubmit={handleSendReply}>
+                <input 
+                  type="text" 
+                  placeholder="Reply" 
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onFocus={() => setIsPaused(true)}
+                  onBlur={() => { if (!replyText) setIsPaused(false); }}
+                  className="w-full bg-black/40 backdrop-blur-xl border border-white/10 rounded-full py-3 px-6 text-[15px] text-white placeholder:text-white/60 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all shadow-2xl"
+                />
+                {replyText.trim() && (
+                  <button 
+                    type="submit"
+                    disabled={isSendingReply}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center active:scale-90 transition-transform shadow-lg disabled:opacity-50"
+                  >
+                    {isSendingReply ? <span className="loading loading-spinner loading-xs" /> : <Send size={18} className="ml-0.5" />}
+                  </button>
+                )}
+             </form>
+          </div>
+
+          {/* Like Heart Button */}
+          <button 
+            onClick={handleLike}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-75 shadow-lg ${
+              isLiked ? "text-rose-500" : "text-white hover:bg-white/10"
+            }`}
+            title={isLiked ? "Unlike" : "Like"}
+          >
+            <Heart size={30} className={isLiked ? "fill-rose-500" : ""} />
           </button>
         </div>
       )}

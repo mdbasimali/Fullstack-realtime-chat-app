@@ -8,5 +8,6 @@ router.get("/", protectRoute, getStories);
 router.post("/", protectRoute, createStory);
 router.delete("/:id", protectRoute, deleteStory);
 router.post("/:id/view", protectRoute, viewStory);
+router.post("/:id/like", protectRoute, likeStory);
 
 export default router;

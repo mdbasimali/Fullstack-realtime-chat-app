@@ -198,7 +198,9 @@ export const getMessages = async(req,res) =>{
             {senderId:myId, receiverId:userToChatId},
             {senderId:userToChatId, receiverId:myId}
         ]
-      }).sort({ createdAt: 1 });
+      })
+      .sort({ createdAt: 1 })
+      .populate("storyId");
       
      res.status(200).json(messages)
     }catch(error){
@@ -209,7 +211,7 @@ export const getMessages = async(req,res) =>{
 
 export const sendMessage = async(req,res)=>{
    try{
-    const {text,image,messageType}=req.body;
+    const {text,image,messageType,storyId}=req.body;
     const {id: receiverId}=req.params;
     const senderId=req.user._id;
 
@@ -240,17 +242,21 @@ export const sendMessage = async(req,res)=>{
         text,
         image: imageUrl,
         messageType: messageType || (image ? "image" : "text"),
+        storyId: storyId || undefined,
     });
     await newMessage.save();
+
+    // Populate storyId before sending via socket
+    const populatedMessage = await Message.findById(newMessage._id).populate("storyId");
 
     // socket.io
     const receiverSocketId =getReceiverSocketId(receiverId);
     if(receiverSocketId){
-        io.to(receiverSocketId).emit("newMessage",newMessage)
+        io.to(receiverSocketId).emit("newMessage",populatedMessage)
     }
     
 
-    res.status(201).json(newMessage)
+    res.status(201).json(populatedMessage)
    }catch(error){
        console.log("Error in sendMessages controllers: ",error.message);
        res.status(500).json({error: "Internal server error"});
