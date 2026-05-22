@@ -398,17 +398,24 @@ const CallModal = () => {
     if (!audioEl) return;
     try {
       if (typeof audioEl.setSinkId === "function") {
+        const devices = await navigator.mediaDevices.enumerateDevices();
         if (speakerOn) {
-          await audioEl.setSinkId("");
+          // Explicitly try to find a loudspeaker
+          const speaker = devices.find(
+            (d) => d.kind === "audiooutput" && 
+              (d.label.toLowerCase().includes("speaker") && !d.label.toLowerCase().includes("ear"))
+          );
+          await audioEl.setSinkId(speaker ? speaker.deviceId : "");
         } else {
-          const devices = await navigator.mediaDevices.enumerateDevices();
+          // Explicitly try to find an earpiece
           const earpiece = devices.find(
             (d) => d.kind === "audiooutput" &&
               (d.label.toLowerCase().includes("earpiece") ||
                d.label.toLowerCase().includes("receiver") ||
                d.label.toLowerCase().includes("ear speaker"))
           );
-          await audioEl.setSinkId(earpiece ? earpiece.deviceId : "");
+          // "default" is often the earpiece during a WebRTC communication session on mobile
+          await audioEl.setSinkId(earpiece ? earpiece.deviceId : "default");
         }
       }
     } catch (err) {
