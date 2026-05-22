@@ -65,18 +65,18 @@ const ChatHeader = () => {
 
   return (
     <div className="p-3 safe-p-3-top border-b border-base-300 bg-base-100/95 backdrop-blur-md flex items-center justify-between shadow-sm">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
         {/* Back button */}
         <button
           onClick={handleBack}
-          className="p-1.5 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
+          className="p-1.5 rounded-full hover:bg-base-200 text-base-content/80 transition-colors shrink-0"
           title="Back"
         >
           <ArrowLeft size={21} />
         </button>
 
         {/* Avatar */}
-        <div className="avatar">
+        <div className="avatar shrink-0">
           <div className="size-10 rounded-full relative flex items-center justify-center bg-indigo-100 dark:bg-indigo-950/40 text-primary font-bold">
             {selectedGroup ? (
               selectedGroup.avatar ? (
@@ -99,11 +99,13 @@ const ChatHeader = () => {
         </div>
 
         {/* User / Group info */}
-        <div className="text-left">
+        <div className="text-left flex-1 min-w-0">
           <h3 className="font-semibold text-sm md:text-base leading-tight flex items-center gap-1.5 text-base-content">
-            {selectedGroup ? selectedGroup.name : (getNickname(authUser?._id, selectedUser._id) || selectedUser.fullName)}
+            <span className="truncate">
+              {selectedGroup ? selectedGroup.name : (getNickname(authUser?._id, selectedUser._id) || selectedUser.fullName)}
+            </span>
           </h3>
-          <p className="text-[11px] text-base-content/60 font-semibold mt-0.5">
+          <p className="text-[11px] text-base-content/60 font-semibold mt-0.5 truncate">
             {selectedGroup ? (
               `${selectedGroup.membersCount} members`
             ) : onlineUsers.includes(selectedUser._id) ? (
