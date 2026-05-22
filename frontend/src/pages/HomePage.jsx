@@ -107,8 +107,8 @@ const HomePage = () => {
 
       {/* 2. Sticky Mobile Bottom Navigation Footer (Only on Mobile screens, hidden inside active chats) */}
       {(!selectedUser && !selectedGroup) && (
-        <div className="block md:hidden flex-shrink-0">
-          <nav className="bg-base-100/90 border-t border-base-300 p-2.5 flex justify-around items-center backdrop-blur-md z-30">
+        <div className="block md:hidden fixed bottom-4 left-4 right-4 z-40">
+          <nav className="bg-base-100/95 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-base-300/50 py-1.5 px-3 rounded-[32px] flex justify-around items-center backdrop-blur-xl">
             
             {/* Chats Tab Button */}
             <button 
@@ -117,14 +117,14 @@ const HomePage = () => {
                 setSelectedUser(null);
                 setSelectedGroup(null);
               }}
-              className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+              className="flex flex-col items-center gap-0.5 text-center group cursor-pointer"
             >
-              <div className={`px-5 py-1 rounded-full transition-all relative ${
+              <div className={`px-4 py-0.5 rounded-full transition-all relative ${
                 activeTab === "chats" 
                   ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
                   : "text-base-content/60 group-hover:text-base-content"
               }`}>
-                <MessageSquare size={20} className={activeTab === "chats" ? "fill-primary text-primary" : "text-base-content/60"} />
+                <MessageSquare size={18} className={activeTab === "chats" ? "fill-primary text-primary" : "text-base-content/60"} />
                 {unreadChatsCount > 0 && (
                   <span className="absolute top-0.5 right-2 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-[9px] font-extrabold shadow-sm border border-base-100 animate-pulse">
                     {unreadChatsCount}
@@ -145,14 +145,14 @@ const HomePage = () => {
                 setSelectedUser(null);
                 setSelectedGroup(null);
               }}
-              className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+              className="flex flex-col items-center gap-0.5 text-center group cursor-pointer"
             >
-              <div className={`px-5 py-1 rounded-full transition-all ${
+              <div className={`px-4 py-0.5 rounded-full transition-all ${
                 activeTab === "groups" 
                   ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
                   : "text-base-content/60 group-hover:text-base-content"
               }`}>
-                <Layers size={20} className={activeTab === "groups" ? "text-primary" : "text-base-content/60"} />
+                <Layers size={18} className={activeTab === "groups" ? "text-primary" : "text-base-content/60"} />
               </div>
               <span className={`text-[10px] font-bold tracking-wide transition-all ${
                 activeTab === "groups" ? "text-primary" : "text-base-content/60"
@@ -168,14 +168,14 @@ const HomePage = () => {
                 setSelectedUser(null);
                 setSelectedGroup(null);
               }}
-              className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+              className="flex flex-col items-center gap-0.5 text-center group cursor-pointer"
             >
-              <div className={`px-5 py-1 rounded-full transition-all ${
+              <div className={`px-4 py-0.5 rounded-full transition-all ${
                 activeTab === "calls" 
                   ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
                   : "text-base-content/60 group-hover:text-base-content"
               }`}>
-                <Phone size={20} className={activeTab === "calls" ? "fill-primary text-primary" : "text-base-content/60"} />
+                <Phone size={18} className={activeTab === "calls" ? "fill-primary text-primary" : "text-base-content/60"} />
               </div>
               <span className={`text-[10px] font-bold tracking-wide transition-all ${
                 activeTab === "calls" ? "text-primary" : "text-base-content/60"
@@ -191,14 +191,14 @@ const HomePage = () => {
                 setSelectedUser(null);
                 setSelectedGroup(null);
               }}
-              className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+              className="flex flex-col items-center gap-0.5 text-center group cursor-pointer"
             >
-              <div className={`px-5 py-1 rounded-full transition-all ${
+              <div className={`px-4 py-0.5 rounded-full transition-all ${
                 activeTab === "friends" 
                   ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
                   : "text-base-content/60 group-hover:text-base-content"
               }`}>
-                <Users size={20} className={activeTab === "friends" ? "text-primary" : "text-base-content/60"} />
+                <Users size={18} className={activeTab === "friends" ? "text-primary" : "text-base-content/60"} />
               </div>
               <span className={`text-[10px] font-bold tracking-wide transition-all ${
                 activeTab === "friends" ? "text-primary" : "text-base-content/60"
@@ -214,14 +214,14 @@ const HomePage = () => {
                 setSelectedUser(null);
                 setSelectedGroup(null);
               }}
-              className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+              className="flex flex-col items-center gap-0.5 text-center group cursor-pointer"
             >
-              <div className={`px-5 py-1 rounded-full transition-all ${
+              <div className={`px-4 py-0.5 rounded-full transition-all ${
                 activeTab === "stories" 
                   ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
                   : "text-base-content/60 group-hover:text-base-content"
               }`}>
-                <ImageIcon size={20} className={activeTab === "stories" ? "fill-primary text-primary" : "text-base-content/60"} />
+                <ImageIcon size={18} className={activeTab === "stories" ? "fill-primary text-primary" : "text-base-content/60"} />
               </div>
               <span className={`text-[10px] font-bold tracking-wide transition-all ${
                 activeTab === "stories" ? "text-primary" : "text-base-content/60"
