@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useCallStore } from "../store/useCallStore";
 import { useAuthStore } from "../store/useAuthStore";
+import toast from "react-hot-toast";
 import { 
   Phone, 
   PhoneOff, 
@@ -415,11 +416,22 @@ const CallModal = () => {
                d.label.toLowerCase().includes("ear speaker"))
           );
           // "default" is often the earpiece during a WebRTC communication session on mobile
-          await audioEl.setSinkId(earpiece ? earpiece.deviceId : "default");
+          try {
+            await audioEl.setSinkId(earpiece ? earpiece.deviceId : "default");
+          } catch (e) {
+            if (!earpiece) await audioEl.setSinkId(""); // fallback if "default" is invalid
+          }
         }
+      } else {
+        toast.error("Browser doesn't support changing speaker/earpiece.", { id: "audio-err", duration: 3000 });
       }
     } catch (err) {
       console.warn("Audio output routing error:", err);
+      if (err.name === 'NotAllowedError') {
+        toast.error("Audio routing blocked by browser permissions.", { id: "audio-err" });
+      } else {
+        toast.error("Cannot toggle earpiece on this device.", { id: "audio-err" });
+      }
     }
   };
 
