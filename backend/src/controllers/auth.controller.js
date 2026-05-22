@@ -641,3 +641,30 @@ export const changePin = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const verifyPin = async (req, res) => {
+  try {
+    const { pin } = req.body;
+    const userId = req.user._id;
+
+    if (!pin) {
+      return res.status(400).json({ message: "PIN is required" });
+    }
+
+    const user = await User.findById(userId);
+    
+    if (!user.pin) {
+      return res.status(400).json({ message: "No PIN is currently set for this account" });
+    }
+
+    const isMatch = await bcrypt.compare(pin.toString(), user.pin);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Incorrect PIN" });
+    }
+
+    res.status(200).json({ message: "PIN verified successfully" });
+  } catch (error) {
+    console.error("Error in verifyPin controller:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

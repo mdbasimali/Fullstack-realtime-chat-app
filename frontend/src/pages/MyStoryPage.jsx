@@ -173,7 +173,6 @@ const MyStoryPage = () => {
               </p>
               
               <ul className="space-y-4 relative pl-4">
-                <div className="absolute left-[3px] top-2 bottom-2 w-0.5 bg-base-300"></div>
                 <li className="flex items-center gap-4 relative">
                   <div className="absolute -left-[5px] w-1.5 h-6 bg-base-300 rounded-full"></div>
                   Starting a chat

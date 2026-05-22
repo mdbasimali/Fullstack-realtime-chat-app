@@ -8,6 +8,7 @@ import { Loader, Video, Phone, X, Loader2 } from "lucide-react"
 import { useThemeStore } from "./store/useThemeStore";
 import { useCallStore } from "./store/useCallStore";
 import CallModal from "./components/CallModal";
+import AppLockScreen from "./components/AppLockScreen";
 import { Capacitor } from "@capacitor/core";
 import { App as CapApp } from "@capacitor/app";
 import { AnimatePresence, motion } from "framer-motion";
@@ -57,7 +58,7 @@ const LinkedDevicesPage = React.lazy(() => import("./pages/LinkedDevicesPage"));
 // import axios from "axios";
 
 const App = () => {
-  const {authUser,checkAuth,isCheckingAuth,onlineUsers}=useAuthStore();
+  const {authUser,checkAuth,isCheckingAuth,onlineUsers,isAppLocked,initAppLockListener}=useAuthStore();
   const { theme } = useThemeStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -149,7 +150,8 @@ const App = () => {
 
   useEffect(()=>{
     checkAuth();
-  },[checkAuth]);
+    initAppLockListener();
+  },[checkAuth, initAppLockListener]);
 
   const { socket } = useAuthStore();
   const { 
@@ -324,6 +326,8 @@ const App = () => {
 
   return (
     <div data-theme={theme} className="h-screen flex flex-col">
+      {isAppLocked && <AppLockScreen />}
+      
       {showNavbar && <Navbar />}
       <div className="flex-1 flex flex-col min-h-0">
         <React.Suspense fallback={null}>

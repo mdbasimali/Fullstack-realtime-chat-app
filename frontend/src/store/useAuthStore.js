@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import {io} from "socket.io-client";
+import { App } from "@capacitor/app";
 // import { Users } from "lucide-react";
 
 const getBaseURL = () => {
@@ -23,6 +24,8 @@ export const useAuthStore = create((set,get) => ({
   socket:null,
   linkedDevices: [],
   isFetchingDevices: false,
+  isAppLocked: false,
+  isVerifyingPin: false,
 
   checkAuth: async () => {
     try {
@@ -157,6 +160,44 @@ export const useAuthStore = create((set,get) => ({
     } catch (error) {
       console.error("Error in checkUsername:", error);
       return { available: false, message: error?.response?.data?.message || "Error checking username" };
+    }
+  },
+
+  verifyPin: async (pin) => {
+    set({ isVerifyingPin: true });
+    try {
+      const res = await axiosInstance.post("/auth/verify-pin", { pin });
+      set({ isAppLocked: false });
+      return { success: true, message: res.data.message };
+    } catch (error) {
+      console.error("Error verifying PIN:", error);
+      return { success: false, error: error?.response?.data?.message || "Incorrect PIN" };
+    } finally {
+      set({ isVerifyingPin: false });
+    }
+  },
+
+  initAppLockListener: () => {
+    // Listen for Web Visibility API
+    document.addEventListener("visibilitychange", () => {
+      const authUser = get().authUser;
+      if (document.visibilityState === "visible") {
+        if (authUser?.pin) {
+          set({ isAppLocked: true });
+        }
+      }
+    });
+
+    // Listen for Capacitor App State
+    try {
+      App.addListener("appStateChange", ({ isActive }) => {
+        const authUser = get().authUser;
+        if (isActive && authUser?.pin) {
+          set({ isAppLocked: true });
+        }
+      });
+    } catch (e) {
+      console.log("Capacitor App plugin not active");
     }
   },
 
