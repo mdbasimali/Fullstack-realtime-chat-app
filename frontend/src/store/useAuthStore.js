@@ -130,6 +130,26 @@ export const useAuthStore = create((set,get) => ({
     }
   },
 
+  createPin: async (pin) => {
+    try {
+      const res = await axiosInstance.put("/auth/create-pin", { pin });
+      return { success: true, message: res.data.message };
+    } catch (error) {
+      console.error("Error creating PIN:", error);
+      return { success: false, error: error?.response?.data?.message || "Failed to create PIN" };
+    }
+  },
+
+  changePin: async (oldPin, newPin) => {
+    try {
+      const res = await axiosInstance.put("/auth/change-pin", { oldPin, newPin });
+      return { success: true, message: res.data.message };
+    } catch (error) {
+      console.error("Error changing PIN:", error);
+      return { success: false, error: error?.response?.data?.message || "Failed to change PIN" };
+    }
+  },
+
   checkUsername: async (username) => {
     try {
       const res = await axiosInstance.get(`/auth/check-username?username=${username}`);

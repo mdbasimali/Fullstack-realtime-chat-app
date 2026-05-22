@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
 const AccountPage = () => {
+  const navigate = useNavigate();
   const [pinReminders, setPinReminders] = useState(true);
   const [registrationLock, setRegistrationLock] = useState(false);
 
@@ -31,7 +32,10 @@ const AccountPage = () => {
             <span className="text-[14px] font-bold text-base-content">ChatZone PIN</span>
           </div>
           
-          <button className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left">
+          <button 
+            onClick={() => navigate("/settings/account/change-pin")}
+            className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left"
+          >
             <span className="text-[16px] text-base-content font-medium">Change your PIN</span>
           </button>
 

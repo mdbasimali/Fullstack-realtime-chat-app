@@ -60,9 +60,13 @@ const SignUpPage = () => {
   const handleGoogleCredentialResponse = async (response) => {
     const res = await googleLogin(response.credential);
     if (res.success) {
-      toast.success("Account created successfully!");
+      toast.success(res.user?.isNewUser ? "Account created successfully!" : "Logged in successfully!");
       localStorage.setItem("trigger_contact_sync", "true");
-      navigate("/");
+      if (res.user?.isNewUser) {
+        navigate("/create-pin");
+      } else {
+        navigate("/");
+      }
     } else {
       toast.error(res.error || "Authentication failed");
     }
@@ -86,7 +90,7 @@ const SignUpPage = () => {
     if (res.success) {
       toast.success("Account created successfully!");
       localStorage.setItem("trigger_contact_sync", "true");
-      navigate("/");
+      navigate("/create-pin");
     } else {
       toast.error(res.error || "Failed to create account");
     }

@@ -27,6 +27,8 @@ const PageWrapper = ({ children }) => (
 // Lazy load pages for faster initial load
 const HomePage = React.lazy(() => import("./pages/HomePage"));
 const SignUpPage = React.lazy(() => import("./pages/SignUpPage"));
+const CreatePinPage = React.lazy(() => import("./pages/CreatePinPage"));
+const ChangePinPage = React.lazy(() => import("./pages/ChangePinPage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const SettingsPage = React.lazy(() => import("./pages/SettingsPage"));
 const AccountPage = React.lazy(() => import("./pages/AccountPage"));
@@ -285,7 +287,11 @@ const App = () => {
       import("react-hot-toast").then(({ default: toast }) => {
         toast.success("Welcome to ChatZone!");
       });
-      window.history.replaceState({}, document.title, "/");
+      if (params.get("isNewUser") === "true") {
+        navigate("/create-pin");
+      } else {
+        window.history.replaceState({}, document.title, "/");
+      }
     }
 
     const code = params.get("code");
@@ -311,7 +317,7 @@ const App = () => {
     </div>
   );
 
-  const showNavbar = !["/", "/settings", "/settings/account", "/settings/appearance", "/settings/appearance/chat-color", "/settings/appearance/app-icon", "/settings/devices", "/settings/chats", "/settings/stories", "/settings/stories/my-story", "/settings/stories/connections", "/settings/notifications", "/settings/privacy", "/settings/backups", "/settings/data-storage", "/settings/data-storage/storage", "/settings/data-storage/storage/review", "/settings/invite", "/settings/help", "/settings/help/contact", "/settings/help/terms", "/profile", "/join-group", "/login", "/signup"].includes(location.pathname);
+  const showNavbar = !["/", "/settings", "/settings/account", "/settings/account/change-pin", "/settings/appearance", "/settings/appearance/chat-color", "/settings/appearance/app-icon", "/settings/devices", "/settings/chats", "/settings/stories", "/settings/stories/my-story", "/settings/stories/connections", "/settings/notifications", "/settings/privacy", "/settings/backups", "/settings/data-storage", "/settings/data-storage/storage", "/settings/data-storage/storage/review", "/settings/invite", "/settings/help", "/settings/help/contact", "/settings/help/terms", "/profile", "/join-group", "/login", "/signup", "/create-pin"].includes(location.pathname);
 
   return (
     <div data-theme={theme} className="h-screen flex flex-col">
@@ -323,9 +329,11 @@ const App = () => {
               <Route path="/" element={<PageWrapper>{authUser ? <HomePage />:<Navigate to="/login" />}</PageWrapper>} />
               <Route path="/join-group" element={<PageWrapper>{authUser ? <HomePage />:<Navigate to="/login" />}</PageWrapper>} />
               <Route path="/signup" element={<PageWrapper>{!authUser ? <SignUpPage />:<Navigate to="/" />}</PageWrapper>} />
+              <Route path="/create-pin" element={<PageWrapper>{authUser ? <CreatePinPage />:<Navigate to="/login" />}</PageWrapper>} />
               <Route path="/login" element={<PageWrapper>{!authUser ? <LoginPage />:<Navigate to="/" />}</PageWrapper>} />
               <Route path="/settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
               <Route path="/settings/account" element={<PageWrapper>{authUser ? <AccountPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/account/change-pin" element={<PageWrapper>{authUser ? <ChangePinPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance" element={<PageWrapper>{authUser ? <AppearancePage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance/chat-color" element={<PageWrapper>{authUser ? <ChatColorWallpaperPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance/app-icon" element={<PageWrapper>{authUser ? <AppIconPage /> : <Navigate to="/login" />}</PageWrapper>} />

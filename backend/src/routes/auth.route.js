@@ -1,5 +1,5 @@
 import express from "express";
-import { checkAuth, login, logout, signup, updateProfile, googleAuth, getGoogleClientId, googleRedirect, linkDevice, getLinkedDevices, revokeLinkedDevice, firebaseLogin, checkUsername } from "../controllers/auth.controller.js";
+import { checkAuth, login, logout, signup, updateProfile, googleAuth, getGoogleClientId, googleRedirect, linkDevice, getLinkedDevices, revokeLinkedDevice, firebaseLogin, checkUsername, createPin, changePin } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router =express.Router()
@@ -13,6 +13,8 @@ router.get("/google-client-id", getGoogleClientId);
 router.post("/firebase-login", firebaseLogin);
 
 router.put("/update-profile", protectRoute, updateProfile);
+router.put("/create-pin", protectRoute, createPin);
+router.put("/change-pin", protectRoute, changePin);
 router.get("/check", protectRoute, checkAuth);
 router.get("/check-username", checkUsername);
 

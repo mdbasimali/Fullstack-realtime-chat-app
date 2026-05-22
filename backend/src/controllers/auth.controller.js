@@ -260,6 +260,11 @@ export const googleAuth = async (req, res) => {
     }
 
     let user = await User.findOne({ email });
+    let isNewUserFlag = false;
+
+    if (!user || !user.pin) {
+      isNewUserFlag = true;
+    }
 
     if (!user) {
       // Create user if not registered
@@ -307,6 +312,7 @@ export const googleAuth = async (req, res) => {
       username: user.username,
       profilePic: user.profilePic,
       token: token,
+      isNewUser: isNewUserFlag,
     });
 
   } catch (error) {
@@ -354,8 +360,14 @@ export const googleRedirect = async (req, res) => {
     }
 
     let user = await User.findOne({ email });
+    let isNewUserFlag = false;
+
+    if (!user || !user.pin) {
+      isNewUserFlag = true;
+    }
 
     if (!user) {
+      isNewUserFlag = true;
       // Create user if not registered
       const emailPrefix = email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
       let username = emailPrefix;
@@ -394,7 +406,7 @@ export const googleRedirect = async (req, res) => {
     // Generate JWT token
     const token = generateToken(user._id, res);
 
-    res.redirect(`${redirectTo}/?token=${token}&trigger_sync=true`);
+    res.redirect(`${redirectTo}/?token=${token}&trigger_sync=true${isNewUserFlag ? '&isNewUser=true' : ''}`);
 
   } catch (error) {
     console.error("Error in googleRedirect controller:", error.message);
@@ -573,5 +585,59 @@ export const firebaseLogin = async (req, res) => {
   } catch (error) {
     console.error("Error in firebaseLogin controller:", error.message);
     res.status(500).json({ message: error.message || "Authentication failed" });
+  }
+};
+
+export const createPin = async (req, res) => {
+  try {
+    const { pin } = req.body;
+    const userId = req.user._id;
+
+    if (!pin) {
+      return res.status(400).json({ message: "PIN is required" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPin = await bcrypt.hash(pin.toString(), salt);
+
+    await User.findByIdAndUpdate(userId, { pin: hashedPin });
+
+    res.status(200).json({ message: "PIN created successfully" });
+  } catch (error) {
+    console.error("Error in createPin controller:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const changePin = async (req, res) => {
+  try {
+    const { oldPin, newPin } = req.body;
+    const userId = req.user._id;
+
+    if (!oldPin || !newPin) {
+      return res.status(400).json({ message: "Both old and new PINs are required" });
+    }
+
+    const user = await User.findById(userId);
+    
+    if (!user.pin) {
+      return res.status(400).json({ message: "No PIN is currently set for this account" });
+    }
+
+    const isMatch = await bcrypt.compare(oldPin.toString(), user.pin);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Incorrect current PIN" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedNewPin = await bcrypt.hash(newPin.toString(), salt);
+
+    user.pin = hashedNewPin;
+    await user.save();
+
+    res.status(200).json({ message: "PIN changed successfully" });
+  } catch (error) {
+    console.error("Error in changePin controller:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
