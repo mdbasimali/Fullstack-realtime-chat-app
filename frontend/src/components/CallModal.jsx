@@ -525,7 +525,7 @@ const CallModal = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  if (!isInCall && !isIncomingCall) return null;
+  if (!isInCall && !isIncomingCall && !isGroupIncomingCall) return null;
 
   // Minimized View (Bubble)
   if (isMinimized && isInCall) {
