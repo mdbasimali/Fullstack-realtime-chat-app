@@ -25,8 +25,9 @@ export const getUsersForSidebar = async(req,res)=>{
          .filter(id => !blockedIds.filter(bid => bid != null).map(bid => bid.toString()).includes(id));
 
        const filteredUsers = await User.find({
-         _id: { $in: allTargetUserIds, $ne: loggedInUserId }
-       }).select("-password");
+          _id: { $in: allTargetUserIds, $ne: loggedInUserId },
+          isDeleted: { $ne: true }
+        }).select("-password");
 
        // Find the last message exchanged for each user to show in sidebar previews
        const usersWithLastMessage = await Promise.all(
@@ -75,6 +76,7 @@ export const addContact = async (req, res) => {
     const usernameClean = inputClean.startsWith("@") ? inputClean.substring(1) : inputClean;
 
     const contactUser = await User.findOne({
+      isDeleted: { $ne: true },
       $or: [
         { email: inputClean },
         { phoneNumber: inputClean },
@@ -412,6 +414,7 @@ export const syncContacts = async (req, res) => {
     // Excluding the current logged-in user!
     const matchedUsers = await User.find({
       _id: { $ne: loggedInUserId },
+      isDeleted: { $ne: true },
       $or: [
         { email: { $in: emails } },
         { phoneNumber: { $in: phoneNumbers } }
@@ -476,6 +479,7 @@ export const globalSearch = async (req, res) => {
     
     const users = await User.find({
       _id: { $ne: req.user._id },
+      isDeleted: { $ne: true },
       $or: [
         { username: searchRegex },
         { fullName: searchRegex }
