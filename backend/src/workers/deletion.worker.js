@@ -36,6 +36,10 @@ export const deletionQueue = new Queue("account-deletion", {
   connection,
 });
 
+deletionQueue.on("error", (err) => {
+  if (err.code !== "ECONNREFUSED") console.error("Queue Error:", err.message);
+});
+
 const updateJobProgress = async (jobId, progress, status = "processing") => {
   await DeletionJob.findOneAndUpdate(
     { jobId },
@@ -149,6 +153,10 @@ const processDeletion = async (job) => {
 export const deletionWorker = new Worker("account-deletion", processDeletion, {
   connection,
   autorun: false,
+});
+
+deletionWorker.on("error", (err) => {
+  if (err.code !== "ECONNREFUSED") console.error("Worker Error:", err.message);
 });
 
 // Start the worker
