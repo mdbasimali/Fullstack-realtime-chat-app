@@ -171,7 +171,6 @@ const App = () => {
     handleGroupCallIceCandidate,
     handleGroupCallUserLeft,
     handleGroupCallNewProducer,
-    handleGroupCallNewProducer,
     handleGroupCallIncomingInvite,
     handleGroupCallActiveState,
   } = useCallStore();
