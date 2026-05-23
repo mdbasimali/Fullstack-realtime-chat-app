@@ -365,29 +365,16 @@ const DraggableBubble = React.memo(({
   duration,
   isMuted,
   isVideoOff,
-  setIsMinimized
+  setIsMinimized,
+  remoteVideoRef
 }) => {
   const containerRef = useRef(null);
-  const videoRef = useRef(null);
 
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const startOffset = useRef({ x: 0, y: 0 });
   const hasMoved = useRef(false);
-
-  useEffect(() => {
-    if (videoRef.current && remoteStream && callType === "video") {
-      if (videoRef.current.srcObject !== remoteStream) {
-        videoRef.current.srcObject = remoteStream;
-      }
-      videoRef.current.play().catch((err) => console.log("Draggable bubble play error:", err));
-      
-      if ('autoPictureInPicture' in videoRef.current) {
-        videoRef.current.autoPictureInPicture = true;
-      }
-    }
-  }, [remoteStream, callType]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -554,7 +541,7 @@ const DraggableBubble = React.memo(({
     >
       {callType === "video" && remoteStream ? (
         <video
-          ref={videoRef}
+          ref={remoteVideoRef}
           autoPlay
           playsInline
           className="w-full h-full object-cover pointer-events-none"
@@ -809,6 +796,7 @@ const CallModal = () => {
         isMuted={isMuted}
         isVideoOff={isVideoOff}
         setIsMinimized={setIsMinimized}
+        remoteVideoRef={remoteVideoRef}
       />
     );
   }
