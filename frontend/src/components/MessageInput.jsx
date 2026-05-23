@@ -45,7 +45,7 @@ const MessageInput = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
-      
+
       // Detect supported mimeType dynamically to support iOS/Safari and various mobile browsers
       const options = {};
       const mimeTypes = [
@@ -81,7 +81,7 @@ const MessageInput = () => {
       recordingIntervalRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
-      
+
       toast.success("Voice recording started...");
     } catch (error) {
       console.error("Error accessing microphone:", error);
@@ -117,15 +117,15 @@ const MessageInput = () => {
             setIsUploadingAudio(true);
             const sendPromise = selectedGroup
               ? sendGroupMessage({
-                  text: `Voice note (${formatDuration(finalDuration)})`,
-                  image: base64Audio,
-                  messageType: "audio",
-                })
+                text: `Voice note (${formatDuration(finalDuration)})`,
+                image: base64Audio,
+                messageType: "audio",
+              })
               : sendMessage({
-                  text: `Voice note (${formatDuration(finalDuration)})`,
-                  image: base64Audio,
-                  messageType: "audio",
-                });
+                text: `Voice note (${formatDuration(finalDuration)})`,
+                image: base64Audio,
+                messageType: "audio",
+              });
 
             await toast.promise(sendPromise, {
               loading: "Uploading voice note...",
@@ -153,7 +153,7 @@ const MessageInput = () => {
       const end = input.selectionEnd;
       const newText = text.substring(0, start) + emoji + text.substring(end);
       setText(newText);
-      
+
       // Auto reposition selection cursor
       setTimeout(() => {
         input.selectionStart = input.selectionEnd = start + emoji.length;
@@ -166,7 +166,7 @@ const MessageInput = () => {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return; 
+    if (!file) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
@@ -213,159 +213,158 @@ const MessageInput = () => {
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-20 w-full max-w-3xl mx-auto pointer-events-none" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}>
+    <div className="absolute bottom-0 left-0 right-0 z-20 w-full max-w-3xl mx-auto pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}>
       {/* Gradient Blur Background Element */}
       <div className="absolute inset-0 z-0 pointer-events-none" style={{
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          background: 'linear-gradient(to bottom, transparent 0%, rgba(128, 128, 128, 0.1) 100%)',
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 100%)'
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        background: 'linear-gradient(to bottom, transparent 0%, rgba(128, 128, 128, 0.1) 100%)',
+        maskImage: 'linear-gradient(to bottom, transparent 0%, black 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 100%)'
       }}></div>
 
       {/* Content Container */}
-      <div className="relative z-10 w-full px-3 pt-2 pb-4 md:px-6 md:pt-3 md:pb-6">
-      {imagePreview && (
-        <div className="mb-3 flex items-center gap-2 pointer-events-auto">
-          <div className="relative">
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="w-20 h-20 object-cover rounded-2xl border border-base-300"
-            />
-            <button
-              onClick={removeImage}
-              className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-base-300
-                 flex items-center justify-center shadow-xs"
-              type="button"
-            >
-              <X className="size-3.5 text-base-content/70" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={handleSendMessage} className="flex items-center gap-2 min-w-0 pointer-events-auto">
-        {isRecording ? (
-          /* Glassmorphic Pulse Recording Pill */
-          <div className="flex-1 flex items-center justify-between gap-4 px-4 py-2 bg-red-50/70 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-full">
-            <div className="flex items-center gap-2.5">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-              </span>
-              <span className="text-xs md:text-sm font-bold text-red-600 dark:text-red-400">
-                Recording Voice ({formatDuration(recordingDuration)})
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Discard / Delete */}
-              <button
-                type="button"
-                onClick={() => stopRecording(false)}
-                className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 transition-colors cursor-pointer"
-                title="Discard Recording"
-              >
-                <Trash2 size={17} />
-              </button>
-
-              {/* Stop & Send */}
-              <button
-                type="button"
-                onClick={() => stopRecording(true)}
-                className="p-1.5 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-xs cursor-pointer"
-                title="Send Recording"
-              >
-                <Check size={17} />
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Standard Input Bar */
-          <div className="flex-1 min-w-0 flex items-center gap-3 px-4 py-2 md:py-2.5 bg-base-100 dark:bg-base-900 border border-base-200/50 dark:border-base-800/50 shadow-sm rounded-full relative">
-            {showEmojiPicker && (
-              <EmojiPicker
-                onSelect={handleEmojiSelect}
-                onClose={() => setShowEmojiPicker(false)}
+      <div className="relative z-10 w-full px-3 pt-1 pb-3 md:px-6 md:pt-2 md:pb-4">
+        {imagePreview && (
+          <div className="mb-3 flex items-center gap-2 pointer-events-auto">
+            <div className="relative">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="w-20 h-20 object-cover rounded-2xl border border-base-300"
               />
-            )}
-
-            {/* Emoji Button */}
-            <button
-              type="button"
-              className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer ${
-                showEmojiPicker ? "text-primary" : "text-base-content/50"
-              }`}
-              onClick={() => setShowEmojiPicker((prev) => !prev)}
-            >
-              <Smile size={24} strokeWidth={1.5} />
-            </button>
-
-            {/* Text Input */}
-            <input
-              type="text"
-              name="chat-message-text"
-              id="chat-message-text"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="sentences"
-              spellCheck="true"
-              data-lpignore="true"
-              className="flex-1 min-w-0 bg-transparent text-[15px] md:text-[16px] border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content px-1"
-              placeholder="Message"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              ref={textInputRef}
-              disabled={isUploadingAudio}
-            />
-
-            {/* Attachment Button (Paperclip) - Only show if NO text */}
-            {!text.trim() && (
               <button
+                onClick={removeImage}
+                className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-base-300
+                 flex items-center justify-center shadow-xs"
                 type="button"
-                disabled={isUploadingAudio}
-                className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer text-base-content/50 ${isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""}`}
-                onClick={() => fileInputRef.current?.click()}
               >
-                <Paperclip size={22} strokeWidth={1.5} />
+                <X className="size-3.5 text-base-content/70" />
               </button>
-            )}
-
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleImageChange}
-              disabled={isUploadingAudio}
-            />
+            </div>
           </div>
         )}
 
-        {/* Send / Mic Button */}
-        <button
-          type={text.trim() || imagePreview ? "submit" : "button"}
-          onClick={text.trim() || imagePreview ? undefined : startRecording}
-          disabled={isUploadingAudio}
-          onMouseDown={(e) => e.preventDefault()}
-          className="flex-shrink-0 flex items-center justify-center size-[42px] md:size-[48px] rounded-full transition-all duration-200 active:scale-90 shadow-sm cursor-pointer"
-          style={{
-            background: "#2AABEE", // Telegram Blue
-            color: "#fff",
-            border: "none",
-            opacity: isUploadingAudio ? 0.7 : 1,
-          }}
-        >
-          {isUploadingAudio ? (
-            <span className="loading loading-spinner loading-xs" style={{ color: "#fff" }} />
-          ) : text.trim() || imagePreview ? (
-            <Send size={20} strokeWidth={2} style={{ marginLeft: "2px" }} />
+        <form onSubmit={handleSendMessage} className="flex items-center gap-2 min-w-0 pointer-events-auto">
+          {isRecording ? (
+            /* Glassmorphic Pulse Recording Pill */
+            <div className="flex-1 flex items-center justify-between gap-4 px-4 py-2 bg-red-50/70 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-full">
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                </span>
+                <span className="text-xs md:text-sm font-bold text-red-600 dark:text-red-400">
+                  Recording Voice ({formatDuration(recordingDuration)})
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Discard / Delete */}
+                <button
+                  type="button"
+                  onClick={() => stopRecording(false)}
+                  className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 transition-colors cursor-pointer"
+                  title="Discard Recording"
+                >
+                  <Trash2 size={17} />
+                </button>
+
+                {/* Stop & Send */}
+                <button
+                  type="button"
+                  onClick={() => stopRecording(true)}
+                  className="p-1.5 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-xs cursor-pointer"
+                  title="Send Recording"
+                >
+                  <Check size={17} />
+                </button>
+              </div>
+            </div>
           ) : (
-            <Mic size={22} strokeWidth={1.5} />
+            /* Standard Input Bar */
+            <div className="flex-1 min-w-0 flex items-center gap-3 px-4 py-2 md:py-2.5 bg-base-100 dark:bg-base-900 border border-base-200/50 dark:border-base-800/50 shadow-sm rounded-full relative">
+              {showEmojiPicker && (
+                <EmojiPicker
+                  onSelect={handleEmojiSelect}
+                  onClose={() => setShowEmojiPicker(false)}
+                />
+              )}
+
+              {/* Emoji Button */}
+              <button
+                type="button"
+                className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer ${showEmojiPicker ? "text-primary" : "text-base-content/50"
+                  }`}
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+              >
+                <Smile size={24} strokeWidth={1.5} />
+              </button>
+
+              {/* Text Input */}
+              <input
+                type="text"
+                name="chat-message-text"
+                id="chat-message-text"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                spellCheck="true"
+                data-lpignore="true"
+                className="flex-1 min-w-0 bg-transparent text-[15px] md:text-[16px] border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content px-1"
+                placeholder="Message"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                ref={textInputRef}
+                disabled={isUploadingAudio}
+              />
+
+              {/* Attachment Button (Paperclip) - Only show if NO text */}
+              {!text.trim() && (
+                <button
+                  type="button"
+                  disabled={isUploadingAudio}
+                  className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer text-base-content/50 ${isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""}`}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Paperclip size={22} strokeWidth={1.5} />
+                </button>
+              )}
+
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                disabled={isUploadingAudio}
+              />
+            </div>
           )}
-        </button>
-      </form>
+
+          {/* Send / Mic Button */}
+          <button
+            type={text.trim() || imagePreview ? "submit" : "button"}
+            onClick={text.trim() || imagePreview ? undefined : startRecording}
+            disabled={isUploadingAudio}
+            onMouseDown={(e) => e.preventDefault()}
+            className="flex-shrink-0 flex items-center justify-center size-[42px] md:size-[48px] rounded-full transition-all duration-200 active:scale-90 shadow-sm cursor-pointer"
+            style={{
+              background: "#2AABEE", // Telegram Blue
+              color: "#fff",
+              border: "none",
+              opacity: isUploadingAudio ? 0.7 : 1,
+            }}
+          >
+            {isUploadingAudio ? (
+              <span className="loading loading-spinner loading-xs" style={{ color: "#fff" }} />
+            ) : text.trim() || imagePreview ? (
+              <Send size={20} strokeWidth={2} style={{ marginLeft: "2px" }} />
+            ) : (
+              <Mic size={22} strokeWidth={1.5} />
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );
