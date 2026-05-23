@@ -21,6 +21,7 @@
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.541.0",
     "mediasoup-client": "^3.20.0",
+    "puppeteer": "^25.0.4",
     "qrcode": "^1.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -750,6 +750,7 @@ const CallModal = () => {
     if (callType !== "video" || callStatus !== "ongoing") return;
     
     let animationFrameId;
+    let timeoutId;
     const canvas = pipCanvasRef.current;
     const pipVideo = pipVideoRef.current;
     const remoteVideo = remoteVideoElRef.current;
@@ -762,6 +763,15 @@ const CallModal = () => {
     // Initialize the PiP stream
     if (!pipVideo.srcObject) {
       const stream = canvas.captureStream(30);
+      
+      // Inject remote audio track so Chrome considers it a valid media element for auto-PiP
+      if (remoteStream) {
+        const audioTracks = remoteStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          stream.addTrack(audioTracks[0]);
+        }
+      }
+      
       pipVideo.srcObject = stream;
       pipVideo.play().catch(() => {});
       if ('autoPictureInPicture' in pipVideo) {
@@ -770,61 +780,66 @@ const CallModal = () => {
     }
     
     const drawFrame = () => {
-      // Draw remote video as full background
       if (remoteVideo.readyState >= 2) {
+        // Draw remote video as background
         ctx.drawImage(remoteVideo, 0, 0, canvas.width, canvas.height);
-      } else {
-        ctx.fillStyle = '#1c1f26';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-      
-      // Overlay local video in the bottom right corner
-      if (!isVideoOff && localVideo.readyState >= 2) {
-        const pipW = 180;
-        const pipH = 240;
-        const margin = 24;
-        const x = canvas.width - pipW - margin;
-        const y = canvas.height - pipH - margin;
         
-        ctx.save();
-        // Create rounded clip path
-        ctx.beginPath();
-        ctx.moveTo(x + 16, y);
-        ctx.lineTo(x + pipW - 16, y);
-        ctx.quadraticCurveTo(x + pipW, y, x + pipW, y + 16);
-        ctx.lineTo(x + pipW, y + pipH - 16);
-        ctx.quadraticCurveTo(x + pipW, y + pipH, x + pipW - 16, y + pipH);
-        ctx.lineTo(x + 16, y + pipH);
-        ctx.quadraticCurveTo(x, y + pipH, x, y + pipH - 16);
-        ctx.lineTo(x, y + 16);
-        ctx.quadraticCurveTo(x, y, x + 16, y);
-        ctx.closePath();
-        ctx.clip();
-
-        if (isMirrored) {
-          ctx.translate(x + pipW, y);
-          ctx.scale(-1, 1);
-          ctx.drawImage(localVideo, 0, 0, pipW, pipH);
-        } else {
-          ctx.drawImage(localVideo, x, y, pipW, pipH);
+        // Draw local video as PiP in the bottom right corner
+        if (localVideo.readyState >= 2 && !isVideoOff) {
+          const pipW = canvas.width * 0.3; // 30% of width
+          const pipH = canvas.height * 0.3;
+          const x = canvas.width - pipW - 16;
+          const y = canvas.height - pipH - 16;
+          
+          ctx.save();
+          
+          // Create rounded clip path
+          ctx.beginPath();
+          ctx.moveTo(x + 16, y);
+          ctx.lineTo(x + pipW - 16, y);
+          ctx.quadraticCurveTo(x + pipW, y, x + pipW, y + 16);
+          ctx.lineTo(x + pipW, y + pipH - 16);
+          ctx.quadraticCurveTo(x + pipW, y + pipH, x + pipW - 16, y + pipH);
+          ctx.lineTo(x + 16, y + pipH);
+          ctx.quadraticCurveTo(x, y + pipH, x, y + pipH - 16);
+          ctx.lineTo(x, y + 16);
+          ctx.quadraticCurveTo(x, y, x + 16, y);
+          ctx.closePath();
+          ctx.clip();
+          
+          if (isMirrored) {
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            // After scale(-1, 1), the x coordinate must be flipped
+            ctx.drawImage(localVideo, canvas.width - x - pipW, y, pipW, pipH);
+          } else {
+            ctx.drawImage(localVideo, x, y, pipW, pipH);
+          }
+          
+          ctx.restore();
+          
+          // Draw border
+          ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
         }
-        ctx.restore();
-        
-        // Draw border
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(x, y, pipW, pipH);
       }
       
-      animationFrameId = requestAnimationFrame(drawFrame);
+      if (document.hidden) {
+        // Fallback for background tabs where rAF is paused
+        timeoutId = setTimeout(drawFrame, 33);
+      } else {
+        animationFrameId = requestAnimationFrame(drawFrame);
+      }
     };
     
     drawFrame();
     
     return () => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [callType, callStatus, isVideoOff, isMirrored]);
+  }, [callType, callStatus, isVideoOff, isMirrored, remoteStream]);
 
   const remoteAudioRef = React.useCallback((el) => {
     remoteAudioElRef.current = el;
@@ -1521,7 +1536,7 @@ const CallModal = () => {
         muted 
         playsInline 
         autoPlay
-        style={{ position: 'absolute', top: 0, left: 0, width: '1px', height: '1px', opacity: 0.01, pointerEvents: 'none' }} 
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.05, pointerEvents: 'none', zIndex: 0 }} 
       />
     </div>
   );
