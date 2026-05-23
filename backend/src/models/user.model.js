@@ -77,6 +77,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: ""
     },
+    chatColor: {
+      type: String,
+      default: "auto"
+    },
+    chatWallpaper: {
+      type: String,
+      default: "default"
+    },
     isDeleted: {
       type: Boolean,
       default: false

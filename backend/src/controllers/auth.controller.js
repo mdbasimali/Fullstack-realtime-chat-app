@@ -150,7 +150,7 @@ export const logout =(req,res)=>{
 
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic, fullName, phoneNumber, username, about } = req.body;
+    const { profilePic, fullName, phoneNumber, username, about, chatColor, chatWallpaper } = req.body;
     const userId = req.user._id;
 
     const updateData = {};
@@ -179,6 +179,19 @@ export const updateProfile = async (req, res) => {
 
     if (about !== undefined) {
       updateData.about = about;
+    }
+
+    if (chatColor !== undefined) {
+      updateData.chatColor = chatColor;
+    }
+
+    if (chatWallpaper !== undefined) {
+      if (chatWallpaper.startsWith("data:")) {
+        const uploadResponse = await cloudinary.uploader.upload(chatWallpaper);
+        updateData.chatWallpaper = uploadResponse.secure_url;
+      } else {
+        updateData.chatWallpaper = chatWallpaper;
+      }
     }
 
     if (Object.keys(updateData).length === 0) {

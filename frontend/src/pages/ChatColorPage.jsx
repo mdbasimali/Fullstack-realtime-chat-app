@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Check } from "lucide-react";
 import { useThemeStore } from "../store/useThemeStore";
+import { useAuthStore } from "../store/useAuthStore";
 
 const CHAT_COLORS = [
   { id: "auto", name: "Auto", value: "auto", display: "#007aff" },
@@ -31,6 +32,12 @@ const CHAT_COLORS = [
 
 const ChatColorPage = () => {
   const { chatColor, setChatColor } = useThemeStore();
+  const { updateProfile } = useAuthStore();
+
+  const handleSelectColor = (colorValue) => {
+    setChatColor(colorValue);
+    updateProfile({ chatColor: colorValue });
+  };
 
   const activeColorValue = chatColor === "auto" ? "#007aff" : chatColor;
 
@@ -80,7 +87,7 @@ const ChatColorPage = () => {
             {CHAT_COLORS.map((c) => (
               <div key={c.id} className="flex justify-center">
                 <button
-                  onClick={() => setChatColor(c.value)}
+                  onClick={() => handleSelectColor(c.value)}
                   className={`relative rounded-full transition-transform active:scale-95 ${
                     chatColor === c.value ? "w-[60px] h-[60px]" : "w-14 h-14"
                   }`}

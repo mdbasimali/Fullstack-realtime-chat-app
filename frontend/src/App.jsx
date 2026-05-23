@@ -35,6 +35,7 @@ const AccountPage = React.lazy(() => import("./pages/AccountPage"));
 const AddPhoneNumberPage = React.lazy(() => import("./pages/AddPhoneNumberPage"));
 const AppearancePage = React.lazy(() => import("./pages/AppearancePage"));
 const ChatColorWallpaperPage = React.lazy(() => import("./pages/ChatColorWallpaperPage"));
+const SetWallpaperPage = React.lazy(() => import("./pages/SetWallpaperPage"));
 const ChatColorPage = React.lazy(() => import("./pages/ChatColorPage"));
 const AppIconPage = React.lazy(() => import("./pages/AppIconPage"));
 const StoriesPage = React.lazy(() => import("./pages/StoriesPage"));
@@ -60,8 +61,8 @@ const LinkedDevicesPage = React.lazy(() => import("./pages/LinkedDevicesPage"));
 // import axios from "axios";
 
 const App = () => {
-  const {authUser,checkAuth,isCheckingAuth,onlineUsers,isAppLocked,initAppLockListener}=useAuthStore();
-  const { theme } = useThemeStore();
+  const { authUser, checkAuth, isCheckingAuth, onlineUsers, isAppLocked, initAppLockListener } = useAuthStore();
+  const { theme, chatColor, chatWallpaper, setChatColor, setChatWallpaper } = useThemeStore();
   const location = useLocation();
   const navigate = useNavigate();
   const { selectedUser, setSelectedUser, subscribeToMessages, unsubscribeFromMessages } = useChatstore();
@@ -225,8 +226,24 @@ const App = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [navigate]);
 
-  useEffect(()=>{
+  useEffect(() => {
     checkAuth();
+  }, [checkAuth]);
+
+  // Sync user's stored wallpaper & color down to the client theme store
+  useEffect(() => {
+    if (authUser) {
+      if (authUser.chatColor && authUser.chatColor !== chatColor) {
+        setChatColor(authUser.chatColor);
+      }
+      if (authUser.chatWallpaper && authUser.chatWallpaper !== chatWallpaper) {
+        setChatWallpaper(authUser.chatWallpaper);
+      }
+    }
+  }, [authUser, setChatColor, setChatWallpaper]);
+
+  // Lock logic
+  useEffect(()=>{
     initAppLockListener();
   },[checkAuth, initAppLockListener]);
 
@@ -414,6 +431,7 @@ const App = () => {
               <Route path="/settings/chats" element={<PageWrapper>{authUser ? <ChatsSettingsPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance" element={<PageWrapper>{authUser ? <AppearancePage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance/chat-color" element={<PageWrapper>{authUser ? <ChatColorWallpaperPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/appearance/wallpaper" element={<PageWrapper>{authUser ? <SetWallpaperPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance/chat-color/picker" element={<PageWrapper>{authUser ? <ChatColorPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance/app-icon" element={<PageWrapper>{authUser ? <AppIconPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/devices" element={<PageWrapper>{authUser ? <LinkedDevicesPage /> : <Navigate to="/login" />}</PageWrapper>} />

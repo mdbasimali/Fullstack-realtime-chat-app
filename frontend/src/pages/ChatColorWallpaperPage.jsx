@@ -5,7 +5,7 @@ import { useThemeStore } from "../store/useThemeStore";
 
 const ChatColorWallpaperPage = () => {
   const [dimsWallpaper, setDimsWallpaper] = useState(false);
-  const { chatColor } = useThemeStore();
+  const { chatColor, chatWallpaper } = useThemeStore();
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col bg-base-100 select-none overflow-hidden font-sans">
@@ -26,8 +26,13 @@ const ChatColorWallpaperPage = () => {
       <div className="flex-1 w-full mx-auto pb-16 overflow-y-auto custom-scrollbar pt-2">
         {/* Mockup */}
         <div className="bg-base-200/50 py-8 flex justify-center items-center mb-4">
-          <div className="w-[220px] h-[400px] bg-base-100 rounded-[28px] shadow-sm border border-base-200 p-4 flex flex-col relative overflow-hidden">
-            <div className="flex items-center gap-3 mb-6">
+          <div 
+            className="w-[220px] h-[400px] bg-base-100 rounded-[28px] shadow-sm border border-base-200 p-4 flex flex-col relative overflow-hidden chat-wallpaper"
+            style={{ 
+              background: chatWallpaper !== "default" ? (chatWallpaper.startsWith("data:") || chatWallpaper.startsWith("http") ? `url(${chatWallpaper}) center/cover no-repeat` : chatWallpaper) : undefined 
+            }}
+          >
+            <div className="flex items-center gap-3 mb-6 relative z-10 bg-base-100/60 p-2 -mx-2 -mt-2 rounded-b-xl backdrop-blur-sm">
               <div className="w-7 h-7 rounded-full bg-primary/20"></div>
               <div className="text-[12px] font-bold">Contact name</div>
               <div className="ml-auto flex gap-2">
@@ -77,9 +82,9 @@ const ChatColorWallpaperPage = () => {
           {/* Divider */}
           <div className="border-b border-base-200/60 my-2 mx-0" />
 
-          <button className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left">
+          <Link to="/settings/appearance/wallpaper" className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left">
             <span className="text-[16px] text-base-content font-medium">Set wallpaper</span>
-          </button>
+          </Link>
 
           <label className="w-full px-6 py-4 flex items-center justify-between hover:bg-base-200 transition-colors cursor-pointer text-left">
             <span className="text-[16px] text-base-content/50 font-medium block">Dark mode dims wallpaper</span>

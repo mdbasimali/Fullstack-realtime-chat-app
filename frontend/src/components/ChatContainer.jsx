@@ -71,7 +71,7 @@ const ChatContainer = () => {
   
   const { initiateCall } = useCallStore();
   const { authUser, onlineUsers } = useAuthStore();
-  const { chatColor } = useThemeStore();
+  const { chatColor, chatWallpaper } = useThemeStore();
   const messageEndRef = useRef(null);
   const isInitialLoadRef = useRef(true);
 
@@ -250,7 +250,12 @@ const ChatContainer = () => {
   return (
     <div className="flex-1 flex overflow-hidden h-full relative bg-base-100">
       {/* Main Chat Panel */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative chat-wallpaper">
+      <div 
+        className="flex-1 flex flex-col h-full overflow-hidden relative chat-wallpaper"
+        style={{ 
+          background: chatWallpaper !== "default" ? (chatWallpaper.startsWith("data:") || chatWallpaper.startsWith("http") ? `url(${chatWallpaper}) center/cover no-repeat` : chatWallpaper) : undefined 
+        }}
+      >
         <ChatHeader />
 
         {/* Messages Stream View */}
