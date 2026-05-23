@@ -671,7 +671,7 @@ export const verifyPin = async (req, res) => {
 
 import { deletionQueue } from "../workers/deletion.worker.js";
 import DeletionJob from "../models/deletionJob.model.js";
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { getReceiverSocketId } from "../lib/socket.js";
 
 export const deleteAccount = async (req, res) => {
   try {
