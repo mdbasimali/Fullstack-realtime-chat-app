@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useChatstore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
-import { Image, Send, X, Smile, Mic, Plus, Trash2, Check } from "lucide-react";
+import { Paperclip, Send, X, Smile, Mic, Trash2, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import EmojiPicker from "./EmojiPicker";
 
@@ -213,9 +213,9 @@ const MessageInput = () => {
   };
 
   return (
-    <div className="px-3 py-2 md:px-4 md:py-3 w-full bg-base-100 shrink-0 border-t border-base-300 md:border-none" style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))' }}>
+    <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pt-2 pb-4 md:px-6 md:pt-3 md:pb-6 w-full bg-transparent max-w-3xl mx-auto pointer-events-none" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}>
       {imagePreview && (
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex items-center gap-2 pointer-events-auto">
           <div className="relative">
             <img
               src={imagePreview}
@@ -234,7 +234,7 @@ const MessageInput = () => {
         </div>
       )}
 
-      <form onSubmit={handleSendMessage} className="flex items-center gap-2 min-w-0">
+      <form onSubmit={handleSendMessage} className="flex items-center gap-2 min-w-0 pointer-events-auto">
         {isRecording ? (
           /* Glassmorphic Pulse Recording Pill */
           <div className="flex-1 flex items-center justify-between gap-4 px-4 py-2 bg-red-50/70 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-full">
@@ -272,7 +272,7 @@ const MessageInput = () => {
           </div>
         ) : (
           /* Standard Input Bar */
-          <div className="flex-1 min-w-0 flex items-center gap-2 px-3 py-2 bg-base-200/60 dark:bg-base-950/40 border border-base-300/40 rounded-full relative">
+          <div className="flex-1 min-w-0 flex items-center gap-3 px-4 py-2 md:py-2.5 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 shadow-sm rounded-full relative">
             {showEmojiPicker && (
               <EmojiPicker
                 onSelect={handleEmojiSelect}
@@ -288,32 +288,7 @@ const MessageInput = () => {
               }`}
               onClick={() => setShowEmojiPicker((prev) => !prev)}
             >
-              <Smile size={20} />
-            </button>
-
-            {/* Image Attachment Button */}
-            <button
-              type="button"
-              disabled={isUploadingAudio}
-              className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer ${
-                imagePreview ? "text-primary" : "text-base-content/50"
-              } ${isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""}`}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Image size={20} />
-            </button>
-
-            {/* Microphone Button */}
-            <button
-              type="button"
-              disabled={isUploadingAudio}
-              className={`flex-shrink-0 text-base-content/50 hover:text-primary transition-colors cursor-pointer ${
-                isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-              onClick={startRecording}
-              title="Record Voice Note"
-            >
-              <Mic size={20} />
+              <Smile size={24} strokeWidth={1.5} />
             </button>
 
             {/* Text Input */}
@@ -326,13 +301,25 @@ const MessageInput = () => {
               autoCapitalize="sentences"
               spellCheck="true"
               data-lpignore="true"
-              className="flex-1 min-w-0 bg-transparent text-sm md:text-base border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content"
-              placeholder="ChatZone message"
+              className="flex-1 min-w-0 bg-transparent text-[15px] md:text-[16px] border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content px-1"
+              placeholder="Message"
               value={text}
               onChange={(e) => setText(e.target.value)}
               ref={textInputRef}
               disabled={isUploadingAudio}
             />
+
+            {/* Attachment Button (Paperclip) - Only show if NO text */}
+            {!text.trim() && (
+              <button
+                type="button"
+                disabled={isUploadingAudio}
+                className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer text-base-content/50 ${isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip size={22} strokeWidth={1.5} />
+              </button>
+            )}
 
             <input
               type="file"
@@ -345,30 +332,26 @@ const MessageInput = () => {
           </div>
         )}
 
-        {/* Send / Action Button */}
+        {/* Send / Mic Button */}
         <button
-          type="submit"
-          disabled={isUploadingAudio || (!text.trim() && !imagePreview && !isRecording)}
+          type={text.trim() || imagePreview ? "submit" : "button"}
+          onClick={text.trim() || imagePreview ? undefined : startRecording}
+          disabled={isUploadingAudio}
           onMouseDown={(e) => e.preventDefault()}
-          className="flex-shrink-0 flex items-center justify-center size-10 md:size-11 rounded-full transition-all duration-200 active:scale-90"
+          className="flex-shrink-0 flex items-center justify-center size-[42px] md:size-[48px] rounded-full transition-all duration-200 active:scale-90 shadow-sm cursor-pointer"
           style={{
-            background: (text.trim() || imagePreview || isRecording)
-              ? "linear-gradient(135deg, #007aff 0%, #3b82f6 50%, #0891b2 100%)"
-              : "rgba(0,0,0,0.08)",
-            boxShadow: (text.trim() || imagePreview || isRecording)
-              ? "0 4px 16px rgba(0, 122, 255,0.4), 0 1px 4px rgba(0,0,0,0.2)"
-              : "none",
-            color: (text.trim() || imagePreview || isRecording) ? "#fff" : "rgba(0,0,0,0.3)",
+            background: "#2AABEE", // Telegram Blue
+            color: "#fff",
             border: "none",
-            cursor: (!text.trim() && !imagePreview && !isRecording) ? "default" : "pointer",
+            opacity: isUploadingAudio ? 0.7 : 1,
           }}
         >
           {isUploadingAudio ? (
             <span className="loading loading-spinner loading-xs" style={{ color: "#fff" }} />
           ) : text.trim() || imagePreview ? (
-            <Send size={17} style={{ marginLeft: "2px", filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.2))" }} />
+            <Send size={20} strokeWidth={2} style={{ marginLeft: "2px" }} />
           ) : (
-            <Plus size={20} onClick={() => fileInputRef.current?.click()} />
+            <Mic size={22} strokeWidth={1.5} />
           )}
         </button>
       </form>
