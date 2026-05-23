@@ -8,12 +8,13 @@ import DeletionJob from "../models/deletionJob.model.js";
 import { io } from "../lib/socket.js";
 import cloudinary from "../lib/cloudinary.js";
 
+import Redis from "ioredis";
+
 const redisOptions = {
   host: process.env.REDIS_HOST || '127.0.0.1',
   port: process.env.REDIS_PORT || 6379,
   maxRetriesPerRequest: null,
   retryStrategy: (times) => {
-    // Retry silently after 10 seconds to avoid spamming the console
     if (times === 1) {
       console.warn("⚠️ Redis connection failed. Make sure Redis is running if you want background jobs to process!");
     }
@@ -21,8 +22,18 @@ const redisOptions = {
   }
 };
 
+const connection = new Redis(redisOptions);
+
+// Prevent unhandled error events from crashing/spamming the Node process
+connection.on("error", (err) => {
+  // Silently ignore ECONNREFUSED since we are already handling retries
+  if (err.code !== "ECONNREFUSED") {
+    console.error("Redis Error:", err);
+  }
+});
+
 export const deletionQueue = new Queue("account-deletion", {
-  connection: redisOptions,
+  connection,
 });
 
 const updateJobProgress = async (jobId, progress, status = "processing") => {
@@ -136,8 +147,8 @@ const processDeletion = async (job) => {
 };
 
 export const deletionWorker = new Worker("account-deletion", processDeletion, {
-  connection: redisOptions,
-  autorun: false, // We'll start it manually if needed, or just let it auto start. Let's auto start.
+  connection,
+  autorun: false,
 });
 
 // Start the worker
