@@ -566,6 +566,16 @@ const CallModal = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  useEffect(() => {
+    if (!isInCall && !isIncomingCall && !isGroupIncomingCall) {
+      if (document.pictureInPictureElement) {
+        document.exitPictureInPicture().catch((err) => {
+          console.error("Failed to exit PiP on call end:", err);
+        });
+      }
+    }
+  }, [isInCall, isIncomingCall, isGroupIncomingCall]);
+
   if (!isInCall && !isIncomingCall && !isGroupIncomingCall) return null;
 
   // Minimized View (Bubble)
