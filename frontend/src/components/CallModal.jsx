@@ -587,6 +587,7 @@ const DraggableVideoContainer = React.memo(({
           {isVideoOff && <VideoOff size={10} className="text-red-500" />}
         </div>
       )}
+
     </div>
   );
 });
@@ -717,16 +718,103 @@ const CallModal = () => {
         el.srcObject = remoteStream;
       }
       el.play().catch((err) => console.log("remoteVideoRef play error:", err));
-      
-      // Enable automatic Picture-in-Picture for mobile browsers (Chrome Android PWA)
-      if ('autoPictureInPicture' in el) {
-        el.autoPictureInPicture = true;
-      }
     }
   }, [remoteStream]);
 
-  // Native PiP is handled automatically by el.autoPictureInPicture = true
+  // Native PiP is handled automatically by el.autoPictureInPicture = true on the pipVideoRef
 
+  const hiddenLocalVideoRef = useRef(null);
+  const pipCanvasRef = useRef(null);
+  const pipVideoRef = useRef(null);
+
+  // Bind local stream to hidden local video for PiP compositing
+  useEffect(() => {
+    if (hiddenLocalVideoRef.current && localStream) {
+      hiddenLocalVideoRef.current.srcObject = localStream;
+      hiddenLocalVideoRef.current.play().catch(() => {});
+    }
+  }, [localStream]);
+
+  // Canvas Compositing Loop for PiP
+  useEffect(() => {
+    if (callType !== "video" || callStatus !== "ongoing") return;
+    
+    let animationFrameId;
+    const canvas = pipCanvasRef.current;
+    const pipVideo = pipVideoRef.current;
+    const remoteVideo = remoteVideoElRef.current;
+    const localVideo = hiddenLocalVideoRef.current;
+    
+    if (!canvas || !pipVideo || !remoteVideo || !localVideo) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Initialize the PiP stream
+    if (!pipVideo.srcObject) {
+      const stream = canvas.captureStream(30);
+      pipVideo.srcObject = stream;
+      pipVideo.play().catch(() => {});
+      if ('autoPictureInPicture' in pipVideo) {
+        pipVideo.autoPictureInPicture = true;
+      }
+    }
+    
+    const drawFrame = () => {
+      // Draw remote video as full background
+      if (remoteVideo.readyState >= 2) {
+        ctx.drawImage(remoteVideo, 0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.fillStyle = '#1c1f26';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      
+      // Overlay local video in the bottom right corner
+      if (!isVideoOff && localVideo.readyState >= 2) {
+        const pipW = 180;
+        const pipH = 240;
+        const margin = 24;
+        const x = canvas.width - pipW - margin;
+        const y = canvas.height - pipH - margin;
+        
+        ctx.save();
+        // Create rounded clip path
+        ctx.beginPath();
+        ctx.moveTo(x + 16, y);
+        ctx.lineTo(x + pipW - 16, y);
+        ctx.quadraticCurveTo(x + pipW, y, x + pipW, y + 16);
+        ctx.lineTo(x + pipW, y + pipH - 16);
+        ctx.quadraticCurveTo(x + pipW, y + pipH, x + pipW - 16, y + pipH);
+        ctx.lineTo(x + 16, y + pipH);
+        ctx.quadraticCurveTo(x, y + pipH, x, y + pipH - 16);
+        ctx.lineTo(x, y + 16);
+        ctx.quadraticCurveTo(x, y, x + 16, y);
+        ctx.closePath();
+        ctx.clip();
+
+        if (isMirrored) {
+          ctx.translate(x + pipW, y);
+          ctx.scale(-1, 1);
+          ctx.drawImage(localVideo, 0, 0, pipW, pipH);
+        } else {
+          ctx.drawImage(localVideo, x, y, pipW, pipH);
+        }
+        ctx.restore();
+        
+        // Draw border
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(x, y, pipW, pipH);
+      }
+      
+      animationFrameId = requestAnimationFrame(drawFrame);
+    };
+    
+    drawFrame();
+    
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [callType, callStatus, isVideoOff, isMirrored]);
 
   const remoteAudioRef = React.useCallback((el) => {
     remoteAudioElRef.current = el;
@@ -1425,6 +1513,17 @@ const CallModal = () => {
         .animate-ping-slower { animation: ping-slower 4s cubic-bezier(0, 0, 0.2, 1) infinite; }
         .animate-bounce-slow { animation: bounce-slow 4s ease-in-out infinite; }
       `}} />
+
+      {/* Hidden elements for Canvas Compositing (Native PiP) */}
+      <canvas ref={pipCanvasRef} width={720} height={1280} className="hidden" />
+      <video ref={hiddenLocalVideoRef} muted playsInline autoPlay className="hidden" />
+      <video 
+        ref={pipVideoRef} 
+        muted 
+        playsInline 
+        autoPlay
+        style={{ position: 'absolute', top: 0, left: 0, width: '1px', height: '1px', opacity: 0.01, pointerEvents: 'none' }} 
+      />
     </div>
   );
 };
