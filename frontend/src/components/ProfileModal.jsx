@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Video, Phone, Edit2, ShieldCheck, User, Ban, ChevronRight, Info, X, Check, Mail, AtSign, PhoneCall, ChevronDown } from 'lucide-react';
+import { MessageSquare, Video, Phone, Edit2, ShieldCheck, User, Ban, ChevronRight, Info, X, Check, Mail, AtSign, PhoneCall, ChevronDown, Link, UserCircle, Users } from 'lucide-react';
 import { useChatstore } from '../store/useChatStore';
 import { useGroupStore } from '../store/useGroupStore';
 import { useCallStore } from '../store/useCallStore';
@@ -39,14 +39,20 @@ export const setNicknameStorage = (authUserId, friendId, nickname) => {
 
 const ProfileModal = ({ profile, onClose }) => {
   const { setSelectedUser } = useChatstore();
-  const { setSelectedGroup, leaveGroup, setShowGroupCallModal, setGroupCallType } = useGroupStore();
+  const { groups, setSelectedGroup, leaveGroup, setShowGroupCallModal, setGroupCallType } = useGroupStore();
   const { initiateCall } = useCallStore();
   const { authUser } = useAuthStore();
 
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [nicknameValue, setNicknameValue] = useState("");
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const [viewMode, setViewMode] = useState('main');
   const [dragY, setDragY] = useState(0);
+
+  useEffect(() => {
+    setViewMode('main');
+    setDragY(0);
+  }, [profile]);
   const touchStartY = useRef(0);
   const isDragging = useRef(false);
   const nicknameInputRef = useRef(null);
@@ -128,6 +134,13 @@ const ProfileModal = ({ profile, onClose }) => {
 
   const displayName = currentNickname || name;
 
+  const commonGroups = (!isGroup && groups) ? groups.filter(g => 
+    g.members && g.members.some(m => m === profile._id || (m._id && m._id === profile._id))
+  ) : [];
+  const commonGroupsText = commonGroups.length > 0 
+    ? `${commonGroups.length} group${commonGroups.length > 1 ? 's' : ''} in common`
+    : "No groups in common";
+
   const handleTouchStart = (e) => {
     touchStartY.current = e.touches[0].clientY;
     isDragging.current = true;
@@ -181,7 +194,9 @@ const ProfileModal = ({ profile, onClose }) => {
           <div className="w-12 h-1 rounded-full bg-base-300"></div>
         </div>
 
-        <div className="flex flex-col items-center pt-4 sm:pt-10 px-6 pb-6">
+        {viewMode === 'main' ? (
+          <>
+            <div className="flex flex-col items-center pt-4 sm:pt-10 px-6 pb-6">
           {/* Avatar */}
           <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border border-base-200 shadow-sm">
             {pic ? (
@@ -195,7 +210,10 @@ const ProfileModal = ({ profile, onClose }) => {
 
           {/* Name + Nickname */}
           <div className="mt-4 flex flex-col items-center gap-1">
-            <div className="flex items-center gap-2 cursor-pointer hover:bg-base-200 px-3 py-1.5 rounded-full transition-colors">
+            <div 
+              onClick={() => { if (!isGroup) setViewMode('detailed'); }}
+              className="flex items-center gap-2 cursor-pointer hover:bg-base-200 px-3 py-1.5 rounded-full transition-colors"
+            >
               <h2 className="text-xl sm:text-2xl font-medium text-base-content">{displayName}</h2>
               {!isGroup && <User size={20} className="text-base-content/70" />}
               <ChevronRight size={20} className="text-base-content/40" />
@@ -351,6 +369,77 @@ const ProfileModal = ({ profile, onClose }) => {
             </div>
           )}
         </div>
+          </>
+        ) : (
+          <div className="flex flex-col h-[85vh] sm:h-[600px] overflow-y-auto custom-scrollbar pb-10 animate-fade-in">
+            {/* Very large avatar */}
+            <div className="w-full flex justify-center mt-6 mb-8">
+              <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-full overflow-hidden shadow-md">
+                {pic ? (
+                  <img src={pic} alt={name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-6xl">
+                    {getInitials(name)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* About header */}
+            <div className="px-6 mb-2">
+              <h2 className="text-3xl font-medium text-base-content tracking-tight">About</h2>
+              {profile.about && (
+                <p className="text-base-content/80 mt-1 text-[16px] leading-relaxed">
+                  {profile.about}
+                </p>
+              )}
+            </div>
+
+            {/* Rows */}
+            <div className="flex flex-col mt-2">
+              <div className="flex items-center gap-5 px-6 py-3 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <User size={24} className="text-base-content/70 shrink-0" strokeWidth={1.5} />
+                <span className="text-[17px] text-base-content font-medium">{displayName}</span>
+              </div>
+              
+              <div className="flex items-center gap-5 px-6 py-3 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <Link size={24} className="text-base-content/70 shrink-0" strokeWidth={1.5} />
+                <span className="text-[17px] text-base-content font-medium">Signal connection &gt;</span>
+              </div>
+              
+              <div className="flex items-center gap-5 px-6 py-3 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <UserCircle size={24} className="text-base-content/70 shrink-0" strokeWidth={1.5} />
+                <span className="text-[17px] text-base-content font-medium">{displayName} is in your phone contacts</span>
+              </div>
+              
+              {profile.email && (
+                <div className="flex items-center gap-5 px-6 py-3 hover:bg-base-200/50 transition-colors cursor-pointer">
+                  <Mail size={24} className="text-base-content/70 shrink-0" strokeWidth={1.5} />
+                  <span className="text-[17px] text-base-content font-medium">{profile.email}</span>
+                </div>
+              )}
+              
+              {profile.username && (
+                <div className="flex items-center gap-5 px-6 py-3 hover:bg-base-200/50 transition-colors cursor-pointer">
+                  <AtSign size={24} className="text-base-content/70 shrink-0" strokeWidth={1.5} />
+                  <span className="text-[17px] text-base-content font-medium">@{profile.username}</span>
+                </div>
+              )}
+
+              {profile.phoneNumber && (
+                <div className="flex items-center gap-5 px-6 py-3 hover:bg-base-200/50 transition-colors cursor-pointer">
+                  <Phone size={24} className="text-base-content/70 shrink-0" strokeWidth={1.5} />
+                  <span className="text-[17px] text-base-content font-medium">{profile.phoneNumber}</span>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-5 px-6 py-3 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <Users size={24} className="text-base-content/70 shrink-0" strokeWidth={1.5} />
+                <span className="text-[17px] text-base-content font-medium">{commonGroupsText}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

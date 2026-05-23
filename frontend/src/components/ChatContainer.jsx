@@ -12,7 +12,9 @@ import { formatMessageTime } from "../lib/utils";
 import { 
   Phone, Users, Check, Video, PhoneMissed, 
   PhoneOutgoing, PhoneIncoming, X, Calendar, Crown, Loader2,
-  Copy, Download, Trash2
+  Copy, Download, Trash2, ArrowLeft, Edit2, Camera, BellOff, 
+  Search, TimerOff, Palette, Volume2, Plus, Link, Tag, UserPlus, 
+  Lock, LogOut, Ban, AlertCircle
 } from "lucide-react";
 import VoicePlayer from "./VoicePlayer";
 import toast from "react-hot-toast";
@@ -636,160 +638,133 @@ const ChatContainer = () => {
 
       {/* Group Details Sidebar */}
       {selectedGroup && showGroupDetailsSidebar && (
-        <div className="fixed inset-y-0 right-0 w-full max-w-sm md:static md:w-80 border-l border-base-300 bg-base-100/95 backdrop-blur-md flex flex-col h-full overflow-hidden shadow-xl z-40 animate-fade-in shrink-0">
-          {/* Header */}
-          <div className="p-4 border-b border-base-300 flex justify-between items-center bg-base-100/40">
-            <h3 className="font-extrabold text-base text-base-content flex items-center gap-2">
-              <Users className="size-5 text-primary" />
-              <span>Group Details</span>
-            </h3>
+        <div className="fixed inset-y-0 right-0 w-full max-w-sm md:static md:w-[400px] border-l border-base-300 bg-base-100 z-40 flex flex-col h-full overflow-hidden animate-fade-in shrink-0">
+          
+          {/* Top Bar */}
+          <div className="p-4 flex justify-between items-center bg-base-100">
             <button
               onClick={() => setShowGroupDetailsSidebar(false)}
-              className="p-1.5 rounded-full hover:bg-base-200 text-base-content/60 hover:text-base-content transition-colors"
+              className="p-2 hover:bg-base-200 rounded-full transition-colors"
             >
-              <X size={18} />
+              <ArrowLeft className="w-6 h-6 text-base-content" />
+            </button>
+            <button className="p-2 hover:bg-base-200 rounded-full transition-colors">
+              <Edit2 className="w-5 h-5 text-base-content" />
             </button>
           </div>
 
-          {/* Details Scroll Area */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
-            {/* Avatar & Basic details */}
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="size-20 rounded-full relative flex items-center justify-center bg-indigo-100 dark:bg-indigo-950/40 text-primary font-bold text-2xl shadow-sm border border-base-300">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            
+            {/* Header: Avatar, Name, Description */}
+            <div className="flex flex-col items-center pt-2 pb-6 px-4">
+              <div className="w-24 h-24 rounded-full bg-indigo-100 dark:bg-indigo-950/40 text-primary font-bold text-3xl flex items-center justify-center mb-4 border border-base-300">
                 {selectedGroup.avatar ? (
-                  <img
-                    src={selectedGroup.avatar}
-                    alt={selectedGroup.name}
-                    className="rounded-full object-cover w-full h-full"
-                  />
+                  <img src={selectedGroup.avatar} alt={selectedGroup.name} className="w-full h-full rounded-full object-cover" />
                 ) : (
-                  selectedGroup.name.slice(0, 2).toUpperCase()
+                  <Users className="w-10 h-10" />
                 )}
               </div>
-              <div>
-                <h4 className="font-extrabold text-lg text-base-content">{selectedGroup.name}</h4>
-                <p className="text-xs text-base-content/50 mt-1 max-w-[240px] mx-auto">
-                  {selectedGroup.description || "No description provided."}
-                </p>
+              <h2 className="text-2xl font-medium text-base-content mb-1">{selectedGroup.name}</h2>
+              <p className="text-[15px] text-base-content/60">
+                {selectedGroup.description || "Add group description..."}
+              </p>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex justify-center gap-6 px-4 pb-8">
+              <div className="flex flex-col items-center gap-2 cursor-pointer">
+                <div className="w-[52px] h-[52px] rounded-[18px] bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-primary hover:bg-indigo-100 transition-colors">
+                  <Camera className="w-[22px] h-[22px]" strokeWidth={1.5} />
+                </div>
+                <span className="text-[13px] font-medium text-base-content">Story</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 cursor-pointer">
+                <div className="w-[52px] h-[52px] rounded-[18px] bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-primary hover:bg-indigo-100 transition-colors">
+                  <Video className="w-[22px] h-[22px]" strokeWidth={1.5} />
+                </div>
+                <span className="text-[13px] font-medium text-base-content">Video</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 cursor-pointer">
+                <div className="w-[52px] h-[52px] rounded-[18px] bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-primary hover:bg-indigo-100 transition-colors">
+                  <BellOff className="w-[22px] h-[22px]" strokeWidth={1.5} />
+                </div>
+                <span className="text-[13px] font-medium text-base-content">Mute</span>
+              </div>
+              <div className="flex flex-col items-center gap-2 cursor-pointer">
+                <div className="w-[52px] h-[52px] rounded-[18px] bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-primary hover:bg-indigo-100 transition-colors">
+                  <Search className="w-[22px] h-[22px]" strokeWidth={1.5} />
+                </div>
+                <span className="text-[13px] font-medium text-base-content">Search</span>
               </div>
             </div>
 
-            {/* Created info */}
-            <div className="bg-base-200/40 border border-base-300/50 rounded-2xl p-4 space-y-2.5 text-xs text-left">
-              <div className="flex items-center gap-2.5 text-base-content/75">
-                <Calendar className="size-4 text-base-content/55" />
-                <span>Created {new Date(selectedGroup.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-base-content/75">
-                <Crown className="size-4 text-amber-500" />
-                <span>
-                  Creator: {selectedGroup.creatorId === authUser?._id ? "You" : "Group Creator"}
-                </span>
-              </div>
-            </div>
+            <div className="h-2 w-full bg-base-200/50"></div>
 
-            {/* Invite Links / Code Section */}
-            <div className="bg-base-200/40 border border-base-300/50 rounded-2xl p-4 space-y-3 text-left animate-fade-in">
-              <span className="text-xs font-bold text-base-content/60 uppercase tracking-widest block">Invite to Group</span>
-              
-              {/* Invite Code */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-base-content/50 uppercase tracking-wider block">Invite Code</label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-base-300/60 p-2 rounded-xl text-center font-mono font-bold text-sm tracking-wider text-primary border border-base-300">
-                    {selectedGroupDetails?.inviteCode || selectedGroup.inviteCode || "N/A"}
-                  </code>
-                  <button
-                    onClick={() => {
-                      const code = selectedGroupDetails?.inviteCode || selectedGroup.inviteCode;
-                      if (code) {
-                        navigator.clipboard.writeText(code);
-                        toast.success("Invite code copied!");
-                      }
-                    }}
-                    className="btn btn-xs btn-outline border-base-300 hover:bg-base-200 rounded-lg py-1.5 px-2.5 h-auto text-[10px] font-bold"
-                  >
-                    Copy
-                  </button>
+            {/* Settings List 1 */}
+            <div className="py-2">
+              <div className="flex items-center gap-5 px-6 py-4 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <TimerOff className="w-[22px] h-[22px] text-base-content/80 shrink-0" strokeWidth={1.5} />
+                <div className="flex flex-col">
+                  <span className="text-[16px] text-base-content font-medium">Disappearing messages</span>
+                  <span className="text-[13px] text-base-content/60">Off</span>
                 </div>
               </div>
-
-              {/* Invite Link */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-base-content/50 uppercase tracking-wider block">Invite Link</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={`${window.location.origin}/join-group?code=${selectedGroupDetails?.inviteCode || selectedGroup.inviteCode || ""}`}
-                    className="flex-1 bg-base-300/60 p-2 rounded-xl text-xs text-base-content/75 border border-base-300 focus:outline-none truncate"
-                  />
-                  <button
-                    onClick={() => {
-                      const code = selectedGroupDetails?.inviteCode || selectedGroup.inviteCode;
-                      if (code) {
-                        navigator.clipboard.writeText(`${window.location.origin}/join-group?code=${code}`);
-                        toast.success("Invite link copied!");
-                      }
-                    }}
-                    className="btn btn-xs btn-outline border-base-300 hover:bg-base-200 rounded-lg py-1.5 px-2.5 h-auto text-[10px] font-bold"
-                  >
-                    Copy
-                  </button>
-                </div>
+              <div className="flex items-center gap-5 px-6 py-4 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <Palette className="w-[22px] h-[22px] text-base-content/80 shrink-0" strokeWidth={1.5} />
+                <span className="text-[16px] text-base-content font-medium">Chat color & wallpaper</span>
+              </div>
+              <div className="flex items-center gap-5 px-6 py-4 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <Volume2 className="w-[22px] h-[22px] text-base-content/80 shrink-0" strokeWidth={1.5} />
+                <span className="text-[16px] text-base-content font-medium">Sounds & notifications</span>
               </div>
             </div>
+
+            <div className="h-2 w-full bg-base-200/50"></div>
 
             {/* Members Section */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <h5 className="text-xs font-bold text-base-content/60 uppercase tracking-wider">
-                  Members ({selectedGroupDetails?.members?.length || selectedGroup.membersCount}/100)
-                </h5>
+            <div className="py-4">
+              <div className="px-6 mb-2">
+                <span className="text-[14px] font-bold text-base-content/90">
+                  {selectedGroupDetails?.members?.length || selectedGroup.membersCount} member{selectedGroup.membersCount !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-5 px-6 py-3 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <div className="w-10 h-10 rounded-full bg-base-200 flex items-center justify-center text-base-content/70">
+                  <Plus className="w-5 h-5" strokeWidth={2} />
+                </div>
+                <span className="text-[16px] text-base-content font-medium">Add members</span>
               </div>
 
               {isFetchingGroupDetails ? (
-                <div className="flex flex-col items-center justify-center py-6 gap-2">
-                  <Loader2 className="size-5 animate-spin text-primary" />
-                  <span className="text-[11px] text-base-content/50">Loading member status...</span>
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="flex flex-col mt-1">
                   {selectedGroupDetails?.members?.map((member) => {
-                    const isOnline = onlineUsers.includes(member._id);
                     const isCreator = selectedGroup.creatorId === member._id;
                     const isMe = authUser?._id === member._id;
                     return (
-                      <div key={member._id} className="flex items-center justify-between p-2 rounded-xl hover:bg-base-200/50 transition-colors">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {/* Avatar with Online status dot */}
-                          <div className="relative">
-                            {member.profilePic ? (
-                              <img
-                                src={member.profilePic}
-                                alt={member.fullName}
-                                className="w-8 h-8 rounded-full object-cover border border-base-300"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-xs">
-                                {member.fullName.charAt(0)}
-                              </div>
-                            )}
-                            <span className={`absolute bottom-0 right-0 block h-2 w-2 rounded-full ring-2 ring-base-100 ${isOnline ? "bg-emerald-500" : "bg-base-300"}`} />
-                          </div>
-                          <div className="text-left min-w-0">
-                            <p className="text-xs font-semibold text-base-content truncate">
-                              {member.fullName} {isMe && "(You)"}
-                            </p>
-                            <p className="text-[10px] text-base-content/50 truncate">
-                              {isOnline ? "Online" : "Offline"}
-                            </p>
+                      <div key={member._id} className="flex items-center justify-between px-6 py-2.5 hover:bg-base-200/50 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-4">
+                          {member.profilePic ? (
+                            <img src={member.profilePic} alt={member.fullName} className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center font-medium text-lg">
+                              {member.fullName.charAt(0).toLowerCase()}
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-[16px] text-base-content font-medium">
+                              {isMe ? "You" : member.fullName}
+                            </span>
+                            {isMe && <span className="text-[13px] text-base-content/60">Add member label &gt;</span>}
                           </div>
                         </div>
                         {isCreator && (
-                          <span className="text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                            Admin
-                          </span>
+                          <span className="text-[13px] text-base-content/60">Admin</span>
                         )}
                       </div>
                     );
@@ -797,6 +772,53 @@ const ChatContainer = () => {
                 </div>
               )}
             </div>
+
+            <div className="h-2 w-full bg-base-200/50"></div>
+
+            {/* Settings List 2 */}
+            <div className="py-2">
+              <div className="flex items-center gap-5 px-6 py-4 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <Link className="w-[22px] h-[22px] text-base-content/80 shrink-0" strokeWidth={1.5} />
+                <div className="flex flex-col">
+                  <span className="text-[16px] text-base-content font-medium">Group link</span>
+                  <span className="text-[13px] text-base-content/60">Off</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-5 px-6 py-4 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <Tag className="w-[22px] h-[22px] text-base-content/80 shrink-0" strokeWidth={1.5} />
+                <span className="text-[16px] text-base-content font-medium">Member Label</span>
+              </div>
+              <div className="flex items-center gap-5 px-6 py-4 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <UserPlus className="w-[22px] h-[22px] text-base-content/80 shrink-0" strokeWidth={1.5} />
+                <span className="text-[16px] text-base-content font-medium">Requests & invites</span>
+              </div>
+              <div className="flex items-center gap-5 px-6 py-4 hover:bg-base-200/50 transition-colors cursor-pointer">
+                <Lock className="w-[22px] h-[22px] text-base-content/80 shrink-0" strokeWidth={1.5} />
+                <span className="text-[16px] text-base-content font-medium">Permissions</span>
+              </div>
+            </div>
+
+            <div className="h-2 w-full bg-base-200/50"></div>
+
+            {/* Danger Zone */}
+            <div className="py-2 mb-8">
+              <div 
+                onClick={() => leaveGroup(selectedGroup._id)}
+                className="flex items-center gap-5 px-6 py-4 hover:bg-error/10 transition-colors cursor-pointer text-error"
+              >
+                <LogOut className="w-[22px] h-[22px] shrink-0" strokeWidth={1.5} />
+                <span className="text-[16px] font-medium">Leave group</span>
+              </div>
+              <div className="flex items-center gap-5 px-6 py-4 hover:bg-error/10 transition-colors cursor-pointer text-error">
+                <Ban className="w-[22px] h-[22px] shrink-0" strokeWidth={1.5} />
+                <span className="text-[16px] font-medium">Block group</span>
+              </div>
+              <div className="flex items-center gap-5 px-6 py-4 hover:bg-error/10 transition-colors cursor-pointer text-error">
+                <AlertCircle className="w-[22px] h-[22px] shrink-0" strokeWidth={1.5} />
+                <span className="text-[16px] font-medium">Report spam</span>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
