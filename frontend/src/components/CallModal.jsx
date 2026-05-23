@@ -358,7 +358,8 @@ const DraggableSelfPreview = React.memo(({
   return (
     prevProps.localStream === nextProps.localStream &&
     prevProps.isVideoOff === nextProps.isVideoOff &&
-    prevProps.isMirrored === nextProps.isMirrored
+    prevProps.isMirrored === nextProps.isMirrored &&
+    prevProps.isMinimized === nextProps.isMinimized
   );
 });
 
