@@ -84,7 +84,8 @@ export const useChatstore = create((set,get) => ({
   clearGlobalSearch: () => set({ globalUsers: [] }),
 
   getUsers: async (silent = false) => {
-    if (!silent) set({ isUsersLoading: true });
+    const isActuallySilent = silent || get().users.length > 0;
+    if (!isActuallySilent) set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/messages/users");
       set({ users: res.data });
@@ -120,7 +121,7 @@ export const useChatstore = create((set,get) => ({
     } catch (error) {
       console.error("GetUsers error:", error);
     } finally {
-      if (!silent) set({ isUsersLoading: false });
+      if (!isActuallySilent) set({ isUsersLoading: false });
     }
   },
   

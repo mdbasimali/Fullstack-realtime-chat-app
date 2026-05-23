@@ -20,8 +20,9 @@ export const useGroupStore = create((set, get) => ({
   groupCallType: "video",
   setGroupCallType: (type) => set({ groupCallType: type }),
 
-  fetchGroups: async () => {
-    set({ isGroupsLoading: true });
+  fetchGroups: async (silent = false) => {
+    const isActuallySilent = silent || get().groups.length > 0;
+    if (!isActuallySilent) set({ isGroupsLoading: true });
     try {
       const res = await axiosInstance.get("/groups");
       set({ groups: res.data });
@@ -34,7 +35,7 @@ export const useGroupStore = create((set, get) => ({
     } catch (error) {
       console.error("Error fetching joined groups:", error);
     } finally {
-      set({ isGroupsLoading: false });
+      if (!isActuallySilent) set({ isGroupsLoading: false });
     }
   },
 
