@@ -260,6 +260,7 @@ body {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  transition: background-size 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-position 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease;
 }
 
 /* Dark mode dimming for chat-wallpaper to maintain high contrast and readability */

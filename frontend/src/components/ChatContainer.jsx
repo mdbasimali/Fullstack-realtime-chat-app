@@ -253,7 +253,12 @@ const ChatContainer = () => {
       <div 
         className="flex-1 flex flex-col h-full overflow-hidden relative chat-wallpaper"
         style={{ 
-          background: chatWallpaper !== "default" ? (chatWallpaper.startsWith("data:") || chatWallpaper.startsWith("http") ? `url(${chatWallpaper}) center/cover no-repeat` : chatWallpaper) : undefined 
+          backgroundImage: chatWallpaper !== "default" && (chatWallpaper.startsWith("data:") || chatWallpaper.startsWith("http")) ? `url(${chatWallpaper})` : undefined,
+          backgroundColor: chatWallpaper !== "default" && !(chatWallpaper.startsWith("data:") || chatWallpaper.startsWith("http")) ? chatWallpaper : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          transition: "background-size 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-position 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease"
         }}
       >
         <ChatHeader />
