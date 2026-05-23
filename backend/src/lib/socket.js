@@ -4,6 +4,10 @@ import express from "express";
 import webpush from "web-push";
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { pubClient, subClient } from "../redis/redisClient.js";
+import callHandler from "../socket/callHandler.js";
+import groupHandler from "../socket/groupHandler.js";
 
 const app=express();
 const server = http.createServer(app);
@@ -13,6 +17,11 @@ const io =new Server(server,{
         origin: ["http://localhost:5173", "http://localhost:5174", "https://fullstack-realtime-chat-app-sooty.vercel.app", "https://chatzone.cloudnexis.in"]
     },
 });
+
+if (pubClient && subClient) {
+  io.adapter(createAdapter(pubClient, subClient));
+  console.log("Socket.IO Redis Adapter configured.");
+}
 
 const userSocketMap = {}; // {userId: socketId}
 export const activeCalls = new Map(); // {userId: {partnerId, type, startTime}}
@@ -194,7 +203,14 @@ io.on("connection", (socket) =>{
     }
   });
 
-  socket.on("messageSeen", async ({ senderId }) => {
+    // Join a personal room for distributed 1-to-1 signaling
+    socket.join(`user:${userId}`);
+
+    // Register handlers
+    callHandler(io, socket, userId);
+    groupHandler(io, socket, userId);
+
+  socket.on("markMessagesAsRead", async ({ senderId }) => {
     try {
       if (senderId && userId) {
         await Message.updateMany(
