@@ -379,7 +379,9 @@ const DraggableVideoContainer = React.memo(({
   setIsMinimized,
   isMinimized,
   remoteVideoRef,
-  manualFullView
+  manualFullView,
+  localStream,
+  isMirrored
 }) => {
   const containerRef = useRef(null);
 
@@ -574,12 +576,29 @@ const DraggableVideoContainer = React.memo(({
       className={containerClasses}
     >
       {callType === "video" && remoteStream ? (
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className={videoClasses}
-        />
+        <div className="relative w-full h-full">
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className={videoClasses}
+          />
+          {isMinimized && !isVideoOff && (
+            <div className="absolute bottom-2 right-2 w-16 h-20 rounded-lg overflow-hidden border border-white/20 shadow-lg bg-black z-10 pointer-events-none">
+              <video
+                ref={(el) => {
+                  if (el && localStream && el.srcObject !== localStream) {
+                    el.srcObject = localStream;
+                  }
+                }}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-cover ${isMirrored ? "scale-x-[-1]" : ""}`}
+              />
+            </div>
+          )}
+        </div>
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-1 pointer-events-none bg-[#1c1f26]">
            <img src={remoteUser?.profilePic || "/avatar.png"} className={isMinimized ? "w-12 h-12 rounded-full object-cover" : "w-32 h-32 rounded-full object-cover"} alt="user" />
@@ -1331,6 +1350,8 @@ const CallModal = () => {
                 isMinimized={isMinimized}
                 remoteVideoRef={remoteVideoRef}
                 manualFullView={manualFullView}
+                localStream={localStream}
+                isMirrored={isMirrored}
               />
               
               {/* Overlay info and toggle (only shown when NOT minimized) */}
@@ -1529,8 +1550,8 @@ const CallModal = () => {
       `}} />
 
       {/* Hidden elements for Canvas Compositing (Native PiP) */}
-      <canvas ref={pipCanvasRef} width={720} height={1280} className="hidden" />
-      <video ref={hiddenLocalVideoRef} muted playsInline autoPlay className="hidden" />
+      <canvas ref={pipCanvasRef} width={720} height={1280} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }} />
+      <video ref={hiddenLocalVideoRef} muted playsInline autoPlay style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }} />
       <video 
         ref={pipVideoRef} 
         muted 
