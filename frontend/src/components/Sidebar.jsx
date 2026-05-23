@@ -10,7 +10,7 @@ import {
   LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
   Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban,
   Layers, Compass, Loader2, Pencil, Lock, Megaphone, ListFilter,
-  Grip, AtSign, Hash, RefreshCw
+  Grip, AtSign, Hash, RefreshCw, TimerOff
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -285,6 +285,7 @@ const Sidebar = () => {
 
   // Group Creation local state
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [createGroupStep, setCreateGroupStep] = useState(1);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
   const [groupAvatarPreview, setGroupAvatarPreview] = useState(null);
@@ -1489,242 +1490,6 @@ const Sidebar = () => {
           </div>
         )}
 
-        {/* ==================== TABS: FRIENDS ==================== */}
-        {activeTab === "friends" && (
-          <div className="space-y-4 animate-fade-in pb-12">
-            {/* Header / Add Friend area */}
-            <div className="p-1.5 bg-base-200/50 rounded-2xl border border-base-300/30 space-y-3">
-              <div className="flex gap-2 items-center px-1">
-                <input 
-                  type="text" 
-                  placeholder="Add by email, phone, or @username..."
-                  value={addContactInput}
-                  onChange={(e) => setAddContactInput(e.target.value)}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-base-100 border border-base-300 text-xs font-semibold focus:outline-none focus:border-primary transition-colors"
-                />
-                <button 
-                  onClick={async () => {
-                    if (!addContactInput.trim()) {
-                      toast.error("Please enter an email, phone, or username");
-                      return;
-                    }
-                    const success = await addContact(addContactInput);
-                    if (success) {
-                      setAddContactInput("");
-                    }
-                  }}
-                  className="btn btn-primary rounded-xl px-4 py-2.5 text-xs font-bold h-auto min-h-0 normal-case shadow-sm"
-                >
-                  + Add
-                </button>
-              </div>
-            </div>
-
-            {/* Sync Contacts Callout Box */}
-            <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-between gap-4 animate-fade-in">
-              <div className="text-left space-y-1">
-                <h4 className="text-xs font-bold text-base-content">Sync Device Contacts</h4>
-                <p className="text-[10px] text-base-content/60 leading-relaxed font-medium">
-                  Automatically match friends already registered on ChatZone.
-                </p>
-              </div>
-              <button 
-                onClick={() => {
-                  setShowSyncModal(true);
-                  setSyncStep("ask");
-                }}
-                className="btn btn-xs btn-primary rounded-xl font-bold px-3 normal-case shadow-sm"
-              >
-                Sync Now
-              </button>
-            </div>
-
-            {/* Friends Count */}
-            <div className="flex justify-between items-center px-1">
-              <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Friends list</span>
-              <span className="text-xs text-primary font-bold">({users.filter(u => u.isContact).length})</span>
-            </div>
-
-            {/* List of Friends */}
-            {isUsersLoading ? (
-              <ContactListSkeleton count={6} />
-            ) : users.length === 0 ? (
-              <div className="text-center py-12 px-4 space-y-2 bg-base-200/20 rounded-2xl border border-dashed border-base-300/50">
-                <Users className="mx-auto text-base-content/30" size={36} />
-                <h3 className="font-semibold text-base-content text-sm">No friends added yet</h3>
-                <p className="text-xs text-base-content/50 max-w-[200px] mx-auto font-medium">Add colleagues by their email, phone, or username to start chatting!</p>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {users
-                  .filter(u => u.isContact)
-                  .filter(u => u.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map((user) => {
-                    const isOnline = onlineUsers.includes(user._id);
-                    return (
-                      <div 
-                        key={user._id}
-                        onClick={() => {
-                          if (activeMenuFriendId) return;
-                          setSelectedUser(user);
-                          setActiveTab("chats");
-                          // Add to active chat list in localStorage if not already present
-                          if (!activeConversations.includes(user._id)) {
-                            const updated = [...activeConversations, user._id];
-                            setActiveConversations(updated);
-                            localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
-                          }
-                        }}
-                        onContextMenu={(e) => handleFriendContextMenu(e, user)}
-                        onTouchStart={(e) => startFriendLongPress(e, user)}
-                        onTouchEnd={endFriendLongPress}
-                        onMouseDown={(e) => startFriendLongPress(e, user)}
-                        onMouseUp={endFriendLongPress}
-                        className="p-3.5 flex items-center justify-between rounded-2xl bg-base-100 hover:bg-base-200 cursor-pointer border border-base-200/50 hover:border-base-300/20 transition-all duration-200 shadow-sm select-none"
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          {/* Avatar */}
-                          <div className="relative flex-shrink-0">
-                            {user.profilePic ? (
-                              <img
-                                src={user.profilePic}
-                                alt={user.fullName}
-                                className="w-12 h-12 object-cover rounded-full border border-base-300 animate-fade-in"
-                              />
-                            ) : (
-                              <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-base border border-indigo-100 dark:border-indigo-900/20 shadow-sm">
-                                {getInitials(user.fullName)}
-                              </div>
-                            )}
-                            {isOnline && (
-                              <span className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full ring-2 ring-base-100 animate-pulse" />
-                            )}
-                          </div>
-                          
-                          <div className="text-left min-w-0">
-                            <h4 className="font-bold text-sm text-base-content truncate group-hover:text-primary transition-colors">{getNickname(authUser?._id, user._id) || user.fullName}</h4>
-                            <p className="text-xs text-base-content/50 truncate mt-0.5">{user.email || user.username || "No status"}</p>
-                          </div>
-                        </div>
-
-                        {/* Quick Actions */}
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          {/* Quick Message / Chat Button */}
-                          <button 
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setActiveTab("chats");
-                              // Add to active chat list in localStorage if not already present
-                              if (!activeConversations.includes(user._id)) {
-                                const updated = [...activeConversations, user._id];
-                                setActiveConversations(updated);
-                                localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
-                              }
-                            }}
-                            className="w-9 h-9 rounded-full bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all"
-                            title="Chat with friend"
-                          >
-                            <MessageSquare size={16} className="fill-primary/20" />
-                          </button>
-
-                          {/* Delete/Remove Friend Button */}
-                          <button 
-                            onClick={async () => {
-                              if (window.confirm(`Are you sure you want to remove ${user.fullName} from your friends?`)) {
-                                const success = await removeContact(user._id);
-                                if (success) {
-                                  const record = {
-                                    user: user,
-                                    removedAt: new Date().toISOString()
-                                  };
-                                  const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== user._id)].slice(0, 20);
-                                  setRecentlyUnfriended(updated);
-                                  localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
-                                }
-                              }
-                            }}
-                            className="w-9 h-9 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 flex items-center justify-center transition-all"
-                            title="Remove friend"
-                          >
-                            <UserMinus size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
-
-            {/* Custom Tap-and-Hold / Long-press Friends Options Menu Popover Overlay */}
-            {activeMenuFriendId && activeMenuFriendUser && (
-              <div 
-                className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[1px]" 
-                onClick={() => { 
-                  if (Date.now() - lastMouseUpTime.current < 150) return;
-                  setActiveMenuFriendId(null); 
-                  setActiveMenuFriendUser(null); 
-                }}
-                onContextMenu={(e) => { e.preventDefault(); setActiveMenuFriendId(null); setActiveMenuFriendUser(null); }}
-              >
-                <div 
-                  style={{ 
-                    top: Math.min(friendMenuPosition.y, window.innerHeight - 180), 
-                    left: Math.min(friendMenuPosition.x, window.innerWidth - 240) 
-                  }}
-                  className="absolute bg-base-100 border border-base-300 shadow-2xl rounded-[24px] p-2 w-56 flex flex-col space-y-0.5 z-50 animate-fade-in"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="px-4 py-2 text-left border-b border-base-300/40 mb-1">
-                    <span className="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">Friend Options</span>
-                    <h5 className="font-bold text-xs text-base-content truncate mt-0.5">{activeMenuFriendUser.fullName}</h5>
-                  </div>
-
-                  {/* 1. Unfriend */}
-                  <button 
-                    onClick={async () => {
-                      const user = activeMenuFriendUser;
-                      if (window.confirm(`Are you sure you want to remove ${user.fullName} from your friends?`)) {
-                        const success = await removeContact(user._id);
-                        if (success) {
-                          const record = {
-                            user: user,
-                            removedAt: new Date().toISOString()
-                          };
-                          const updated = [record, ...recentlyUnfriended.filter(r => r.user._id !== user._id)].slice(0, 20);
-                          setRecentlyUnfriended(updated);
-                          localStorage.setItem(`recently_unfriended_${authUser?._id}`, JSON.stringify(updated));
-                        }
-                      }
-                      setActiveMenuFriendId(null);
-                      setActiveMenuFriendUser(null);
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 rounded-xl text-left text-sm font-semibold transition-colors text-base-content/90"
-                  >
-                    <UserMinus size={18} className="text-rose-500" />
-                    <span>Unfriend</span>
-                  </button>
-
-                  {/* 2. Block */}
-                  <button 
-                    onClick={async () => {
-                      const user = activeMenuFriendUser;
-                      if (window.confirm(`Are you sure you want to block ${user.fullName}? They will be removed from your friends and won't be able to chat with you.`)) {
-                        await blockContact(user._id);
-                      }
-                      setActiveMenuFriendId(null);
-                      setActiveMenuFriendUser(null);
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-950/40 rounded-xl text-left text-sm font-semibold transition-colors text-rose-600"
-                  >
-                    <Ban size={18} className="text-rose-600" />
-                    <span>Block</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
       </main>
 
       {/* 3. Floating Action Buttons (FABs) on Bottom Right */}
@@ -1795,16 +1560,7 @@ const Sidebar = () => {
           <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "calls" ? "text-primary font-bold" : "text-base-content/60"}`}>Calls</span>
         </button>
 
-        {/* Friends Tab button */}
-        <button 
-          onClick={() => { setActiveTab("friends"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
-          className="flex flex-col items-center gap-1 text-center group cursor-pointer"
-        >
-          <div className={`px-5 py-1 rounded-full transition-all ${activeTab === "friends" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
-            <Users size={21} className={activeTab === "friends" ? "fill-primary" : ""} />
-          </div>
-          <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "friends" ? "text-primary font-bold" : "text-base-content/60"}`}>Friends</span>
-        </button>
+
 
         {/* Stories Tab button */}
         <button 
@@ -1854,7 +1610,13 @@ const Sidebar = () => {
             {/* Actions */}
             {searchQuery.length === 0 && (
               <div className="px-4 pb-4 pt-2 space-y-2">
-                <button className="flex items-center gap-4 w-full group text-left px-1 py-1.5 hover:bg-base-200 rounded-xl transition-colors">
+                <button 
+                  onClick={() => {
+                    setShowContactsModal(false);
+                    setShowCreateGroupModal(true);
+                    setCreateGroupStep(1);
+                  }}
+                  className="flex items-center gap-4 w-full group text-left px-1 py-1.5 hover:bg-base-200 rounded-xl transition-colors">
                   <div className="w-[44px] h-[44px] rounded-full bg-base-200 text-base-content/80 flex items-center justify-center shrink-0 border border-base-300">
                     <Users size={22} className="stroke-[1.5]" />
                   </div>
@@ -2132,196 +1894,243 @@ const Sidebar = () => {
         </div>
       )}
       {/* Create Group Modal */}
-      {/* Create Group Modal */}
+      {/* Create Group Modal / Multi-step Flow */}
       {showCreateGroupModal && (
         <div className="absolute inset-0 bg-base-100 z-50 flex flex-col animate-slide-up">
-          <header className="p-4 border-b border-base-300 flex items-center gap-4 bg-base-100">
-            <button 
-              type="button"
-              onClick={() => { 
-                setShowCreateGroupModal(false); 
-                setNewGroupName(""); 
-                setNewGroupDesc(""); 
-                setGroupAvatarPreview(null); 
-                setSelectedFriendIds([]); 
-                setFriendSearchQuery("");
-              }}
-              className="p-1.5 rounded-full hover:bg-base-200 text-base-content/80 transition-colors"
-            >
-              <ArrowLeft size={21} />
-            </button>
-            <div className="text-left">
-              <h2 className="text-lg font-bold text-base-content">Create New Group</h2>
-              <p className="text-xs text-base-content/50 mt-0.5">Bring your team together in one thread</p>
-            </div>
-          </header>
+          {createGroupStep === 1 && (
+            <>
+              <header className="p-4 flex items-center gap-6 bg-base-100">
+                <button 
+                  type="button"
+                  onClick={() => { 
+                    setShowCreateGroupModal(false); 
+                    setCreateGroupStep(1);
+                    setNewGroupName(""); 
+                    setNewGroupDesc(""); 
+                    setGroupAvatarPreview(null); 
+                    setSelectedFriendIds([]); 
+                    setFriendSearchQuery("");
+                  }}
+                  className="hover:bg-base-200 p-1 -ml-1 rounded-full text-base-content transition-colors"
+                >
+                  <ArrowLeft size={24} strokeWidth={2.5} />
+                </button>
+                <h2 className="text-[18px] font-semibold text-base-content">Select members</h2>
+              </header>
 
-          <form onSubmit={handleCreateGroupSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-            {/* Group Avatar Upload */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative group cursor-pointer" onClick={() => groupAvatarInputRef.current?.click()}>
-                {groupAvatarPreview ? (
-                  <img 
-                    src={groupAvatarPreview} 
-                    alt="Group Avatar" 
-                    className="w-20 h-20 rounded-full object-cover border-2 border-primary shadow-md"
+              <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
+                {/* Search Box */}
+                <div className="px-4 py-2">
+                  <div className="flex items-center gap-3 px-4 py-2.5 bg-base-200/50 rounded-2xl">
+                    <input 
+                      type="text" 
+                      placeholder="Name, username or number"
+                      value={friendSearchQuery}
+                      onChange={(e) => setFriendSearchQuery(e.target.value)}
+                      className="w-full bg-transparent text-[16px] focus:outline-none placeholder:text-base-content/50"
+                    />
+                    <Grip size={20} className="text-base-content/50 shrink-0" />
+                  </div>
+                </div>
+
+                {/* Actions (Only when not searching) */}
+                {friendSearchQuery.length === 0 && (
+                  <div className="px-4 pb-4 pt-2 space-y-2">
+                    <button className="flex items-center gap-4 w-full group text-left px-1 py-1.5 hover:bg-base-200 rounded-xl transition-colors">
+                      <div className="w-[44px] h-[44px] rounded-full bg-base-200 text-base-content/80 flex items-center justify-center shrink-0 border border-base-300">
+                        <AtSign size={22} className="stroke-[1.5]" />
+                      </div>
+                      <span className="text-[16px] font-medium text-base-content tracking-tight">Find by username</span>
+                    </button>
+                    <button className="flex items-center gap-4 w-full group text-left px-1 py-1.5 hover:bg-base-200 rounded-xl transition-colors">
+                      <div className="w-[44px] h-[44px] rounded-full bg-base-200 text-base-content/80 flex items-center justify-center shrink-0 border border-base-300">
+                        <Hash size={22} className="stroke-[1.5]" />
+                      </div>
+                      <span className="text-[16px] font-medium text-base-content tracking-tight">Find by phone number</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Alphabetical Contact List */}
+                <div className="px-5 pt-2 pb-24">
+                  <h3 className="font-bold text-base-content mb-4 text-[15px]">Contacts</h3>
+                  
+                  {filteredFriendsForGroup.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-base-content/40">
+                      No friends found.
+                    </div>
+                  ) : (
+                    Object.entries(
+                      filteredFriendsForGroup.reduce((acc, friend) => {
+                        const firstLetter = friend.fullName.charAt(0).toUpperCase();
+                        if (!acc[firstLetter]) acc[firstLetter] = [];
+                        acc[firstLetter].push(friend);
+                        return acc;
+                      }, {})
+                    ).sort(([a], [b]) => a.localeCompare(b)).map(([letter, groupFriends]) => (
+                      <div key={letter} className="mb-6">
+                        <h4 className="font-bold text-base-content/90 mb-3 ml-1">{letter}</h4>
+                        <div className="space-y-4">
+                          {groupFriends.map((friend) => {
+                            const isSelected = selectedFriendIds.includes(friend._id);
+                            return (
+                              <div 
+                                key={friend._id}
+                                onClick={() => toggleFriendSelection(friend._id)}
+                                className="flex items-center justify-between cursor-pointer group"
+                              >
+                                <div className="flex items-center gap-4">
+                                  {friend.profilePic ? (
+                                    <img 
+                                      src={friend.profilePic} 
+                                      alt={friend.fullName}
+                                      className="w-11 h-11 rounded-full object-cover border border-base-300"
+                                    />
+                                  ) : (
+                                    <div className="w-11 h-11 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-base">
+                                      {friend.fullName.charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <span className="text-[16px] font-medium text-base-content">{friend.fullName}</span>
+                                </div>
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? "border-primary bg-primary" : "border-base-300 group-hover:border-base-content/30"}`}>
+                                  {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Floating Next/Skip Button */}
+              <div className="absolute bottom-6 right-6 z-20 animate-fade-in">
+                <button 
+                  onClick={() => setCreateGroupStep(2)}
+                  className="bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950/70 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold px-6 py-3.5 rounded-[24px] shadow-sm transition-transform active:scale-95"
+                >
+                  {selectedFriendIds.length > 0 ? (
+                    <ArrowLeft size={24} className="rotate-180 stroke-[2.5]" />
+                  ) : (
+                    <span className="text-[15px]">Skip</span>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+
+          {createGroupStep === 2 && (
+            <>
+              <header className="p-4 flex items-center gap-6 bg-base-100">
+                <button 
+                  type="button"
+                  onClick={() => setCreateGroupStep(1)}
+                  className="hover:bg-base-200 p-1 -ml-1 rounded-full text-base-content transition-colors"
+                >
+                  <ArrowLeft size={24} strokeWidth={2.5} />
+                </button>
+                <h2 className="text-[18px] font-semibold text-base-content">Name this group</h2>
+              </header>
+
+              <form onSubmit={handleCreateGroupSubmit} className="flex-1 overflow-y-auto custom-scrollbar pb-24">
+                {/* Group Info Input Row */}
+                <div className="flex items-center gap-4 px-5 py-6">
+                  {/* Avatar Upload */}
+                  <div className="relative cursor-pointer shrink-0" onClick={() => groupAvatarInputRef.current?.click()}>
+                    {groupAvatarPreview ? (
+                      <img 
+                        src={groupAvatarPreview} 
+                        alt="Group Avatar" 
+                        className="w-[60px] h-[60px] rounded-full object-cover border border-base-300 shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-[60px] h-[60px] rounded-full bg-base-200/60 border border-base-300 flex items-center justify-center text-base-content/50 transition-colors">
+                        <Camera size={26} className="stroke-[1.5]" />
+                      </div>
+                    )}
+                  </div>
+                  <input 
+                    type="file" 
+                    ref={groupAvatarInputRef} 
+                    onChange={handleGroupAvatarChange} 
+                    accept="image/*" 
+                    className="hidden" 
                   />
-                ) : (
-                  <div className="w-20 h-20 rounded-full bg-base-200 border-2 border-dashed border-base-300 flex flex-col items-center justify-center text-base-content/40 hover:border-primary hover:text-primary transition-colors">
-                    <Camera size={22} className="text-base-content/55" />
-                    <span className="text-[10px] mt-1 font-semibold">Add Image</span>
+
+                  {/* Group Name Input */}
+                  <input 
+                    type="text" 
+                    placeholder="Group name (required)" 
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    maxLength={50}
+                    required
+                    disabled={isCreatingGroup}
+                    className="w-full bg-transparent text-[16px] border-b border-transparent focus:outline-none focus:border-primary py-2 transition-colors placeholder:text-base-content/40"
+                  />
+                </div>
+
+                <div className="h-[1px] bg-base-300/30 w-full" />
+
+                {/* Settings Rows */}
+                <div className="flex items-center justify-between px-5 py-5 cursor-pointer hover:bg-base-200/30 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <TimerOff size={22} className="stroke-[1.5] text-base-content/80" />
+                    <span className="text-[16px] text-base-content tracking-tight">Disappearing messages</span>
                   </div>
-                )}
-                {groupAvatarPreview && (
-                  <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-semibold">
-                    Change
-                  </div>
-                )}
-              </div>
-              <input 
-                type="file" 
-                ref={groupAvatarInputRef} 
-                onChange={handleGroupAvatarChange} 
-                accept="image/*" 
-                className="hidden" 
-              />
-            </div>
+                  <span className="text-[15px] text-base-content/50">Off</span>
+                </div>
 
-            <div className="space-y-1.5 text-left">
-              <label className="text-xs font-bold text-base-content/70 tracking-wide uppercase px-1">Group Name</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Project Apollo" 
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                maxLength={50}
-                required
-                disabled={isCreatingGroup}
-                className="w-full px-4 py-3 rounded-2xl bg-base-200 border border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-              />
-            </div>
+                <div className="h-[8px] bg-base-200/30 w-full" />
 
-            <div className="space-y-1.5 text-left">
-              <label className="text-xs font-bold text-base-content/70 tracking-wide uppercase px-1">Description (Optional)</label>
-              <textarea 
-                placeholder="Brief overview of what this group is about..."
-                value={newGroupDesc}
-                onChange={(e) => setNewGroupDesc(e.target.value)}
-                maxLength={200}
-                disabled={isCreatingGroup}
-                rows={2}
-                className="w-full px-4 py-3 rounded-2xl bg-base-200 border border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm resize-none"
-              />
-            </div>
-
-            {/* Select Members Checklist */}
-            <div className="space-y-2 text-left">
-              <div className="flex justify-between items-center px-1">
-                <label className="text-xs font-bold text-base-content/70 tracking-wide uppercase">Add Members ({selectedFriendIds.length})</label>
-                {selectedFriendIds.length > 0 && (
-                  <button 
-                    type="button" 
-                    onClick={() => setSelectedFriendIds([])} 
-                    className="text-[10px] font-bold text-rose-500 hover:underline"
-                  >
-                    Clear Selection
-                  </button>
-                )}
-              </div>
-
-              {/* Friend Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-base-content/40" />
-                <input 
-                  type="text"
-                  placeholder="Search friends to add..."
-                  value={friendSearchQuery}
-                  onChange={(e) => setFriendSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-base-200 border border-base-300 focus:outline-none focus:ring-1 focus:ring-primary/20 focus:border-primary text-xs"
-                />
-              </div>
-
-              {/* Scrollable Friends list */}
-              <div className="max-h-48 overflow-y-auto custom-scrollbar border border-base-300 rounded-2xl bg-base-150 p-2 space-y-1">
-                {filteredFriendsForGroup.length === 0 ? (
-                  <div className="text-center py-6 text-xs text-base-content/40">
-                    No friends found.
-                  </div>
-                ) : (
-                  filteredFriendsForGroup.map((friend) => {
-                    const isSelected = selectedFriendIds.includes(friend._id);
-                    return (
-                      <div 
-                        key={friend._id}
-                        onClick={() => toggleFriendSelection(friend._id)}
-                        className={`p-2 flex items-center justify-between rounded-xl cursor-pointer transition-all duration-200 ${
-                          isSelected 
-                            ? "bg-primary/10 border border-primary/20" 
-                            : "hover:bg-base-200 border border-transparent"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
+                {/* Members List */}
+                <div className="px-5 py-4">
+                  <h3 className="font-bold text-base-content mb-4 text-[15px]">Members</h3>
+                  <div className="space-y-4">
+                    {users
+                      .filter(u => selectedFriendIds.includes(u._id))
+                      .map(friend => (
+                        <div key={friend._id} className="flex items-center gap-4">
                           {friend.profilePic ? (
                             <img 
                               src={friend.profilePic} 
                               alt={friend.fullName}
-                              className="w-8 h-8 rounded-full object-cover border border-base-300"
+                              className="w-[44px] h-[44px] rounded-full object-cover border border-base-300"
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-xs">
-                              {friend.fullName.charAt(0)}
+                            <div className="w-[44px] h-[44px] rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
+                              {friend.fullName.charAt(0).toUpperCase()}
                             </div>
                           )}
-                          <div className="text-left min-w-0">
-                            <p className="text-xs font-semibold text-base-content truncate">{friend.fullName}</p>
-                            <p className="text-[10px] text-base-content/50 truncate">@{friend.username || "user"}</p>
-                          </div>
+                          <span className="text-[16px] font-medium text-base-content">{friend.fullName}</span>
                         </div>
-                        <input 
-                          type="checkbox" 
-                          checked={isSelected}
-                          onChange={() => {}} // toggled via parent div click
-                          className="checkbox checkbox-xs checkbox-primary rounded-md pointer-events-none"
-                        />
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+                    ))}
+                  </div>
+                </div>
 
-            <div className="pt-2 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => { 
-                  setShowCreateGroupModal(false); 
-                  setNewGroupName(""); 
-                  setNewGroupDesc(""); 
-                  setGroupAvatarPreview(null); 
-                  setSelectedFriendIds([]); 
-                  setFriendSearchQuery("");
-                }}
-                disabled={isCreatingGroup}
-                className="px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-base-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isCreatingGroup || !newGroupName.trim()}
-                className="px-6 py-2.5 rounded-full text-sm font-semibold btn-primary flex items-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
-              >
-                {isCreatingGroup ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    <span>Creating...</span>
-                  </>
-                ) : (
-                  <span>Create Group</span>
-                )}
-              </button>
-            </div>
-          </form>
+                {/* Floating Create Button */}
+                <div className="fixed bottom-6 right-6 z-20">
+                  <button
+                    type="submit"
+                    disabled={isCreatingGroup || !newGroupName.trim()}
+                    className="bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950/70 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold px-6 py-3.5 rounded-[24px] shadow-sm disabled:opacity-50 transition-transform active:scale-95 flex items-center gap-2"
+                  >
+                    {isCreatingGroup ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin" />
+                        <span className="text-[15px]">Creating...</span>
+                      </>
+                    ) : (
+                      <span className="text-[15px]">Create</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       )}
       {/* Join Group Modal */}

@@ -184,28 +184,7 @@ const HomePage = () => {
               </span>
             </button>
 
-            {/* Friends Tab Button */}
-            <button 
-              onClick={() => { 
-                setActiveTab("friends"); 
-                setSelectedUser(null);
-                setSelectedGroup(null);
-              }}
-              className="flex flex-col items-center gap-0.5 text-center group cursor-pointer"
-            >
-              <div className={`px-4 py-0.5 rounded-full transition-all ${
-                activeTab === "friends" 
-                  ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
-                  : "text-base-content/60 group-hover:text-base-content"
-              }`}>
-                <Users size={18} className={activeTab === "friends" ? "text-primary" : "text-base-content/60"} />
-              </div>
-              <span className={`text-[10px] font-bold tracking-wide transition-all ${
-                activeTab === "friends" ? "text-primary" : "text-base-content/60"
-              }`}>
-                Friends
-              </span>
-            </button>
+
 
             {/* Stories Tab Button */}
             <button 
