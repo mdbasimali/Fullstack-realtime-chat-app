@@ -170,28 +170,6 @@ io.on("connection", (socket) =>{
     }
   });
 
-  // Group calling WebRTC Mesh Signaling events
-  const checkGroupCallRoomEmpty = (gId) => {
-    setTimeout(() => {
-      const callRoom = io.sockets.adapter.rooms.get(`group_call_${gId}`);
-      const size = callRoom ? callRoom.size : 0;
-      if (size === 0) {
-        io.to(`group_${gId}`).emit("group-call:active-state", {
-          groupId: gId,
-          isActive: false
-        });
-      }
-    }, 200);
-  };
-
-  // Group calling WebRTC Mesh Signaling events
-  
-    // Notify others in the room
-    socket.to(`group_call_${groupId}`).emit("group-call:user-joined", {
-      userId,
-      socketId: socket.id
-    });
-  });
 
   socket.on("group-call:invite", async ({ groupId, invitedUserIds, callType }) => {
     try {
@@ -224,35 +202,6 @@ io.on("connection", (socket) =>{
     }
   });
 
-  
-  });
-
-  
-  });
-
-  
-  });
-
-  
-    checkGroupCallRoomEmpty(groupId);
-  });
-
-  socket.on("disconnecting", () => {
-    try {
-      for (const room of socket.rooms) {
-        if (room.startsWith("group_call_")) {
-          const groupId = room.replace("group_call_", "");
-          socket.to(room).emit("group-call:user-left", {
-            userId,
-            socketId: socket.id
-          });
-          checkGroupCallRoomEmpty(groupId);
-        }
-      }
-    } catch (err) {
-      console.error("Error in disconnecting handler:", err);
-    }
-  });
 
    socket.on("disconnect", ()=>{
       for (const [sessionId, session] of qrSessions.entries()) {
