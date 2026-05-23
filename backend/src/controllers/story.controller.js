@@ -109,16 +109,10 @@ export const getStories = async (req, res) => {
     const user = await User.findById(userId);
     const contactIds = user.contacts || [];
 
-    // 2. Get people interacted with via messages
-    const messageUserIds = await Story.db.model("Message").distinct("senderId", { receiverId: userId });
-    const messageUserIds2 = await Story.db.model("Message").distinct("receiverId", { senderId: userId });
-    const interactedUserIds = [...new Set([...messageUserIds, ...messageUserIds2])].filter(id => id != null);
-
-    // 3. Combine unique IDs (Self + Contacts + Interactions)
+    // 2. Combine unique IDs (Self + Contacts only)
     const targetUserIds = [...new Set([
       userId.toString(),
-      ...contactIds.map(id => id.toString()),
-      ...interactedUserIds.map(id => id.toString())
+      ...contactIds.map(id => id.toString())
     ])];
 
     const stories = await Story.find({

@@ -249,6 +249,13 @@ export const sendMessage = async(req,res)=>{
     });
     await newMessage.save();
 
+    // Auto-add to contacts if this is a reply (receiver previously sent a message to sender)
+    const existingMessageFromReceiver = await Message.findOne({ senderId: receiverId, receiverId: senderId });
+    if (existingMessageFromReceiver) {
+      await User.findByIdAndUpdate(senderId, { $addToSet: { contacts: receiverId } });
+      await User.findByIdAndUpdate(receiverId, { $addToSet: { contacts: senderId } });
+    }
+
     // Populate storyId before sending via socket
     const populatedMessage = await Message.findById(newMessage._id).populate("storyId");
 
