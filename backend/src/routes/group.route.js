@@ -9,6 +9,7 @@ import {
   addMember,
   getGroupDetails,
   joinGroupByInvite,
+  updateGroup,
 } from "../controllers/group.controller.js";
 
 const router = express.Router();
@@ -28,5 +29,8 @@ router.get("/:groupId/details", protectRoute, getGroupDetails);
 // Group messaging endpoints
 router.get("/:groupId/messages", protectRoute, getGroupMessages);
 router.post("/:groupId/send", protectRoute, sendGroupMessage);
+
+// Update group
+router.put("/:groupId/update", protectRoute, updateGroup);
 
 export default router;

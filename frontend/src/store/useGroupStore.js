@@ -202,6 +202,7 @@ export const useGroupStore = create((set, get) => ({
     socket.off("groupMemberJoined");
     socket.off("groupMemberLeft");
     socket.off("groupMessageDeleted");
+    socket.off("groupUpdated");
 
     // Make sure socket is subbed to this room channel
     socket.emit("group:join-room", groupId);
@@ -255,6 +256,16 @@ export const useGroupStore = create((set, get) => ({
       const { messages } = get();
       set({ messages: messages.filter((msg) => msg._id !== messageId) });
     });
+
+    socket.on("groupUpdated", (updatedData) => {
+      const { selectedGroup, groups } = get();
+      const updatedGroups = groups.map(g => g._id === updatedData.groupId ? { ...g, ...updatedData } : g);
+      set({ groups: updatedGroups });
+
+      if (selectedGroup && selectedGroup._id === updatedData.groupId) {
+        set({ selectedGroup: { ...selectedGroup, ...updatedData } });
+      }
+    });
   },
 
   unsubscribeFromGroupMessages: () => {
@@ -270,6 +281,7 @@ export const useGroupStore = create((set, get) => ({
     socket.off("groupMemberJoined");
     socket.off("groupMemberLeft");
     socket.off("groupMessageDeleted");
+    socket.off("groupUpdated");
   },
 
   addMemberToGroup: async (groupId, identifier) => {
@@ -324,6 +336,34 @@ export const useGroupStore = create((set, get) => ({
     } catch (error) {
       console.error("deleteGroupMessage error:", error);
       throw error;
+    }
+  },
+
+  isUpdatingGroup: false,
+  updateGroup: async (groupId, updateData) => {
+    set({ isUpdatingGroup: true });
+    try {
+      const res = await axiosInstance.put(`/groups/${groupId}/update`, updateData);
+      const updatedGroup = res.data;
+
+      // Update in our groups list
+      const updatedGroups = get().groups.map(g => g._id === groupId ? { ...g, name: updatedGroup.name, description: updatedGroup.description, avatar: updatedGroup.avatar } : g);
+      set({ groups: updatedGroups });
+
+      // Update active selectedGroup details
+      const selected = get().selectedGroup;
+      if (selected && selected._id === groupId) {
+        set({ selectedGroup: { ...selected, name: updatedGroup.name, description: updatedGroup.description, avatar: updatedGroup.avatar } });
+      }
+
+      toast.success("Group updated successfully! ✨");
+      return true;
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to update group.";
+      toast.error(errorMsg);
+      return false;
+    } finally {
+      set({ isUpdatingGroup: false });
     }
   }
 }));

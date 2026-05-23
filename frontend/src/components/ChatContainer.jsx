@@ -5,6 +5,7 @@ import { useGroupStore } from "../store/useGroupStore";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import ContactDetailsSidebar from "./ContactDetailsSidebar";
+import EditGroupSidebar from "./EditGroupSidebar";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { useCallStore } from "../store/useCallStore";
@@ -13,7 +14,7 @@ import {
   Phone, Users, Check, Video, PhoneMissed, 
   PhoneOutgoing, PhoneIncoming, X, Calendar, Crown, Loader2,
   Copy, Download, Trash2, ArrowLeft, Edit2, Camera, BellOff, 
-  Search, TimerOff, Palette, Volume2, Plus, Link, Tag, UserPlus, 
+  Search, TimerOff, Palette, Volume2, Plus, PlusCircle, Link, Tag, UserPlus, 
   Lock, LogOut, Ban, AlertCircle
 } from "lucide-react";
 import VoicePlayer from "./VoicePlayer";
@@ -49,6 +50,7 @@ const ChatContainer = () => {
     selectedUser,
     showContactDetailsSidebar,
     deleteMessage,
+    users,
   } = useChatstore();
 
   const {
@@ -71,8 +73,14 @@ const ChatContainer = () => {
   const messageEndRef = useRef(null);
   const isInitialLoadRef = useRef(true);
 
+  const groupCreatorUser = 
+    users?.find((u) => u._id === selectedGroup?.creatorId) || 
+    selectedGroupDetails?.members?.find((m) => m._id === selectedGroup?.creatorId);
+  const creatorName = groupCreatorUser?.fullName || "Someone";
+
   const [contextMenu, setContextMenu] = useState(null); // { message, x, y, isMobile }
   const [viewingMedia, setViewingMedia] = useState(null);
+  const [isEditingGroup, setIsEditingGroup] = useState(false);
   const touchTimeoutRef = useRef(null);
   const touchStartPosRef = useRef({ x: 0, y: 0 });
   const hasTriggeredLongPressRef = useRef(false);
@@ -209,6 +217,7 @@ const ChatContainer = () => {
   // Reset initial load flag when switching chats
   useEffect(() => {
     isInitialLoadRef.current = true;
+    setIsEditingGroup(false);
   }, [selectedUser?._id, selectedGroup?._id]);
 
   useEffect(() => {
@@ -245,66 +254,78 @@ const ChatContainer = () => {
         {/* Messages Stream View */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-1">
           
-          {/* Large, Beautiful Profile Onboarding Card */}
+          {/* WhatsApp-Style User Profile Onboarding Card */}
           {selectedUser && (
-            <div className="flex flex-col items-center justify-center p-6 mb-8 mt-4 bg-base-200/30 dark:bg-base-950/20 border border-base-300/40 rounded-[32px] max-w-[340px] md:max-w-md mx-auto text-center space-y-4 shadow-xs animate-fade-in">
+            <div className="flex flex-col items-center justify-center p-8 mb-8 mt-4 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-[32px] max-w-[340px] md:max-w-[380px] mx-auto text-center shadow-sm animate-fade-in">
               {selectedUser.profilePic ? (
                 <img 
                   src={selectedUser.profilePic} 
                   alt={selectedUser.fullName} 
-                  className="w-20 h-20 rounded-full object-cover shadow-xs ring-2 ring-primary/10" 
+                  className="w-[84px] h-[84px] rounded-full object-cover mb-4" 
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-pink-100 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 flex items-center justify-center font-bold text-2xl shadow-xs">
+                <div className="w-[84px] h-[84px] rounded-full bg-pink-100/80 dark:bg-pink-900/40 text-pink-500 flex items-center justify-center font-bold text-3xl mb-4">
                   {selectedUser.fullName.slice(0, 2).toLowerCase()}
                 </div>
               )}
-              <div className="space-y-1">
-                <h3 className="font-bold text-lg flex items-center justify-center gap-1.5 text-base-content leading-tight">
-                  {selectedUser.fullName}
-                </h3>
-                {selectedUser.phoneNumber && (
-                  <p className="text-xs font-semibold text-base-content/60 flex items-center justify-center gap-1.5">
-                    <Phone size={13} className="text-base-content/40" /> {selectedUser.phoneNumber}
-                  </p>
-                )}
-                <p className="text-xs font-semibold text-base-content/50 flex items-center justify-center gap-1.5">
-                  <Users size={13} className="text-base-content/40" /> No groups in common
+              <h3 className="font-bold text-[19px] text-base-content leading-tight mb-2">
+                {selectedUser.fullName}
+              </h3>
+              {selectedUser.phoneNumber && (
+                <p className="text-[14px] font-medium text-base-content/50 flex items-center justify-center gap-1.5 mb-1.5">
+                  <Phone size={14} /> {selectedUser.phoneNumber}
                 </p>
-              </div>
+              )}
+              <p className="text-[14px] font-medium text-base-content/50 flex items-center justify-center gap-1.5">
+                <Users size={14} /> No groups in common
+              </p>
             </div>
           )}
 
+          {/* WhatsApp-Style Group Profile Onboarding Card */}
           {selectedGroup && (
-            <div className="flex flex-col items-center justify-center p-6 mb-8 mt-4 bg-base-200/30 dark:bg-base-950/20 border border-base-300/40 rounded-[32px] max-w-[340px] md:max-w-md mx-auto text-center space-y-4 shadow-xs animate-fade-in">
+            <div className="flex flex-col items-center justify-center p-8 mb-8 mt-4 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-[32px] max-w-[340px] md:max-w-[380px] mx-auto text-center shadow-sm animate-fade-in">
               {selectedGroup.avatar ? (
                 <img
                   src={selectedGroup.avatar}
                   alt={selectedGroup.name}
-                  className="w-20 h-20 rounded-[24px] object-cover shadow-md"
+                  className="w-[84px] h-[84px] rounded-full object-cover mb-4"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-[24px] bg-blue-100 dark:bg-blue-950 text-primary flex items-center justify-center font-extrabold text-3xl shadow-md">
+                <div className="w-[84px] h-[84px] rounded-full bg-blue-100 dark:bg-blue-900/40 text-primary flex items-center justify-center font-bold text-3xl mb-4">
                   {selectedGroup.name.slice(0, 2).toUpperCase()}
                 </div>
               )}
-              <div className="space-y-1">
-                <h3 className="font-bold text-lg flex items-center justify-center gap-1.5 text-base-content leading-tight">
-                  {selectedGroup.name}
-                </h3>
-                <p className="text-xs font-semibold text-base-content/50 px-4 mt-1">
-                  {selectedGroup.description || "No description provided."}
-                </p>
-                <div className="flex items-center justify-center gap-2 mt-2">
-                  <span className="text-[11px] font-bold bg-primary/10 text-primary px-3 py-0.5 rounded-full">
-                    {selectedGroup.membersCount} members
-                  </span>
-                  {selectedGroup.creatorId === authUser?._id && (
-                    <span className="text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-3 py-0.5 rounded-full">
-                      Group Creator
-                    </span>
-                  )}
-                </div>
+              
+              <h3 className="font-bold text-[19px] text-base-content leading-tight mb-1">
+                {selectedGroup.creatorId === authUser?._id ? "You created this group" : `${creatorName} added you`}
+              </h3>
+              
+              <p className="text-[14px] font-medium text-base-content/50 mb-4 px-2">
+                {selectedGroup.membersCount} members · Group created by {selectedGroup.creatorId === authUser?._id ? "you" : creatorName}
+              </p>
+
+              <button className="text-[15px] font-semibold text-primary hover:underline mb-6">
+                Add description...
+              </button>
+
+              <div className="w-full space-y-3 px-1">
+                <button 
+                  onClick={() => {
+                    const drawer = document.getElementById("contact-details-drawer");
+                    if (drawer) drawer.checked = true;
+                  }}
+                  className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-full border-[1.5px] border-base-200 dark:border-base-700 text-[#008069] dark:text-[#00a884] hover:bg-base-200/50 dark:hover:bg-base-800 transition-colors"
+                >
+                  <UserPlus size={20} strokeWidth={2.5} />
+                  <span className="font-bold text-[15px]">Add members</span>
+                </button>
+                <button 
+                  className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-full border-[1.5px] border-base-200 dark:border-base-700 text-[#008069] dark:text-[#00a884] hover:bg-base-200/50 dark:hover:bg-base-800 transition-colors"
+                >
+                  <PlusCircle size={20} strokeWidth={2.5} />
+                  <span className="font-bold text-[15px]">Add your member tag</span>
+                </button>
               </div>
             </div>
           )}
@@ -636,22 +657,28 @@ const ChatContainer = () => {
         />
       )}
 
-      {/* Group Details Sidebar */}
+      {/* Group Details Sidebar or Edit Sidebar */}
       {selectedGroup && showGroupDetailsSidebar && (
-        <div className="absolute inset-y-0 right-0 w-full md:max-w-[400px] md:static md:w-[400px] border-l border-base-300 bg-base-100 z-40 flex flex-col h-full overflow-hidden animate-fade-in shrink-0 shadow-2xl">
-          
-          {/* Top Bar */}
-          <div className="p-4 flex justify-between items-center bg-base-100">
-            <button
-              onClick={() => setShowGroupDetailsSidebar(false)}
-              className="p-2 hover:bg-base-200 rounded-full transition-colors"
-            >
-              <ArrowLeft className="w-6 h-6 text-base-content" />
-            </button>
-            <button className="p-2 hover:bg-base-200 rounded-full transition-colors">
-              <Edit2 className="w-5 h-5 text-base-content" />
-            </button>
-          </div>
+        isEditingGroup ? (
+          <EditGroupSidebar onClose={() => setIsEditingGroup(false)} />
+        ) : (
+          <div className="absolute inset-y-0 right-0 w-full md:max-w-[400px] md:static md:w-[400px] border-l border-base-300 bg-base-100 z-40 flex flex-col h-full overflow-hidden animate-fade-in shrink-0 shadow-2xl">
+            
+            {/* Top Bar */}
+            <div className="p-4 flex justify-between items-center bg-base-100">
+              <button
+                onClick={() => setShowGroupDetailsSidebar(false)}
+                className="p-2 hover:bg-base-200 rounded-full transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6 text-base-content" />
+              </button>
+              <button 
+                onClick={() => setIsEditingGroup(true)}
+                className="p-2 hover:bg-base-200 rounded-full transition-colors"
+              >
+                <Edit2 className="w-5 h-5 text-base-content" />
+              </button>
+            </div>
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -819,8 +846,10 @@ const ChatContainer = () => {
               </div>
             </div>
 
+            </div>
+
           </div>
-        </div>
+        )
       )}
 
       {/* User Contact Details Sidebar Slider */}

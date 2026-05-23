@@ -438,3 +438,53 @@ export const getGroupDetails = async (req, res) => {
   }
 };
 
+/**
+ * Update group details (name, description, avatar)
+ */
+export const updateGroup = async (req, res) => {
+  const { groupId } = req.params;
+  const userId = req.user._id;
+  const { name, description, avatar } = req.body;
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found." });
+    }
+
+    // Verify requesting user is a member
+    if (!group.members.includes(userId)) {
+      return res.status(403).json({ message: "Only group members can edit the group." });
+    }
+
+    if (name) {
+      if (name.length > 50) return res.status(400).json({ message: "Group name must be 50 characters or less." });
+      group.name = name.trim();
+    }
+    
+    if (description !== undefined) {
+      if (description.length > 200) return res.status(400).json({ message: "Description must be 200 characters or less." });
+      group.description = description.trim();
+    }
+
+    if (avatar) {
+      const uploadResponse = await cloudinary.uploader.upload(avatar);
+      group.avatar = uploadResponse.secure_url;
+    }
+
+    await group.save();
+
+    // Broadcast the update to the room
+    io.to(`group_${groupId}`).emit("groupUpdated", {
+      groupId: group._id,
+      name: group.name,
+      description: group.description,
+      avatar: group.avatar
+    });
+
+    res.status(200).json(group);
+  } catch (error) {
+    console.error("Error in updateGroup:", error);
+    res.status(500).json({ message: "Server error updating group." });
+  }
+};
