@@ -693,23 +693,7 @@ export const deleteAccount = async (req, res) => {
 
     // ---- INLINE DELETION (no Redis/BullMQ needed) ----
 
-    // Phase 1: Anonymize user data
-    const randomHash = `deleted_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    user.email = `${randomHash}@deleted.chatzone.app`;
-    user.username = randomHash;
-    user.fullName = "Deleted User";
-    user.profilePic = "";
-    user.phoneNumber = "";
-    user.pin = "";
-    user.about = "This account was deleted.";
-    user.linkedDevices = [];
-    user.pushSubscriptions = [];
-    user.syncedContacts = [];
-    user.isDeleted = true;
-    user.deletedAt = new Date();
-    await user.save();
-
-    // Phase 2: Remove from other users' contacts and blocked lists
+    // Phase 1: Remove from other users' contacts and blocked lists
     await User.updateMany(
       { contacts: userId },
       { $pull: { contacts: userId } }
@@ -719,7 +703,7 @@ export const deleteAccount = async (req, res) => {
       { $pull: { blockedUsers: userId } }
     );
 
-    // Phase 3: Groups Cleanup
+    // Phase 2: Groups Cleanup
     const userGroups = await Group.find({ members: userId });
     for (const group of userGroups) {
       group.members = group.members.filter(m => m.toString() !== userId.toString());
@@ -733,16 +717,19 @@ export const deleteAccount = async (req, res) => {
       await group.save();
     }
 
-    // Phase 4: Stories Cleanup
+    // Phase 3: Stories Cleanup
     await Story.deleteMany({ userId });
 
-    // Phase 5: Create deleted account record
+    // Phase 4: Create deleted account record (for audit trail only)
     await DeletedAccount.create({
       userId,
       deletedAt: new Date(),
       scheduledPermanentDeleteAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       status: "completed"
     });
+
+    // Phase 5: HARD DELETE — completely remove user from MongoDB
+    await User.findByIdAndDelete(userId);
 
     // Clear JWT cookie
     res.cookie("jwt", "", { maxAge: 0 });
