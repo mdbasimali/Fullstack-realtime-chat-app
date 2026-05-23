@@ -27,6 +27,7 @@
     "jsonwebtoken": "^9.0.2",
     "mediasoup": "^3.19.22",
     "mongoose": "^8.17.1",
+    "redis": "^5.12.1",
     "socket.io": "^4.8.1",
     "uuid": "^14.0.0",
     "web-push": "^3.6.7"

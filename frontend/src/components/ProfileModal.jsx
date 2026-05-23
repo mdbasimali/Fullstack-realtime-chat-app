@@ -47,7 +47,13 @@ const ProfileModal = ({ profile, onClose }) => {
   const [nicknameValue, setNicknameValue] = useState("");
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [viewMode, setViewMode] = useState('main');
-  const [dragY, setDragY] = useState(0);
+  
+  const [dragYState, setDragYState] = useState(0);
+  const dragY = useRef(0);
+  const setDragY = (val) => {
+    dragY.current = val;
+    setDragYState(val);
+  };
 
   useEffect(() => {
     setViewMode('main');
@@ -148,6 +154,14 @@ const ProfileModal = ({ profile, onClose }) => {
 
   const handleTouchMove = (e) => {
     if (!isDragging.current) return;
+
+    // Don't drag if we are scrolling down inside the list
+    const scrollable = e.target.closest('.overflow-y-auto');
+    if (scrollable && scrollable.scrollTop > 0) {
+      touchStartY.current = e.touches[0].clientY; // Reset start Y to prevent jumping when reached top
+      return;
+    }
+
     const diff = e.touches[0].clientY - touchStartY.current;
     if (diff > 0) {
       setDragY(diff);
@@ -156,10 +170,12 @@ const ProfileModal = ({ profile, onClose }) => {
 
   const handleTouchEnd = () => {
     isDragging.current = false;
-    if (dragY > 80) {
-      onClose();
+    if (dragY.current > 80) {
+      setDragY(window.innerHeight); // Animate off screen
+      setTimeout(() => onClose(), 300);
+    } else {
+      setDragY(0);
     }
-    setDragY(0);
   };
 
   return (
@@ -167,30 +183,43 @@ const ProfileModal = ({ profile, onClose }) => {
       <div 
         className="w-full sm:w-[400px] bg-base-100 sm:rounded-[2rem] rounded-t-[2rem] shadow-2xl flex flex-col overflow-hidden animate-slide-up sm:animate-fade-in"
         onClick={(e) => e.stopPropagation()}
-        style={{ transform: `translateY(${dragY}px)`, transition: isDragging.current ? 'none' : 'transform 0.3s ease' }}
+        style={{ transform: `translateY(${dragYState}px)`, transition: isDragging.current ? 'none' : 'transform 0.3s ease' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={(e) => {
+          // Check if clicking inside scrollable content
+          const scrollable = e.target.closest('.overflow-y-auto');
+          if (scrollable && scrollable.scrollTop > 0) return;
+
+          const startY = e.clientY;
+          isDragging.current = true;
+
+          const onMouseMove = (ev) => {
+            if (!isDragging.current) return;
+            const diff = ev.clientY - startY;
+            if (diff > 0) setDragY(diff);
+          };
+
+          const onMouseUp = (ev) => {
+            isDragging.current = false;
+            const finalDiff = ev.clientY - startY;
+            if (finalDiff > 80 || dragY.current > 80) {
+              setDragY(window.innerHeight); // Animate off screen
+              setTimeout(() => onClose(), 300);
+            } else {
+              setDragY(0);
+            }
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+          };
+
+          window.addEventListener('mousemove', onMouseMove);
+          window.addEventListener('mouseup', onMouseUp);
+        }}
       >
         {/* Drag handle */}
-        <div 
-          className="flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onMouseDown={(e) => {
-            const startY = e.clientY;
-            const onMouseMove = (ev) => {
-              const diff = ev.clientY - startY;
-              if (diff > 0) setDragY(diff);
-            };
-            const onMouseUp = () => {
-              if (dragY > 80) onClose();
-              setDragY(0);
-              window.removeEventListener('mousemove', onMouseMove);
-              window.removeEventListener('mouseup', onMouseUp);
-            };
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
-          }}
-        >
+        <div className="flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing">
           <div className="w-12 h-1 rounded-full bg-base-300"></div>
         </div>
 

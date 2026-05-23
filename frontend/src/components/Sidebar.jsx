@@ -826,7 +826,46 @@ const Sidebar = () => {
                 </div>
               ) : null
             ) : (
-              /* Active Chat List styled beautifully like Signal */
+              <div className="space-y-6">
+                {/* Active Now Section */}
+                {users.filter(u => onlineUsers.includes(u._id) && u._id !== authUser?._id).length > 0 && (
+                  <div className="pt-2 animate-fade-in">
+                    <div className="px-1 mb-3">
+                      <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Active Now</span>
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 px-1">
+                      {users.filter(u => onlineUsers.includes(u._id) && u._id !== authUser?._id).map((user) => (
+                        <div 
+                          key={user._id} 
+                          onClick={() => setSelectedUser(user)}
+                          className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0 group"
+                        >
+                          <div className="relative">
+                            {user.profilePic ? (
+                              <img
+                                src={user.profilePic}
+                                alt={user.fullName}
+                                className="w-[52px] h-[52px] object-cover rounded-full border-2 border-green-500 p-[2px] transition-transform group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="w-[52px] h-[52px] rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-lg border-2 border-green-500 p-[2px] shadow-sm transition-transform group-hover:scale-105">
+                                <div className="w-full h-full rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                                  {getInitials(user.fullName)}
+                                </div>
+                              </div>
+                            )}
+                            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full ring-2 ring-base-100 animate-pulse" />
+                          </div>
+                          <span className="text-[11px] font-medium text-base-content/80 group-hover:text-base-content truncate w-[56px] text-center">
+                            {user.fullName.split(' ')[0]}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Active Chat List styled beautifully like Signal */}
               <div className="space-y-1">
                 <div className="flex justify-between items-center px-1 mb-2">
                   <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Conversations</span>
@@ -949,9 +988,9 @@ const Sidebar = () => {
                         </div>
                       </div>
 
-                    </div>
                   );
                 })}
+              </div>
               </div>
             )}
 
@@ -1521,7 +1560,7 @@ const Sidebar = () => {
       </div>
 
       {/* 4. Bottom Navigation Bar */}
-      <nav className="hidden md:flex absolute bottom-0 inset-x-0 bg-base-100/90 border-t border-base-300 p-2.5 justify-around items-center backdrop-blur-md z-10 animate-fade-in">
+      <nav className="hidden md:flex absolute bottom-0 inset-x-0 bg-white/40 dark:bg-[#1a1a1a]/40 border-t border-base-300/50 p-2.5 justify-around items-center backdrop-blur-xl z-10 animate-fade-in">
         {/* Chats Tab button */}
         <button 
           onClick={() => { setActiveTab("chats"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}

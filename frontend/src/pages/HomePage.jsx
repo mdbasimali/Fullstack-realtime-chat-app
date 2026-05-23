@@ -108,7 +108,7 @@ const HomePage = () => {
       {/* 2. Sticky Mobile Bottom Navigation Footer (Only on Mobile screens, hidden inside active chats) */}
       {(!selectedUser && !selectedGroup) && (
         <div className="block md:hidden fixed bottom-4 left-4 right-4 z-40">
-          <nav className="bg-base-100/95 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-base-300/50 py-1.5 px-3 rounded-[32px] flex justify-around items-center backdrop-blur-xl">
+          <nav className="bg-white/40 dark:bg-[#1a1a1a]/40 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/40 dark:border-white/10 py-1.5 px-3 rounded-[32px] flex justify-around items-center backdrop-blur-xl">
             
             {/* Chats Tab Button */}
             <button 
