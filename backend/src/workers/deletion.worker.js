@@ -22,7 +22,7 @@ const redisOptions = {
   }
 };
 
-const connection = new Redis(redisOptions);
+export const connection = new Redis(redisOptions);
 
 // Prevent unhandled error events from crashing/spamming the Node process
 connection.on("error", (err) => {
