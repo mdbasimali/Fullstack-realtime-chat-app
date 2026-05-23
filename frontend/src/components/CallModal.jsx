@@ -337,9 +337,7 @@ const DraggableSelfPreview = React.memo(({
         transition: isDragging ? "none" : "transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
         touchAction: "none"
       }}
-      className={`fixed z-[80] w-[110px] md:w-[140px] aspect-[3/4] rounded-2xl overflow-hidden border-2 shadow-2xl cursor-grab active:cursor-grabbing top-28 right-6 select-none bg-[#1c1f26] ${
-        isMinimized ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto transition-opacity duration-300"
-      } ${
+      className={`fixed z-[80] w-[110px] md:w-[140px] aspect-[3/4] rounded-2xl overflow-hidden border-2 shadow-2xl cursor-grab active:cursor-grabbing top-28 right-6 select-none bg-[#1c1f26] pointer-events-auto transition-opacity duration-300 ${
         isDragging 
           ? "border-blue-500 shadow-[0_0_25px_rgba(0, 122, 255,0.6)]" 
           : "border-white/20 hover:border-blue-500/50 shadow-black/80"
@@ -358,8 +356,7 @@ const DraggableSelfPreview = React.memo(({
   return (
     prevProps.localStream === nextProps.localStream &&
     prevProps.isVideoOff === nextProps.isVideoOff &&
-    prevProps.isMirrored === nextProps.isMirrored &&
-    prevProps.isMinimized === nextProps.isMinimized
+    prevProps.isMirrored === nextProps.isMirrored
   );
 });
 
@@ -728,35 +725,8 @@ const CallModal = () => {
     }
   }, [remoteStream]);
 
-  // Handle PiP on app background
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === "hidden") {
-        if (callType === "video" && callStatus === "ongoing" && remoteVideoElRef.current) {
-          try {
-            if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
-              await remoteVideoElRef.current.requestPictureInPicture();
-            }
-          } catch (err) {
-            console.warn("Failed to enter PiP manually (needs user gesture or autoPiP not supported):", err);
-          }
-        }
-      } else {
-        if (document.pictureInPictureElement) {
-          try {
-            await document.exitPictureInPicture();
-          } catch (err) {
-            console.error("Failed to exit PiP:", err);
-          }
-        }
-      }
-    };
+  // Native PiP is handled automatically by el.autoPictureInPicture = true
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [callType, callStatus]);
 
   const remoteAudioRef = React.useCallback((el) => {
     remoteAudioElRef.current = el;
