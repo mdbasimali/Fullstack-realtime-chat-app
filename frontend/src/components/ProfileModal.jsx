@@ -231,7 +231,7 @@ const ProfileModal = ({ profile, onClose }) => {
             {pic ? (
               <img src={pic} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-3xl">
+              <div className="w-full h-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-3xl">
                 {getInitials(name)}
               </div>
             )}
@@ -407,7 +407,7 @@ const ProfileModal = ({ profile, onClose }) => {
                 {pic ? (
                   <img src={pic} alt={name} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-6xl">
+                  <div className="w-full h-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-6xl">
                     {getInitials(name)}
                   </div>
                 )}

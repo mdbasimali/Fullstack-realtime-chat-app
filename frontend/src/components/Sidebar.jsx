@@ -6,8 +6,8 @@ import { useStoryStore } from "../store/useStoryStore";
 import { useGroupStore } from "../store/useGroupStore";
 import { 
   Search, MoreVertical, Camera, UserPlus, Users, Mail, X, 
-  MessageSquare, Phone, Plus, Check, User, Settings, 
-  LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image,
+  MessageSquare, MessageCircle, Phone, Plus, Check, User, Settings, 
+  LogOut, ArrowLeft, Trash2, Video, PhoneCall, PhoneOff, PhoneIncoming, PhoneMissed, Image, Sparkles,
   Pin, VolumeX, CheckCircle, FolderPlus, Archive, UserMinus, UserX, Ban,
   Layers, Compass, Loader2, Pencil, Lock, Megaphone, ListFilter,
   Grip, AtSign, Hash, RefreshCw, TimerOff
@@ -848,8 +848,8 @@ const Sidebar = () => {
                                 className="w-[52px] h-[52px] object-cover rounded-full border-2 border-green-500 p-[2px] transition-transform group-hover:scale-105"
                               />
                             ) : (
-                              <div className="w-[52px] h-[52px] rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-lg border-2 border-green-500 p-[2px] shadow-sm transition-transform group-hover:scale-105">
-                                <div className="w-full h-full rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                              <div className="w-[52px] h-[52px] rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-lg border-2 border-green-500 p-[2px] shadow-sm transition-transform group-hover:scale-105">
+                                <div className="w-full h-full rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                                   {getInitials(user.fullName)}
                                 </div>
                               </div>
@@ -916,7 +916,7 @@ const Sidebar = () => {
                               className="w-12 h-12 object-cover rounded-full border border-base-300 animate-fade-in"
                             />
                           ) : (
-                            <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-base border border-indigo-100 dark:border-indigo-900/20 shadow-sm">
+                            <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-base border border-blue-100 dark:border-blue-900/20 shadow-sm">
                               {getInitials(user.fullName)}
                             </div>
                           )}
@@ -1034,7 +1034,7 @@ const Sidebar = () => {
                                   className="w-12 h-12 object-cover rounded-full border border-base-300"
                                 />
                               ) : (
-                                <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-base border border-indigo-100 dark:border-indigo-900/20 shadow-sm">
+                                <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-base border border-blue-100 dark:border-blue-900/20 shadow-sm">
                                   {getInitials(user.fullName)}
                                 </div>
                               )}
@@ -1240,7 +1240,7 @@ const Sidebar = () => {
                             onMouseUp={endLongPress}
                             className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none ${
                               isSelected 
-                                ? "bg-indigo-50 dark:bg-indigo-950/20 border border-primary/20" 
+                                ? "bg-blue-50 dark:bg-blue-950/20 border border-primary/20" 
                                 : "hover:bg-base-200/55 border border-transparent"
                             }`}
                           >
@@ -1258,7 +1258,7 @@ const Sidebar = () => {
                                 />
                               ) : (
                                 <div 
-                                  className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950 text-primary flex items-center justify-center font-bold text-base shadow-sm shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+                                  className="w-11 h-11 rounded-full bg-blue-100 dark:bg-blue-950 text-primary flex items-center justify-center font-bold text-base shadow-sm shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setProfileModalData(group);
@@ -1431,10 +1431,10 @@ const Sidebar = () => {
                     <img 
                       src={authUser.profilePic} 
                       alt="me" 
-                      className="w-12 h-12 rounded-full object-cover ring-2 ring-primary"
+                      className="w-12 h-12 rounded-full object-cover ring-2 ring-[#007aff]"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-pink-100 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 flex items-center justify-center font-bold text-base shadow-sm ring-2 ring-primary">
+                    <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-base shadow-sm ring-2 ring-[#007aff]">
                       {getInitials(authUser?.fullName)}
                     </div>
                   )}
@@ -1444,7 +1444,7 @@ const Sidebar = () => {
                       setCameraInitialMode("camera");
                       setShowCameraModal(true); 
                     }}
-                    className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary text-primary-content rounded-full flex items-center justify-center ring-2 ring-base-100 hover:scale-105 transition-transform"
+                    className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#007aff] text-white rounded-full flex items-center justify-center ring-2 ring-base-100 hover:scale-105 transition-transform"
                     title="Add to story"
                   >
                     <Plus size={14} strokeWidth={3} />
@@ -1471,7 +1471,7 @@ const Sidebar = () => {
                       initialIndex: 0
                     }); 
                   }}
-                  className="btn btn-xs btn-outline btn-primary rounded-full px-3"
+                  className="btn btn-xs btn-outline rounded-full px-3 border-[#007aff] text-[#007aff] hover:bg-[#007aff] hover:border-[#007aff] hover:text-white transition-colors"
                 >
                   View Mine
                 </button>
@@ -1502,12 +1502,12 @@ const Sidebar = () => {
                     >
                       <div className="flex items-center gap-3.5">
                         {/* Avatar with colorful ring representing dynamic stories */}
-                        <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary to-secondary ring-2 ring-transparent">
+                        <div className="p-0.5 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 ring-2 ring-transparent">
                           <div className="p-0.5 bg-base-100 rounded-full">
                             {group.user.profilePic ? (
                                 <img src={group.user.profilePic} className="w-11 h-11 rounded-full object-cover" />
                             ) : (
-                                <div className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
+                                <div className="w-11 h-11 rounded-full bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-sm">
                                 {getInitials(group.user.fullName)}
                                 </div>
                             )}
@@ -1551,7 +1551,7 @@ const Sidebar = () => {
         {activeTab !== "stories" && (
           <button 
             onClick={() => setShowContactsModal(true)}
-            className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/70 hover:brightness-95 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95"
+            className="w-12 h-12 rounded-2xl bg-blue-500/30 dark:bg-blue-500/40 border border-blue-500/40 text-[#007aff] dark:text-[#60a5fa] hover:brightness-105 flex items-center justify-center shadow-[0_8px_32px_rgba(0,122,255,0.15)] transition-all hover:scale-105 active:scale-95"
             title="Add Friend"
           >
             <UserPlus size={21} />
@@ -1560,56 +1560,54 @@ const Sidebar = () => {
       </div>
 
       {/* 4. Bottom Navigation Bar */}
-      <nav className="hidden md:flex absolute bottom-0 inset-x-0 bg-white/40 dark:bg-[#1a1a1a]/40 border-t border-base-300/50 p-2.5 justify-around items-center backdrop-blur-xl z-10 animate-fade-in">
+      <nav className="hidden md:flex absolute bottom-4 left-4 right-4 p-2 justify-around items-center z-10 animate-fade-in glass-dock rounded-[24px]">
         {/* Chats Tab button */}
         <button 
           onClick={() => { setActiveTab("chats"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
-          className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+          className={`dock-btn flex flex-col items-center gap-1 text-center group cursor-pointer ${activeTab === "chats" ? "dock-btn-active" : ""}`}
         >
-          <div className={`px-5 py-1 rounded-full transition-all relative ${activeTab === "chats" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
-            <MessageSquare size={21} className={activeTab === "chats" ? "fill-primary" : ""} />
+          <div className={`icon-wrapper px-5 py-1 rounded-full transition-all relative ${activeTab === "chats" ? "active-glass-pill text-[#007aff]" : "text-base-content/60 group-hover:text-base-content"}`}>
+            <MessageCircle size={21} className={activeTab === "chats" ? "fill-[#007aff] text-[#007aff]" : ""} />
             {unreadChatsCount > 0 && (
               <span className="absolute top-0.5 right-2 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-[9px] font-extrabold shadow-sm border border-base-100 animate-pulse">
                 {unreadChatsCount}
               </span>
             )}
           </div>
-          <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "chats" ? "text-primary font-bold" : "text-base-content/60"}`}>Chats</span>
+          <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "chats" ? "active-dock-text font-bold" : "text-base-content/60"}`}>Chats</span>
         </button>
 
         {/* Groups Tab button */}
         <button 
           onClick={() => { setActiveTab("groups"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
-          className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+          className={`dock-btn flex flex-col items-center gap-1 text-center group cursor-pointer ${activeTab === "groups" ? "dock-btn-active" : ""}`}
         >
-          <div className={`px-5 py-1 rounded-full transition-all ${activeTab === "groups" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
-            <Layers size={21} />
+          <div className={`icon-wrapper px-5 py-1 rounded-full transition-all ${activeTab === "groups" ? "active-glass-pill text-[#007aff]" : "text-base-content/60 group-hover:text-base-content"}`}>
+            <Users size={21} className={activeTab === "groups" ? "fill-[#007aff] text-[#007aff]" : ""} />
           </div>
-          <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "groups" ? "text-primary font-bold" : "text-base-content/60"}`}>Groups</span>
+          <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "groups" ? "active-dock-text font-bold" : "text-base-content/60"}`}>Groups</span>
         </button>
 
         {/* Calls Tab button */}
         <button 
           onClick={() => { setActiveTab("calls"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
-          className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+          className={`dock-btn flex flex-col items-center gap-1 text-center group cursor-pointer ${activeTab === "calls" ? "dock-btn-active" : ""}`}
         >
-          <div className={`px-5 py-1 rounded-full transition-all ${activeTab === "calls" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
-            <Phone size={21} />
+          <div className={`icon-wrapper px-5 py-1 rounded-full transition-all ${activeTab === "calls" ? "active-glass-pill text-[#007aff]" : "text-base-content/60 group-hover:text-base-content"}`}>
+            <Phone size={21} className={activeTab === "calls" ? "fill-[#007aff] text-[#007aff]" : ""} />
           </div>
-          <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "calls" ? "text-primary font-bold" : "text-base-content/60"}`}>Calls</span>
+          <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "calls" ? "active-dock-text font-bold" : "text-base-content/60"}`}>Calls</span>
         </button>
-
-
 
         {/* Stories Tab button */}
         <button 
           onClick={() => { setActiveTab("stories"); setSearchQuery(""); setSelectedUser(null); setSelectedGroup(null); }}
-          className="flex flex-col items-center gap-1 text-center group cursor-pointer"
+          className={`dock-btn flex flex-col items-center gap-1 text-center group cursor-pointer ${activeTab === "stories" ? "dock-btn-active" : ""}`}
         >
-          <div className={`px-5 py-1 rounded-full transition-all ${activeTab === "stories" ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" : "text-base-content/60 group-hover:text-base-content"}`}>
-            <Image size={21} />
+          <div className={`icon-wrapper px-5 py-1 rounded-full transition-all ${activeTab === "stories" ? "active-glass-pill text-[#007aff]" : "text-base-content/60 group-hover:text-base-content"}`}>
+            <Sparkles size={21} className={activeTab === "stories" ? "fill-[#007aff] text-[#007aff]" : ""} />
           </div>
-          <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "stories" ? "text-primary font-bold" : "text-base-content/60"}`}>Stories</span>
+          <span className={`text-[11px] font-semibold tracking-wide transition-all ${activeTab === "stories" ? "active-dock-text font-bold" : "text-base-content/60"}`}>Stories</span>
         </button>
       </nav>
 
@@ -1895,7 +1893,7 @@ const Sidebar = () => {
                               className="w-11 h-11 object-cover rounded-full border border-base-300"
                             />
                           ) : (
-                            <div className="w-11 h-11 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
+                            <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-sm">
                               {getInitials(record.user.fullName)}
                             </div>
                           )}
@@ -2026,7 +2024,7 @@ const Sidebar = () => {
                                       className="w-11 h-11 rounded-full object-cover border border-base-300"
                                     />
                                   ) : (
-                                    <div className="w-11 h-11 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-base">
+                                    <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-base">
                                       {friend.fullName.charAt(0).toUpperCase()}
                                     </div>
                                   )}
@@ -2049,7 +2047,7 @@ const Sidebar = () => {
               <div className="absolute bottom-6 right-6 z-20 animate-fade-in">
                 <button 
                   onClick={() => setCreateGroupStep(2)}
-                  className="bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950/70 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold px-6 py-3.5 rounded-[24px] shadow-sm transition-transform active:scale-95"
+                  className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-950/70 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold px-6 py-3.5 rounded-[24px] shadow-sm transition-transform active:scale-95"
                 >
                   {selectedFriendIds.length > 0 ? (
                     <ArrowLeft size={24} className="rotate-180 stroke-[2.5]" />
@@ -2140,7 +2138,7 @@ const Sidebar = () => {
                               className="w-[44px] h-[44px] rounded-full object-cover border border-base-300"
                             />
                           ) : (
-                            <div className="w-[44px] h-[44px] rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">
+                            <div className="w-[44px] h-[44px] rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-sm">
                               {friend.fullName.charAt(0).toUpperCase()}
                             </div>
                           )}
@@ -2155,7 +2153,7 @@ const Sidebar = () => {
                   <button
                     type="submit"
                     disabled={isCreatingGroup || !newGroupName.trim()}
-                    className="bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950/70 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold px-6 py-3.5 rounded-[24px] shadow-sm disabled:opacity-50 transition-transform active:scale-95 flex items-center gap-2"
+                    className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-950/70 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold px-6 py-3.5 rounded-[24px] shadow-sm disabled:opacity-50 transition-transform active:scale-95 flex items-center gap-2"
                   >
                     {isCreatingGroup ? (
                       <>
@@ -2318,7 +2316,7 @@ const Sidebar = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Option A: VCF Upload */}
                     <div className="p-5 bg-base-200/50 hover:bg-base-200 border border-base-300/40 rounded-2xl text-center space-y-3 transition-colors cursor-pointer" onClick={() => vcfInputRef.current?.click()}>
-                      <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center mx-auto text-indigo-600 dark:text-indigo-400">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center mx-auto text-blue-600 dark:text-blue-400">
                         <Layers size={20} />
                       </div>
                       <div>

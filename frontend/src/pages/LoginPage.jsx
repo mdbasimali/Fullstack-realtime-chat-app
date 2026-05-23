@@ -187,7 +187,7 @@ const LoginPage = () => {
         className="absolute pointer-events-none animate-float"
         style={{
           top: "8%", left: "10%", width: "420px", height: "420px",
-          background: "radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(0, 122, 255,0.18) 0%, transparent 70%)",
           borderRadius: "50%", filter: "blur(40px)"
         }}
       />
@@ -239,18 +239,18 @@ const LoginPage = () => {
               {/* Spinning ring */}
               <div
                 className="absolute -inset-1.5 rounded-2xl animate-spin-slow opacity-60"
-                style={{ background: "conic-gradient(from 0deg, #7c3aed, #06b6d4, #7c3aed)", borderRadius: "18px" }}
+                style={{ background: "conic-gradient(from 0deg, #007aff, #06b6d4, #007aff)", borderRadius: "18px" }}
               />
               <div
                 className="relative size-12 rounded-2xl flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, #1a0a3e 0%, #0a1a3e 100%)", border: "1px solid rgba(255,255,255,0.12)" }}
               >
-                <MessageSquare size={22} style={{ color: "#a78bfa" }} />
+                <MessageSquare size={22} style={{ color: "#60a5fa" }} />
               </div>
             </div>
             <div>
               <span className="text-2xl font-black tracking-tight text-white">
-                Chat<span style={{ background: "linear-gradient(90deg,#a78bfa,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Zone</span>
+                Chat<span style={{ background: "linear-gradient(90deg,#60a5fa,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Zone</span>
               </span>
               <span className="block text-[10px] font-bold tracking-[0.22em] uppercase mt-0.5" style={{ color: "#4b5563" }}>
                 India Onboarding
@@ -279,7 +279,7 @@ const LoginPage = () => {
                 <Mail
                   size={15}
                   className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200"
-                  style={{ color: focusedField === "email" ? "#a78bfa" : "#4b5563" }}
+                  style={{ color: focusedField === "email" ? "#60a5fa" : "#4b5563" }}
                 />
                 <input
                   id="login-email"
@@ -296,7 +296,7 @@ const LoginPage = () => {
                       ? "1px solid rgba(167,139,250,0.6)"
                       : "1px solid transparent",
                     boxShadow: focusedField === "email"
-                      ? "0 0 0 3px rgba(124,58,237,0.12), 0 0 20px rgba(124,58,237,0.1)"
+                      ? "0 0 0 3px rgba(0, 122, 255,0.12), 0 0 20px rgba(0, 122, 255,0.1)"
                       : "none"
                   }}
                   required
@@ -313,7 +313,7 @@ const LoginPage = () => {
                 <Lock
                   size={15}
                   className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200"
-                  style={{ color: focusedField === "password" ? "#a78bfa" : "#4b5563" }}
+                  style={{ color: focusedField === "password" ? "#60a5fa" : "#4b5563" }}
                 />
                 <input
                   id="login-password"
@@ -330,7 +330,7 @@ const LoginPage = () => {
                       ? "1px solid rgba(167,139,250,0.6)"
                       : "1px solid transparent",
                     boxShadow: focusedField === "password"
-                      ? "0 0 0 3px rgba(124,58,237,0.12), 0 0 20px rgba(124,58,237,0.1)"
+                      ? "0 0 0 3px rgba(0, 122, 255,0.12), 0 0 20px rgba(0, 122, 255,0.1)"
                       : "none"
                   }}
                   required
@@ -340,7 +340,7 @@ const LoginPage = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-200"
                   style={{ color: "#4b5563" }}
-                  onMouseEnter={e => e.currentTarget.style.color = "#a78bfa"}
+                  onMouseEnter={e => e.currentTarget.style.color = "#60a5fa"}
                   onMouseLeave={e => e.currentTarget.style.color = "#4b5563"}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -355,8 +355,8 @@ const LoginPage = () => {
               disabled={isLoggingIn}
               className="relative w-full py-4 rounded-2xl text-sm font-black text-white mt-1 overflow-hidden transition-all duration-200 disabled:opacity-60"
               style={{
-                background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 50%, #0891b2 100%)",
-                boxShadow: "0 8px 32px rgba(124,58,237,0.35), 0 2px 8px rgba(0,0,0,0.3)"
+                background: "linear-gradient(135deg, #007aff 0%, #1d4ed8 50%, #0891b2 100%)",
+                boxShadow: "0 8px 32px rgba(0, 122, 255,0.35), 0 2px 8px rgba(0,0,0,0.3)"
               }}
               onMouseEnter={e => { if (!isLoggingIn) e.currentTarget.style.transform = "translateY(-1px) scale(1.01)"; }}
               onMouseLeave={e => { e.currentTarget.style.transform = ""; }}
@@ -397,9 +397,9 @@ const LoginPage = () => {
               <Link
                 to="/signup"
                 className="font-black transition-colors duration-150"
-                style={{ color: "#a78bfa" }}
+                style={{ color: "#60a5fa" }}
                 onMouseEnter={e => e.currentTarget.style.color = "#c4b5fd"}
-                onMouseLeave={e => e.currentTarget.style.color = "#a78bfa"}
+                onMouseLeave={e => e.currentTarget.style.color = "#60a5fa"}
               >
                 Sign up →
               </Link>
@@ -434,7 +434,7 @@ const LoginPage = () => {
             {/* Glow ring */}
             <div
               className="absolute -inset-3 rounded-[28px] animate-glow-pulse"
-              style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.3), rgba(6,182,212,0.2))", filter: "blur(12px)" }}
+              style={{ background: "linear-gradient(135deg, rgba(0, 122, 255,0.3), rgba(6,182,212,0.2))", filter: "blur(12px)" }}
             />
             <div
               className="relative flex items-center justify-center rounded-3xl p-3"
@@ -453,7 +453,7 @@ const LoginPage = () => {
                 />
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <Loader2 size={28} className="animate-spin" style={{ color: "#7c3aed" }} />
+                  <Loader2 size={28} className="animate-spin" style={{ color: "#007aff" }} />
                   <span className="text-xs font-semibold text-gray-500">Generating…</span>
                 </div>
               )}
@@ -468,7 +468,7 @@ const LoginPage = () => {
                   <button
                     onClick={refreshQrCode}
                     className="px-4 py-2 rounded-full text-xs font-black text-white transition-all"
-                    style={{ background: "linear-gradient(135deg,#7c3aed,#06b6d4)", boxShadow: "0 4px 16px rgba(124,58,237,0.4)" }}
+                    style={{ background: "linear-gradient(135deg,#007aff,#06b6d4)", boxShadow: "0 4px 16px rgba(0, 122, 255,0.4)" }}
                   >
                     Refresh QR
                   </button>
@@ -481,7 +481,7 @@ const LoginPage = () => {
                   className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl gap-3"
                   style={{ background: "rgba(5,5,20,0.88)", backdropFilter: "blur(4px)" }}
                 >
-                  <Loader2 size={24} className="animate-spin" style={{ color: "#a78bfa" }} />
+                  <Loader2 size={24} className="animate-spin" style={{ color: "#60a5fa" }} />
                   <span className="text-xs font-bold text-white text-center">Syncing & logging in…</span>
                 </div>
               )}
@@ -510,7 +510,7 @@ const LoginPage = () => {
               <li key={i} className="flex items-start gap-2.5">
                 <span
                   className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black"
-                  style={{ background: "rgba(124,58,237,0.2)", color: "#a78bfa" }}
+                  style={{ background: "rgba(0, 122, 255,0.2)", color: "#60a5fa" }}
                 >
                   {i + 1}
                 </span>

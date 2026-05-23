@@ -161,11 +161,11 @@ const SignUpPage = () => {
       ? "1px solid rgba(167,139,250,0.6)"
       : "1px solid rgba(255,255,255,0.08)",
     boxShadow: focusedField === field
-      ? "0 0 0 3px rgba(124,58,237,0.12), 0 0 20px rgba(124,58,237,0.08)"
+      ? "0 0 0 3px rgba(0, 122, 255,0.12), 0 0 20px rgba(0, 122, 255,0.08)"
       : "none"
   });
 
-  const iconColor = (field) => focusedField === field ? "#a78bfa" : "#4b5563";
+  const iconColor = (field) => focusedField === field ? "#60a5fa" : "#4b5563";
 
   return (
     <div
@@ -177,7 +177,7 @@ const SignUpPage = () => {
         className="fixed pointer-events-none animate-float"
         style={{
           top: "5%", right: "12%", width: "360px", height: "360px",
-          background: "radial-gradient(circle, rgba(124,58,237,0.16) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(0, 122, 255,0.16) 0%, transparent 70%)",
           borderRadius: "50%", filter: "blur(40px)"
         }}
       />
@@ -224,13 +224,13 @@ const SignUpPage = () => {
             <div className="relative">
               <div
                 className="absolute -inset-2 rounded-3xl animate-spin-slow opacity-50"
-                style={{ background: "conic-gradient(from 0deg, #7c3aed, #06b6d4, #ec4899, #7c3aed)", borderRadius: "22px" }}
+                style={{ background: "conic-gradient(from 0deg, #007aff, #06b6d4, #ec4899, #007aff)", borderRadius: "22px" }}
               />
               <div
                 className="relative size-16 rounded-2xl flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, #1a0a3e 0%, #0a1a3e 100%)", border: "1px solid rgba(255,255,255,0.12)" }}
               >
-                <MessageSquare size={28} style={{ color: "#a78bfa" }} />
+                <MessageSquare size={28} style={{ color: "#60a5fa" }} />
               </div>
             </div>
             <div className="text-center">
@@ -239,7 +239,7 @@ const SignUpPage = () => {
               </h1>
               <p className="text-sm mt-1.5 font-medium" style={{ color: "#6b7280" }}>
                 Join{" "}
-                <span style={{ background: "linear-gradient(90deg,#a78bfa,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 900 }}>
+                <span style={{ background: "linear-gradient(90deg,#60a5fa,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 900 }}>
                   ChatZone
                 </span>
                 {" "}and start chatting instantly.
@@ -378,7 +378,7 @@ const SignUpPage = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-200"
                   style={{ color: "#4b5563" }}
-                  onMouseEnter={e => e.currentTarget.style.color = "#a78bfa"}
+                  onMouseEnter={e => e.currentTarget.style.color = "#60a5fa"}
                   onMouseLeave={e => e.currentTarget.style.color = "#4b5563"}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -415,8 +415,8 @@ const SignUpPage = () => {
               disabled={isSigningUp}
               className="relative w-full py-4 rounded-2xl text-sm font-black text-white mt-1 overflow-hidden transition-all duration-200 disabled:opacity-60"
               style={{
-                background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 50%, #0891b2 100%)",
-                boxShadow: "0 8px 32px rgba(124,58,237,0.35), 0 2px 8px rgba(0,0,0,0.3)"
+                background: "linear-gradient(135deg, #007aff 0%, #1d4ed8 50%, #0891b2 100%)",
+                boxShadow: "0 8px 32px rgba(0, 122, 255,0.35), 0 2px 8px rgba(0,0,0,0.3)"
               }}
               onMouseEnter={e => { if (!isSigningUp) e.currentTarget.style.transform = "translateY(-1px) scale(1.01)"; }}
               onMouseLeave={e => { e.currentTarget.style.transform = ""; }}
@@ -444,7 +444,7 @@ const SignUpPage = () => {
           <div className="flex justify-center min-h-[46px]">
             {isLoggingIn ? (
               <div className="flex items-center gap-2">
-                <Loader2 size={16} className="animate-spin" style={{ color: "#a78bfa" }} />
+                <Loader2 size={16} className="animate-spin" style={{ color: "#60a5fa" }} />
                 <span className="text-xs font-semibold" style={{ color: "#6b7280" }}>Signing in…</span>
               </div>
             ) : (
@@ -459,9 +459,9 @@ const SignUpPage = () => {
               <Link
                 to="/login"
                 className="font-black transition-colors duration-150"
-                style={{ color: "#a78bfa" }}
+                style={{ color: "#60a5fa" }}
                 onMouseEnter={e => e.currentTarget.style.color = "#c4b5fd"}
-                onMouseLeave={e => e.currentTarget.style.color = "#a78bfa"}
+                onMouseLeave={e => e.currentTarget.style.color = "#60a5fa"}
               >
                 Log in →
               </Link>

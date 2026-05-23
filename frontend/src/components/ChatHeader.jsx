@@ -88,7 +88,7 @@ const ChatHeader = () => {
         >
           {/* Avatar */}
           <div className="avatar shrink-0">
-            <div className="size-10 rounded-full relative flex items-center justify-center bg-indigo-100 dark:bg-indigo-950/40 text-primary font-bold">
+            <div className="size-10 rounded-full relative flex items-center justify-center bg-blue-100 dark:bg-blue-950/40 text-primary font-bold">
               {selectedGroup ? (
                 selectedGroup.avatar ? (
                   <img

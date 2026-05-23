@@ -6,15 +6,15 @@ const AppIconPage = () => {
   const icons = [
     { name: "ChatZone", bg: "bg-blue-600 text-white", Icon: MessageSquare, outline: true },
     { name: "ChatZone", bg: "bg-blue-500 text-white", Icon: MessageSquare, outline: false },
-    { name: "ChatZone", bg: "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 text-white", Icon: MessageSquare, outline: true },
+    { name: "ChatZone", bg: "bg-gradient-to-tr from-yellow-400 via-pink-500 to-blue-500 text-white", Icon: MessageSquare, outline: true },
     { name: "ChatZone", bg: "bg-slate-900 text-blue-400", Icon: MessageSquare, outline: false },
-    { name: "ChatZone", bg: "bg-gradient-to-tr from-green-400 to-purple-900 text-white", Icon: MessageSquare, outline: false },
+    { name: "ChatZone", bg: "bg-gradient-to-tr from-green-400 to-blue-900 text-white", Icon: MessageSquare, outline: false },
     { name: "ChatZone", bg: "bg-blue-500 text-white", Icon: MessageSquare, filled: true },
     { name: "ChatZone", bg: "bg-white text-orange-500 shadow-md", Icon: MessageSquare, filled: true },
     { name: "ChatZone", bg: "bg-yellow-400 text-white", Icon: MessageSquare, filled: true },
     { name: "News", bg: "bg-green-500 text-white", Icon: FileText, outline: false },
     { name: "Notes", bg: "bg-yellow-100 text-green-500 shadow-sm", Icon: FileText, outline: false },
-    { name: "Weather", bg: "bg-indigo-500 text-white", Icon: Cloud, outline: false },
+    { name: "Weather", bg: "bg-blue-500 text-white", Icon: Cloud, outline: false },
     { name: "Waves", bg: "bg-blue-500 text-white", Icon: Waves, outline: false },
   ];
 

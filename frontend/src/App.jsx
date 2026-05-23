@@ -382,7 +382,7 @@ const App = () => {
             <header className="px-6 py-5 border-b border-base-200 flex justify-between items-center bg-base-150">
               <div className="text-left">
                 <h3 className="text-base font-extrabold text-base-content tracking-tight flex items-center gap-2">
-                  {groupCallType === "video" ? <Video className="text-indigo-500 fill-indigo-500/10" size={20} /> : <Phone className="text-emerald-500 fill-emerald-500/10" size={20} />}
+                  {groupCallType === "video" ? <Video className="text-blue-500 fill-blue-500/10" size={20} /> : <Phone className="text-emerald-500 fill-emerald-500/10" size={20} />}
                   <span>Group {groupCallType === "video" ? "Video" : "Voice"} Call</span>
                 </h3>
                 <p className="text-xs text-base-content/50 mt-0.5">Select a member to start a call</p>
@@ -414,7 +414,7 @@ const App = () => {
                       onClick={() => toggleMemberSelection(member._id)}
                       className={`p-3 flex items-center justify-between rounded-2xl border transition-all duration-200 cursor-pointer ${
                         selectedMemberIds.has(member._id)
-                          ? "bg-purple-500/10 border-purple-500/30"
+                          ? "bg-blue-500/10 border-blue-500/30"
                           : "bg-base-200/40 border-base-200/50 hover:bg-base-200"
                       }`}
                     >
@@ -426,7 +426,7 @@ const App = () => {
                             className="w-10 h-10 rounded-full object-cover border border-base-300"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm border border-indigo-100 dark:border-indigo-900/20 shadow-sm">
+                          <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-sm border border-blue-100 dark:border-blue-900/20 shadow-sm">
                             {member.fullName.slice(0, 2).toUpperCase()}
                           </div>
                         )}
@@ -439,7 +439,7 @@ const App = () => {
 
                       <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
                         selectedMemberIds.has(member._id)
-                          ? "bg-purple-600 border-purple-600 text-white"
+                          ? "bg-blue-600 border-blue-600 text-white"
                           : "border-base-content/20"
                       }`}>
                         {selectedMemberIds.has(member._id) && (
@@ -475,7 +475,7 @@ const App = () => {
                   }}
                   className={`w-full py-3 px-4 rounded-[18px] text-xs font-bold text-white shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
                     groupCallType === "video"
-                      ? "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20"
+                      ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"
                       : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
                   }`}
                 >

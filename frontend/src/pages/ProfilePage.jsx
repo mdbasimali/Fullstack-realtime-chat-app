@@ -320,7 +320,7 @@ const ProfilePage = () => {
                 className="w-[120px] h-[120px] rounded-full object-cover shadow-sm ring-1 ring-base-200"
               />
             ) : (
-              <div className="w-[120px] h-[120px] rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold text-4xl shadow-xs ring-1 ring-purple-200/20 capitalize">
+              <div className="w-[120px] h-[120px] rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-4xl shadow-xs ring-1 ring-blue-200/20 capitalize">
                 {getInitials(fullName)}
               </div>
             )}

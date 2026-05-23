@@ -8,9 +8,19 @@ module.exports = {
   },
   plugins: [daisyui],
   daisyui: {
-   themes: [
-      "light",
-      "dark",
-    ], // yahan DaisyUI ki themes add karo
+    themes: [
+      {
+        light: {
+          ...require("daisyui/src/theming/themes")["light"],
+          primary: "#007aff",
+          "primary-content": "#ffffff",
+        },
+        dark: {
+          ...require("daisyui/src/theming/themes")["dark"],
+          primary: "#007aff",
+          "primary-content": "#ffffff",
+        },
+      },
+    ],
   },
 };

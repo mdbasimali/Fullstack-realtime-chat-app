@@ -111,9 +111,9 @@ body {
 }
 
 @keyframes input-glow {
-  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
-  50% { box-shadow: 0 0 20px 4px rgba(124, 58, 237, 0.25); }
-  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
+  50% { box-shadow: 0 0 20px 4px rgba(0, 122, 255, 0.25); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
 }
 
 .animate-scale-up {
@@ -137,7 +137,7 @@ body {
 }
 
 .shimmer-text {
-  background: linear-gradient(90deg, #fff 0%, #a78bfa 40%, #06b6d4 60%, #fff 100%);
+  background: linear-gradient(90deg, #fff 0%, #60a5fa 40%, #06b6d4 60%, #fff 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -173,3 +173,107 @@ body {
 .safe-p-3-top {
   padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)) !important;
 }
+
+/* ==================== iOS-Style Glassmorphism Dock ==================== */
+.glass-dock {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    0 12px 40px rgba(0, 0, 0, 0.12);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .glass-dock {
+  background: rgba(26, 26, 26, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 16px 48px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Light streak/reflection effect on top half */
+.glass-dock::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.03) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Active tab glowing blue glass indicator */
+.active-glass-pill {
+  background: rgba(0, 122, 255, 0.12) !important;
+  border: 1px solid rgba(0, 122, 255, 0.35) !important;
+  box-shadow: 
+    0 0 14px rgba(0, 122, 255, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  animation: dock-glow-pulse 3s ease-in-out infinite !important;
+}
+
+.dark .active-glass-pill {
+  background: rgba(0, 122, 255, 0.22) !important;
+  border: 1px solid rgba(0, 122, 255, 0.5) !important;
+  box-shadow: 
+    0 0 18px rgba(0, 122, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+@keyframes dock-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(0, 122, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 122, 255, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 122, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border-color: rgba(0, 122, 255, 0.6);
+  }
+}
+
+/* Active text label */
+.active-dock-text {
+  color: #007aff !important;
+}
+
+.dark .active-dock-text {
+  color: #60a5fa !important;
+}
+
+/* Smooth spring transition and micro-interactions */
+.dock-btn {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.dock-btn:active {
+  transform: scale(0.92) !important;
+}
+
+.dock-btn-active {
+  transform: scale(1.05) !important;
+}
+
+.dock-btn .icon-wrapper {
+  transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+.dock-btn:hover .icon-wrapper {
+  transform: translateY(-2px) !important;
+}
+

@@ -48,7 +48,7 @@ const StoriesPage = () => {
           </button>
 
           <Link to="/settings/stories/my-story" className="w-full px-6 py-4 flex items-center gap-4 hover:bg-base-200 transition-colors text-left">
-            <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 font-medium text-[16px]">
+            <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 font-medium text-[16px]">
               {authUser?.fullName ? authUser.fullName.slice(0, 2).toLowerCase() : "mr"}
             </div>
             <div className="flex flex-col">

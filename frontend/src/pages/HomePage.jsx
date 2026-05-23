@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
-import { MessageSquare, Phone, Image as ImageIcon, Users, Layers } from "lucide-react";
+import { MessageCircle, Phone, Sparkles, Users } from "lucide-react";
 
 const HomePage = () => {
   const { selectedUser, setSelectedUser, activeTab, setActiveTab, users } = useChatstore();
@@ -108,7 +108,7 @@ const HomePage = () => {
       {/* 2. Sticky Mobile Bottom Navigation Footer (Only on Mobile screens, hidden inside active chats) */}
       {(!selectedUser && !selectedGroup) && (
         <div className="block md:hidden fixed bottom-4 left-4 right-4 z-40">
-          <nav className="bg-white/40 dark:bg-[#1a1a1a]/40 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/40 dark:border-white/10 py-1.5 px-3 rounded-[32px] flex justify-around items-center backdrop-blur-xl">
+          <nav className="py-2 px-3 flex justify-around items-center w-full glass-dock rounded-[24px]">
             
             {/* Chats Tab Button */}
             <button 
@@ -117,14 +117,14 @@ const HomePage = () => {
                 setSelectedUser(null);
                 setSelectedGroup(null);
               }}
-              className="flex flex-col items-center gap-0.5 text-center group cursor-pointer"
+              className={`dock-btn flex flex-col items-center gap-0.5 text-center group cursor-pointer ${activeTab === "chats" ? "dock-btn-active" : ""}`}
             >
-              <div className={`px-4 py-0.5 rounded-full transition-all relative ${
+              <div className={`icon-wrapper px-4 py-0.5 rounded-full transition-all relative ${
                 activeTab === "chats" 
-                  ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
+                  ? "active-glass-pill text-[#007aff]" 
                   : "text-base-content/60 group-hover:text-base-content"
               }`}>
-                <MessageSquare size={18} className={activeTab === "chats" ? "fill-primary text-primary" : "text-base-content/60"} />
+                <MessageCircle size={18} className={activeTab === "chats" ? "fill-[#007aff] text-[#007aff]" : "text-base-content/60"} />
                 {unreadChatsCount > 0 && (
                   <span className="absolute top-0.5 right-2 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-[9px] font-extrabold shadow-sm border border-base-100 animate-pulse">
                     {unreadChatsCount}
@@ -132,7 +132,7 @@ const HomePage = () => {
                 )}
               </div>
               <span className={`text-[10px] font-bold tracking-wide transition-all ${
-                activeTab === "chats" ? "text-primary" : "text-base-content/60"
+                activeTab === "chats" ? "active-dock-text font-bold" : "text-base-content/60"
               }`}>
                 Chats
               </span>
@@ -145,17 +145,17 @@ const HomePage = () => {
                 setSelectedUser(null);
                 setSelectedGroup(null);
               }}
-              className="flex flex-col items-center gap-0.5 text-center group cursor-pointer"
+              className={`dock-btn flex flex-col items-center gap-0.5 text-center group cursor-pointer ${activeTab === "groups" ? "dock-btn-active" : ""}`}
             >
-              <div className={`px-4 py-0.5 rounded-full transition-all ${
+              <div className={`icon-wrapper px-4 py-0.5 rounded-full transition-all ${
                 activeTab === "groups" 
-                  ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
+                  ? "active-glass-pill text-[#007aff]" 
                   : "text-base-content/60 group-hover:text-base-content"
               }`}>
-                <Layers size={18} className={activeTab === "groups" ? "text-primary" : "text-base-content/60"} />
+                <Users size={18} className={activeTab === "groups" ? "fill-[#007aff] text-[#007aff]" : "text-base-content/60"} />
               </div>
               <span className={`text-[10px] font-bold tracking-wide transition-all ${
-                activeTab === "groups" ? "text-primary" : "text-base-content/60"
+                activeTab === "groups" ? "active-dock-text font-bold" : "text-base-content/60"
               }`}>
                 Groups
               </span>
@@ -168,23 +168,21 @@ const HomePage = () => {
                 setSelectedUser(null);
                 setSelectedGroup(null);
               }}
-              className="flex flex-col items-center gap-0.5 text-center group cursor-pointer"
+              className={`dock-btn flex flex-col items-center gap-0.5 text-center group cursor-pointer ${activeTab === "calls" ? "dock-btn-active" : ""}`}
             >
-              <div className={`px-4 py-0.5 rounded-full transition-all ${
+              <div className={`icon-wrapper px-4 py-0.5 rounded-full transition-all ${
                 activeTab === "calls" 
-                  ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
+                  ? "active-glass-pill text-[#007aff]" 
                   : "text-base-content/60 group-hover:text-base-content"
               }`}>
-                <Phone size={18} className={activeTab === "calls" ? "fill-primary text-primary" : "text-base-content/60"} />
+                <Phone size={18} className={activeTab === "calls" ? "fill-[#007aff] text-[#007aff]" : "text-base-content/60"} />
               </div>
               <span className={`text-[10px] font-bold tracking-wide transition-all ${
-                activeTab === "calls" ? "text-primary" : "text-base-content/60"
+                activeTab === "calls" ? "active-dock-text font-bold" : "text-base-content/60"
               }`}>
                 Calls
               </span>
             </button>
-
-
 
             {/* Stories Tab Button */}
             <button 
@@ -193,17 +191,17 @@ const HomePage = () => {
                 setSelectedUser(null);
                 setSelectedGroup(null);
               }}
-              className="flex flex-col items-center gap-0.5 text-center group cursor-pointer"
+              className={`dock-btn flex flex-col items-center gap-0.5 text-center group cursor-pointer ${activeTab === "stories" ? "dock-btn-active" : ""}`}
             >
-              <div className={`px-4 py-0.5 rounded-full transition-all ${
+              <div className={`icon-wrapper px-4 py-0.5 rounded-full transition-all ${
                 activeTab === "stories" 
-                  ? "bg-indigo-100 dark:bg-indigo-950/40 text-primary" 
+                  ? "active-glass-pill text-[#007aff]" 
                   : "text-base-content/60 group-hover:text-base-content"
               }`}>
-                <ImageIcon size={18} className={activeTab === "stories" ? "fill-primary text-primary" : "text-base-content/60"} />
+                <Sparkles size={18} className={activeTab === "stories" ? "fill-[#007aff] text-[#007aff]" : "text-base-content/60"} />
               </div>
               <span className={`text-[10px] font-bold tracking-wide transition-all ${
-                activeTab === "stories" ? "text-primary" : "text-base-content/60"
+                activeTab === "stories" ? "active-dock-text font-bold" : "text-base-content/60"
               }`}>
                 Stories
               </span>

@@ -38,7 +38,7 @@ const CameraModal = ({
 
   const textBgColors = [
     "bg-[#c7a2c9]", // Pastel lavender
-    "bg-[#7f66de]", // Soft purple
+    "bg-[#007aff]", // iOS blue
     "bg-[#5c9ca6]", // Soft teal
     "bg-[#df6976]", // Soft coral/red
     "bg-[#e5a05d]", // Soft orange/peach
@@ -812,7 +812,7 @@ const CameraModal = ({
                           : "bg-black/45 border-white/10 text-white/80 hover:bg-black/60"
                       }`}
                     >
-                      <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-pink-500 to-indigo-500" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-pink-500 to-blue-500" />
                       <span>My Story</span>
                       {sendToStory && <Check size={12} strokeWidth={3} />}
                     </button>
@@ -839,7 +839,7 @@ const CameraModal = ({
                       onClick={() => setShowShareDrawer(!showShareDrawer)}
                       className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
                         selectedDMs.length > 0 || selectedGroups.length > 0
-                          ? "bg-indigo-600 border-indigo-600 text-white" 
+                          ? "bg-blue-600 border-blue-600 text-white" 
                           : "bg-black/45 border-white/10 text-white/80 hover:bg-black/60"
                       }`}
                     >
@@ -878,7 +878,7 @@ const CameraModal = ({
                               >
                                 <span className="text-xs font-semibold truncate">{user.fullName}</span>
                                 <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
-                                  isChecked ? "bg-indigo-500 border-indigo-500 text-white" : "border-white/20"
+                                  isChecked ? "bg-blue-500 border-blue-500 text-white" : "border-white/20"
                                 }`}>
                                   {isChecked && <Check size={8} strokeWidth={4} />}
                                 </div>
@@ -904,7 +904,7 @@ const CameraModal = ({
                               >
                                 <span className="text-xs font-semibold truncate">{group.name}</span>
                                 <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
-                                  isChecked ? "bg-indigo-500 border-indigo-500 text-white" : "border-white/20"
+                                  isChecked ? "bg-blue-500 border-blue-500 text-white" : "border-white/20"
                                 }`}>
                                   {isChecked && <Check size={8} strokeWidth={4} />}
                                 </div>
@@ -1066,7 +1066,7 @@ const CameraModal = ({
                     : "bg-black/45 border-white/10 text-white/80 hover:bg-black/60"
                 }`}
               >
-                <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-pink-500 to-indigo-500" />
+                <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-pink-500 to-blue-500" />
                 <span>My Story</span>
                 {sendToStory && <Check size={12} strokeWidth={3} />}
               </button>
@@ -1093,7 +1093,7 @@ const CameraModal = ({
                 onClick={() => setShowShareDrawer(!showShareDrawer)}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
                   selectedDMs.length > 0 || selectedGroups.length > 0
-                    ? "bg-indigo-600 border-indigo-600 text-white" 
+                    ? "bg-blue-600 border-blue-600 text-white" 
                     : "bg-black/45 border-white/10 text-white/80 hover:bg-black/60"
                 }`}
               >
@@ -1132,7 +1132,7 @@ const CameraModal = ({
                         >
                           <span className="text-xs font-semibold truncate">{user.fullName}</span>
                           <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
-                            isChecked ? "bg-indigo-500 border-indigo-500 text-white" : "border-white/20"
+                            isChecked ? "bg-blue-500 border-blue-500 text-white" : "border-white/20"
                           }`}>
                             {isChecked && <Check size={8} strokeWidth={4} />}
                           </div>
@@ -1158,7 +1158,7 @@ const CameraModal = ({
                         >
                           <span className="text-xs font-semibold truncate">{group.name}</span>
                           <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
-                            isChecked ? "bg-indigo-500 border-indigo-500 text-white" : "border-white/20"
+                            isChecked ? "bg-blue-500 border-blue-500 text-white" : "border-white/20"
                           }`}>
                             {isChecked && <Check size={8} strokeWidth={4} />}
                           </div>

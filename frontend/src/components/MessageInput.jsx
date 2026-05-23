@@ -353,10 +353,10 @@ const MessageInput = () => {
           className="flex-shrink-0 flex items-center justify-center size-10 md:size-11 rounded-full transition-all duration-200 active:scale-90"
           style={{
             background: (text.trim() || imagePreview || isRecording)
-              ? "linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #0891b2 100%)"
+              ? "linear-gradient(135deg, #007aff 0%, #3b82f6 50%, #0891b2 100%)"
               : "rgba(0,0,0,0.08)",
             boxShadow: (text.trim() || imagePreview || isRecording)
-              ? "0 4px 16px rgba(124,58,237,0.4), 0 1px 4px rgba(0,0,0,0.2)"
+              ? "0 4px 16px rgba(0, 122, 255,0.4), 0 1px 4px rgba(0,0,0,0.2)"
               : "none",
             color: (text.trim() || imagePreview || isRecording) ? "#fff" : "rgba(0,0,0,0.3)",
             border: "none",

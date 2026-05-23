@@ -78,7 +78,7 @@ const StoragePage = () => {
               <div className="w-full h-full bg-gray-500" />
             ) : (
               <>
-                <div style={{ width: `${getPercent(photoBytes)}%` }} className="h-full bg-indigo-500 transition-all duration-500" />
+                <div style={{ width: `${getPercent(photoBytes)}%` }} className="h-full bg-blue-500 transition-all duration-500" />
                 <div style={{ width: `${getPercent(videoBytes)}%` }} className="h-full bg-teal-300 transition-all duration-500" />
                 <div style={{ width: `${getPercent(fileBytes)}%` }} className="h-full bg-pink-600 transition-all duration-500" />
                 <div style={{ width: `${getPercent(audioBytes)}%` }} className="h-full bg-blue-600 transition-all duration-500" />
@@ -89,7 +89,7 @@ const StoragePage = () => {
           {/* Legend */}
           <div className="flex gap-5 mb-8">
             <div className="flex items-center gap-1.5 text-[13px] font-medium text-base-content">
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Photos
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Photos
             </div>
             <div className="flex items-center gap-1.5 text-[13px] font-medium text-base-content">
               <span className="w-2.5 h-2.5 rounded-full bg-teal-300"></span> Videos

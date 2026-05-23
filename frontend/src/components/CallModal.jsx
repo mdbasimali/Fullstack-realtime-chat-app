@@ -63,7 +63,7 @@ const ParticipantVideoTile = React.memo(({
     <div 
       className={`relative rounded-3xl overflow-hidden bg-[#1c1f26] border-2 shadow-xl transition-all duration-500 flex items-center justify-center aspect-video md:aspect-[4/3] ${
         isActiveSpeaker 
-          ? "border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)] scale-[1.01]" 
+          ? "border-blue-500 shadow-[0_0_15px_rgba(0, 122, 255,0.4)] scale-[1.01]" 
           : "border-white/10"
       }`}
     >
@@ -82,8 +82,8 @@ const ParticipantVideoTile = React.memo(({
           <div className="relative">
             {!isLocal && !stream ? (
               // Connecting Spinner
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border border-purple-500/30 flex items-center justify-center bg-purple-500/5 relative">
-                <div className="absolute inset-0 rounded-full border-t-2 border-purple-500 animate-spin"></div>
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border border-blue-500/30 flex items-center justify-center bg-blue-500/5 relative">
+                <div className="absolute inset-0 rounded-full border-t-2 border-blue-500 animate-spin"></div>
                 {profilePic ? (
                   <img 
                     src={profilePic} 
@@ -91,7 +91,7 @@ const ParticipantVideoTile = React.memo(({
                     className="w-16 h-16 rounded-full object-cover opacity-60"
                   />
                 ) : (
-                  <span className="text-sm font-bold text-purple-400 opacity-60">
+                  <span className="text-sm font-bold text-blue-400 opacity-60">
                     {fullName.slice(0, 2).toUpperCase()}
                   </span>
                 )}
@@ -100,7 +100,7 @@ const ParticipantVideoTile = React.memo(({
               // Normal Avatar
               <>
                 {isActiveSpeaker && (
-                  <div className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping"></div>
+                  <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping"></div>
                 )}
                 {profilePic ? (
                   <img 
@@ -109,7 +109,7 @@ const ParticipantVideoTile = React.memo(({
                     className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/10 shadow-lg animate-fade-in"
                   />
                 ) : (
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-2xl border-2 border-purple-500/20 shadow-lg">
+                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-2xl border-2 border-blue-500/20 shadow-lg">
                     {fullName.slice(0, 2).toUpperCase()}
                   </div>
                 )}
@@ -124,7 +124,7 @@ const ParticipantVideoTile = React.memo(({
 
       {/* Status Overlay Indicators */}
       <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-1.5 border border-white/5">
-        {isLocal && <span className="text-[10px] text-purple-400 font-bold uppercase mr-0.5">You</span>}
+        {isLocal && <span className="text-[10px] text-blue-400 font-bold uppercase mr-0.5">You</span>}
         <span className="truncate max-w-[80px]">{fullName}</span>
       </div>
 
@@ -331,8 +331,8 @@ const DraggableSelfPreview = React.memo(({
       }}
       className={`fixed z-[80] w-[110px] md:w-[140px] aspect-[3/4] rounded-2xl overflow-hidden border-2 shadow-2xl cursor-grab active:cursor-grabbing top-28 right-6 select-none bg-[#1c1f26] ${
         isDragging 
-          ? "border-purple-500 shadow-[0_0_25px_rgba(168,85,247,0.6)]" 
-          : "border-white/20 hover:border-purple-500/50 shadow-black/80"
+          ? "border-blue-500 shadow-[0_0_25px_rgba(0, 122, 255,0.6)]" 
+          : "border-white/20 hover:border-blue-500/50 shadow-black/80"
       }`}
     >
       <video
@@ -570,7 +570,7 @@ const CallModal = () => {
 
         {/* Top Info section */}
         <div className="z-10 text-center pt-20 px-6">
-          <span className="text-sm font-semibold tracking-widest text-purple-400 uppercase animate-pulse">
+          <span className="text-sm font-semibold tracking-widest text-blue-400 uppercase animate-pulse">
             Incoming Group {callType === "video" ? "Video" : "Voice"} Call
           </span>
           <h2 className="text-3xl font-bold mt-2 text-white drop-shadow-md">
@@ -582,10 +582,10 @@ const CallModal = () => {
         {/* Pulsing Avatar */}
         <div className="z-10 flex-1 flex items-center justify-center">
           <div className="relative">
-            <div className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping-slow"></div>
-            <div className="absolute -inset-10 rounded-full bg-purple-500/10 animate-ping-slower"></div>
+            <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping-slow"></div>
+            <div className="absolute -inset-10 rounded-full bg-blue-500/10 animate-ping-slower"></div>
             <div className="avatar animate-bounce-slow">
-              <div className="w-40 h-40 rounded-full ring-4 ring-purple-500 ring-offset-[#0b141a] ring-offset-4 relative z-10 overflow-hidden shadow-2xl">
+              <div className="w-40 h-40 rounded-full ring-4 ring-blue-500 ring-offset-[#0b141a] ring-offset-4 relative z-10 overflow-hidden shadow-2xl">
                 <img 
                   src={groupCallInviteData?.fromUserPic || "/avatar.png"} 
                   alt="Caller" 
@@ -615,7 +615,7 @@ const CallModal = () => {
             <div className="flex flex-col items-center gap-2">
               <button
                 onClick={acceptGroupCallInvite}
-                className="w-16 h-16 rounded-full flex items-center justify-center bg-purple-600 hover:bg-purple-700 shadow-lg animate-bounce hover:scale-110 active:scale-95 transition-all text-white"
+                className="w-16 h-16 rounded-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 shadow-lg animate-bounce hover:scale-110 active:scale-95 transition-all text-white"
                 title="Accept & Join"
               >
                 {callType === "video" ? <Video size={28} /> : <Phone size={28} />}
@@ -767,7 +767,7 @@ const CallModal = () => {
         <div className="absolute inset-0 px-4 pt-28 pb-28 flex items-center justify-center overflow-y-auto">
           {participantsList.length === 0 ? (
             <div className="text-center p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md max-w-sm animate-pulse">
-              <Loader2 className="w-10 h-10 text-purple-500 mx-auto mb-4 animate-spin" />
+              <Loader2 className="w-10 h-10 text-blue-500 mx-auto mb-4 animate-spin" />
               <h3 className="text-lg font-bold text-white mb-1">Waiting for others</h3>
               <p className="text-xs text-white/55">The call will automatically start as soon as participants join.</p>
             </div>
@@ -898,7 +898,7 @@ const CallModal = () => {
                     onChange={(e) => setMemberIdentifier(e.target.value)}
                     required
                     disabled={isSubmitting}
-                    className="w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm text-white placeholder-white/30"
+                    className="w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-white placeholder-white/30"
                   />
                 </div>
 
@@ -914,7 +914,7 @@ const CallModal = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting || !memberIdentifier.trim()}
-                    className="px-6 py-2.5 rounded-full text-sm font-semibold bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
+                    className="px-6 py-2.5 rounded-full text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
                   >
                     {isSubmitting ? (
                       <>

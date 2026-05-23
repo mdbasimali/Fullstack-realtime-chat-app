@@ -44,7 +44,7 @@ const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => 
     
     const colors = [
       "bg-[#c7a2c9]", // Pastel lavender (matches screenshot)
-      "bg-[#7f66de]", // Soft purple
+      "bg-[#007aff]", // iOS blue
       "bg-[#5c9ca6]", // Soft teal
       "bg-[#df6976]", // Soft coral/red
       "bg-[#e5a05d]", // Soft orange/peach
@@ -68,7 +68,7 @@ const StoryViewer = ({ user, stories, authUser, onClose, initialIndex = 0 }) => 
     
     const bgToRing = {
       "bg-[#c7a2c9]": "ring-[#c7a2c9]",
-      "bg-[#7f66de]": "ring-[#7f66de]",
+      "bg-[#007aff]": "ring-[#007aff]",
       "bg-[#5c9ca6]": "ring-[#5c9ca6]",
       "bg-[#df6976]": "ring-[#df6976]",
       "bg-[#e5a05d]": "ring-[#e5a05d]",

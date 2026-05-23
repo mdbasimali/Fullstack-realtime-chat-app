@@ -23,7 +23,7 @@ import MediaViewerModal from "./MediaViewerModal";
 
 const getSenderColor = (senderId) => {
   const colors = [
-    "text-indigo-500 dark:text-indigo-400",
+    "text-blue-500 dark:text-blue-400",
     "text-rose-500 dark:text-rose-400",
     "text-emerald-500 dark:text-emerald-400",
     "text-amber-500 dark:text-amber-400",
@@ -284,7 +284,7 @@ const ChatContainer = () => {
                   className="w-20 h-20 rounded-[24px] object-cover shadow-md"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-[24px] bg-indigo-100 dark:bg-indigo-950 text-primary flex items-center justify-center font-extrabold text-3xl shadow-md">
+                <div className="w-20 h-20 rounded-[24px] bg-blue-100 dark:bg-blue-950 text-primary flex items-center justify-center font-extrabold text-3xl shadow-md">
                   {selectedGroup.name.slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -347,7 +347,7 @@ const ChatContainer = () => {
                   {selectedGroup && !isMyMessage && (
                     <div className="w-8 h-8 shrink-0 flex items-center justify-center">
                       {!isSameSender ? (
-                        <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-xs border border-base-300 shadow-xs">
+                        <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-xs border border-base-300 shadow-xs">
                           {message.senderId?.profilePic ? (
                             <img src={message.senderId.profilePic} alt={message.senderId.fullName} className="w-full h-full rounded-full object-cover" />
                           ) : (
@@ -395,7 +395,7 @@ const ChatContainer = () => {
                           }}
                           className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all cursor-pointer select-none active:opacity-95 overflow-hidden ${paddingClass} ${
                             isMyMessage 
-                              ? "bg-[#6057CA] text-white rounded-tr-[4px]" 
+                              ? "bg-[#007aff] text-white rounded-tr-[4px]" 
                               : "bg-base-200 text-base-content rounded-tl-[4px]"
                           }`}
                         >
@@ -638,7 +638,7 @@ const ChatContainer = () => {
 
       {/* Group Details Sidebar */}
       {selectedGroup && showGroupDetailsSidebar && (
-        <div className="fixed inset-y-0 right-0 w-full max-w-sm md:static md:w-[400px] border-l border-base-300 bg-base-100 z-40 flex flex-col h-full overflow-hidden animate-fade-in shrink-0">
+        <div className="absolute inset-y-0 right-0 w-full md:max-w-[400px] md:static md:w-[400px] border-l border-base-300 bg-base-100 z-40 flex flex-col h-full overflow-hidden animate-fade-in shrink-0 shadow-2xl">
           
           {/* Top Bar */}
           <div className="p-4 flex justify-between items-center bg-base-100">
@@ -658,7 +658,7 @@ const ChatContainer = () => {
             
             {/* Header: Avatar, Name, Description */}
             <div className="flex flex-col items-center pt-2 pb-6 px-4">
-              <div className="w-24 h-24 rounded-full bg-indigo-100 dark:bg-indigo-950/40 text-primary font-bold text-3xl flex items-center justify-center mb-4 border border-base-300">
+              <div className="w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-950/40 text-primary font-bold text-3xl flex items-center justify-center mb-4 border border-base-300">
                 {selectedGroup.avatar ? (
                   <img src={selectedGroup.avatar} alt={selectedGroup.name} className="w-full h-full rounded-full object-cover" />
                 ) : (
@@ -674,25 +674,25 @@ const ChatContainer = () => {
             {/* Quick Actions */}
             <div className="flex justify-center gap-6 px-4 pb-8">
               <div className="flex flex-col items-center gap-2 cursor-pointer">
-                <div className="w-[52px] h-[52px] rounded-[18px] bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-primary hover:bg-indigo-100 transition-colors">
+                <div className="w-[52px] h-[52px] rounded-[18px] bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-primary hover:bg-blue-100 transition-colors">
                   <Camera className="w-[22px] h-[22px]" strokeWidth={1.5} />
                 </div>
                 <span className="text-[13px] font-medium text-base-content">Story</span>
               </div>
               <div className="flex flex-col items-center gap-2 cursor-pointer">
-                <div className="w-[52px] h-[52px] rounded-[18px] bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-primary hover:bg-indigo-100 transition-colors">
+                <div className="w-[52px] h-[52px] rounded-[18px] bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-primary hover:bg-blue-100 transition-colors">
                   <Video className="w-[22px] h-[22px]" strokeWidth={1.5} />
                 </div>
                 <span className="text-[13px] font-medium text-base-content">Video</span>
               </div>
               <div className="flex flex-col items-center gap-2 cursor-pointer">
-                <div className="w-[52px] h-[52px] rounded-[18px] bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-primary hover:bg-indigo-100 transition-colors">
+                <div className="w-[52px] h-[52px] rounded-[18px] bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-primary hover:bg-blue-100 transition-colors">
                   <BellOff className="w-[22px] h-[22px]" strokeWidth={1.5} />
                 </div>
                 <span className="text-[13px] font-medium text-base-content">Mute</span>
               </div>
               <div className="flex flex-col items-center gap-2 cursor-pointer">
-                <div className="w-[52px] h-[52px] rounded-[18px] bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-primary hover:bg-indigo-100 transition-colors">
+                <div className="w-[52px] h-[52px] rounded-[18px] bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-primary hover:bg-blue-100 transition-colors">
                   <Search className="w-[22px] h-[22px]" strokeWidth={1.5} />
                 </div>
                 <span className="text-[13px] font-medium text-base-content">Search</span>
