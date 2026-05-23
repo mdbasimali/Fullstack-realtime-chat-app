@@ -9,6 +9,7 @@ import EditGroupSidebar from "./EditGroupSidebar";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { useCallStore } from "../store/useCallStore";
+import { useThemeStore } from "../store/useThemeStore";
 import { formatMessageTime } from "../lib/utils";
 import { 
   Phone, Users, Check, Video, PhoneMissed, 
@@ -70,6 +71,7 @@ const ChatContainer = () => {
   
   const { initiateCall } = useCallStore();
   const { authUser, onlineUsers } = useAuthStore();
+  const { chatColor } = useThemeStore();
   const messageEndRef = useRef(null);
   const isInitialLoadRef = useRef(true);
 
@@ -395,7 +397,7 @@ const ChatContainer = () => {
                       const isMediaOnly = isImageOrVideo && !message.text;
 
                       const paddingClass = isTextOnly 
-                        ? "p-2 pb-0.5 px-3.5 pr-[54px]" 
+                        ? "p-2 pb-1.5 px-3.5" 
                         : isMediaOnly 
                           ? "p-[2px]" // tiny 2px frame or 0? user said "no frame". Let's use p-[2px] for WhatsApp style, or p-0. Let's use p-0.5. Actually, p-0 is safest for "no frame". Wait, if p-0, timestamp needs absolute pos.
                           : "p-2 px-2";
@@ -407,6 +409,7 @@ const ChatContainer = () => {
                           onTouchEnd={handleTouchEnd}
                           onTouchMove={handleTouchMove}
                           style={{
+                            ...(isMyMessage ? { background: chatColor === "auto" ? "#007aff" : chatColor } : {}),
                             WebkitTouchCallout: "none",
                             WebkitUserSelect: "none",
                             KhtmlUserSelect: "none",
@@ -416,7 +419,7 @@ const ChatContainer = () => {
                           }}
                           className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all cursor-pointer select-none active:opacity-95 overflow-hidden ${paddingClass} ${
                             isMyMessage 
-                              ? "bg-[#007aff] text-white rounded-tr-[4px]" 
+                              ? "text-white rounded-tr-[4px]" 
                               : "bg-base-200 text-base-content rounded-tl-[4px]"
                           }`}
                         >
@@ -468,9 +471,13 @@ const ChatContainer = () => {
                           )}
 
                           {message.text && (message.messageType === "text" || message.messageType === "story_reply") && (
-                            <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed break-words select-none">
-                              {message.text}
-                            </p>
+                            <div className="relative">
+                              <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed break-words select-none inline">
+                                {message.text}
+                              </p>
+                              {/* Invisible spacer to prevent text from going under the timestamp */}
+                              <span className="inline-block w-[68px] h-4" />
+                            </div>
                           )}
                           {message.text && isImageOrVideo && (
                             <p className="text-sm md:text-base font-medium whitespace-pre-wrap leading-relaxed break-words select-none px-1 pb-1">

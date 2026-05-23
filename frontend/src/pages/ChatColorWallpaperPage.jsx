@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useThemeStore } from "../store/useThemeStore";
 
 const ChatColorWallpaperPage = () => {
   const [dimsWallpaper, setDimsWallpaper] = useState(false);
+  const { chatColor } = useThemeStore();
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col bg-base-100 select-none overflow-hidden font-sans">
@@ -41,23 +43,32 @@ const ChatColorWallpaperPage = () => {
                 <div className="w-24 h-2.5 bg-base-content/10 rounded-full"></div>
               </div>
               
-              <div className="self-end max-w-[85%] px-4 py-5 bg-primary rounded-2xl rounded-tr-sm">
+              <div 
+                className="self-end max-w-[85%] px-4 py-5 rounded-2xl rounded-tr-sm"
+                style={{ background: chatColor === "auto" ? "#007aff" : chatColor }}
+              >
                 <div className="w-28 h-2.5 bg-white/40 rounded-full"></div>
               </div>
             </div>
 
             <div className="mt-auto pt-4 flex items-center gap-3">
               <div className="flex-1 h-8 bg-base-200 rounded-full"></div>
-              <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[14px]">+</div>
+              <div 
+                className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[14px]"
+                style={{ background: chatColor === "auto" ? "#007aff" : chatColor }}
+              >+</div>
             </div>
           </div>
         </div>
 
         <div className="flex flex-col">
-          <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-base-200 transition-colors text-left">
+          <Link to="/settings/appearance/chat-color/picker" className="w-full px-6 py-4 flex items-center justify-between hover:bg-base-200 transition-colors text-left">
             <span className="text-[16px] text-base-content font-medium">Chat color</span>
-            <div className="w-5 h-5 rounded-full bg-primary"></div>
-          </button>
+            <div 
+              className="w-5 h-5 rounded-full" 
+              style={{ background: chatColor === "auto" ? "#007aff" : chatColor }}
+            ></div>
+          </Link>
 
           <button className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left">
             <span className="text-[16px] text-base-content font-medium">Reset chat colors</span>

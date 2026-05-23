@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Navbar from "./components/Navbar";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatstore } from "./store/useChatStore";
@@ -36,6 +35,7 @@ const AccountPage = React.lazy(() => import("./pages/AccountPage"));
 const AddPhoneNumberPage = React.lazy(() => import("./pages/AddPhoneNumberPage"));
 const AppearancePage = React.lazy(() => import("./pages/AppearancePage"));
 const ChatColorWallpaperPage = React.lazy(() => import("./pages/ChatColorWallpaperPage"));
+const ChatColorPage = React.lazy(() => import("./pages/ChatColorPage"));
 const AppIconPage = React.lazy(() => import("./pages/AppIconPage"));
 const StoriesPage = React.lazy(() => import("./pages/StoriesPage"));
 const MyStoryPage = React.lazy(() => import("./pages/MyStoryPage"));
@@ -394,13 +394,10 @@ const App = () => {
     </div>
   );
 
-  const showNavbar = !["/", "/settings", "/settings/account", "/settings/account/change-pin", "/settings/account/add-number", "/settings/chats", "/settings/appearance", "/settings/appearance/chat-color", "/settings/appearance/app-icon", "/settings/devices", "/settings/chats", "/settings/stories", "/settings/stories/my-story", "/settings/stories/connections", "/settings/stories/privacy-except", "/settings/stories/privacy-only", "/settings/notifications", "/settings/privacy", "/settings/backups", "/settings/data-storage", "/settings/data-storage/storage", "/settings/data-storage/storage/review", "/settings/invite", "/settings/help", "/settings/help/contact", "/settings/help/terms", "/profile", "/profile/about", "/join-group", "/login", "/signup", "/create-pin"].includes(location.pathname);
-
   return (
     <div data-theme={theme} className="h-screen flex flex-col">
       {isAppLocked && <AppLockScreen />}
       
-      {showNavbar && <Navbar />}
       <div className="flex-1 flex flex-col min-h-0">
         <React.Suspense fallback={null}>
           <AnimatePresence mode="wait">
@@ -417,6 +414,7 @@ const App = () => {
               <Route path="/settings/chats" element={<PageWrapper>{authUser ? <ChatsSettingsPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance" element={<PageWrapper>{authUser ? <AppearancePage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance/chat-color" element={<PageWrapper>{authUser ? <ChatColorWallpaperPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/appearance/chat-color/picker" element={<PageWrapper>{authUser ? <ChatColorPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance/app-icon" element={<PageWrapper>{authUser ? <AppIconPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/devices" element={<PageWrapper>{authUser ? <LinkedDevicesPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/chats" element={<PageWrapper>{authUser ? <ChatsPage /> : <Navigate to="/login" />}</PageWrapper>} />
