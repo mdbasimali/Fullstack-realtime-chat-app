@@ -172,7 +172,13 @@ export const useChatstore = create((set,get) => ({
     set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
-      set({ messages: res.data });
+      // Merge: keep any socket-delivered messages that arrived during this API fetch
+      const currentMessages = get().messages;
+      const fetchedIds = new Set(res.data.map(m => m._id));
+      const socketOnlyMessages = currentMessages.filter(
+        m => !m.isOptimistic && !fetchedIds.has(m._id)
+      );
+      set({ messages: [...res.data, ...socketOnlyMessages] });
       get().getUsers(); // Update sidebar unread badge states and previews instantly!
     } catch (error) {
       console.error("GetMessages error:", error);
@@ -247,14 +253,18 @@ export const useChatstore = create((set,get) => ({
     socket.off("messageDeleted");
 
     socket.on("newMessage", (newMessage) => {
-      const { selectedUser, messages, getUsers } = get();
+      // Always read the FRESHEST state at the moment the event fires
+      const { selectedUser, getUsers } = get();
       const authUser = useAuthStore.getState().authUser;
       if (!authUser) return;
 
       if (selectedUser && newMessage.senderId === selectedUser._id) {
-        set({
-          messages: [...messages, newMessage]
-        });
+        // Deduplicate: only add if this message doesn't already exist in the current messages array
+        const currentMessages = get().messages;
+        const alreadyExists = currentMessages.some(m => m._id === newMessage._id);
+        if (!alreadyExists) {
+          set({ messages: [...currentMessages, newMessage] });
+        }
 
         // Emit messageSeen over socket since we are actively in this user's chat window
         socket.emit("messageSeen", { senderId: selectedUser._id });
