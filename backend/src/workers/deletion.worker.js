@@ -5,7 +5,7 @@ import Story from "../models/story.model.js";
 import Message from "../models/message.model.js";
 import DeletedAccount from "../models/deletedAccount.model.js";
 import DeletionJob from "../models/deletionJob.model.js";
-import { io } from "../index.js";
+import { io } from "../lib/socket.js";
 import cloudinary from "../lib/cloudinary.js";
 
 const redisOptions = {
