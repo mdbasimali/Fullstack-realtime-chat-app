@@ -64,8 +64,8 @@ const ChatHeader = () => {
   const activeAvatarName = selectedGroup ? selectedGroup.name : selectedUser?.fullName;
 
   return (
-    <div className="p-3 safe-p-3-top border-b border-base-300 bg-base-100/95 backdrop-blur-md flex items-center justify-between shadow-sm">
-      <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
+    <div className="py-1.5 px-3 safe-p-1.5-top border-b border-base-300 bg-base-100/95 backdrop-blur-md flex items-center justify-between shadow-sm">
+      <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
         {/* Back button */}
         <button
           onClick={handleBack}
@@ -88,7 +88,7 @@ const ChatHeader = () => {
         >
           {/* Avatar */}
           <div className="avatar shrink-0">
-            <div className="size-10 rounded-full relative flex items-center justify-center bg-blue-100 dark:bg-blue-950/40 text-primary font-bold">
+            <div className="size-8 rounded-full relative flex items-center justify-center bg-blue-100 dark:bg-blue-950/40 text-primary font-bold">
               {selectedGroup ? (
                 selectedGroup.avatar ? (
                   <img
