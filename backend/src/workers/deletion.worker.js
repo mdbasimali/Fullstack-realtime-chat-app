@@ -11,7 +11,14 @@ import cloudinary from "../lib/cloudinary.js";
 const redisOptions = {
   host: process.env.REDIS_HOST || '127.0.0.1',
   port: process.env.REDIS_PORT || 6379,
-  // password: process.env.REDIS_PASSWORD,
+  maxRetriesPerRequest: null,
+  retryStrategy: (times) => {
+    // Retry silently after 10 seconds to avoid spamming the console
+    if (times === 1) {
+      console.warn("⚠️ Redis connection failed. Make sure Redis is running if you want background jobs to process!");
+    }
+    return 10000;
+  }
 };
 
 export const deletionQueue = new Queue("account-deletion", {
