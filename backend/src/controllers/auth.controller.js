@@ -669,8 +669,9 @@ export const verifyPin = async (req, res) => {
   }
 };
 
-import { deletionQueue, connection as redisConnection } from "../workers/deletion.worker.js";
-import DeletionJob from "../models/deletionJob.model.js";
+import Group from "../models/group.model.js";
+import Story from "../models/story.model.js";
+import DeletedAccount from "../models/deletedAccount.model.js";
 import { getReceiverSocketId } from "../lib/socket.js";
 
 export const deleteAccount = async (req, res) => {
@@ -690,27 +691,61 @@ export const deleteAccount = async (req, res) => {
       if (!isMatch) return res.status(400).json({ message: "Incorrect PIN" });
     }
 
-    // Generate unique job ID
-    const jobId = `del_${Date.now()}_${userId}`;
+    // ---- INLINE DELETION (no Redis/BullMQ needed) ----
 
-    // Create DB tracking for the job
-    await DeletionJob.create({
-      jobId,
-      userId,
-      status: "queued"
-    });
+    // Phase 1: Anonymize user data
+    const randomHash = `deleted_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    user.email = `${randomHash}@deleted.chatzone.app`;
+    user.username = randomHash;
+    user.fullName = "Deleted User";
+    user.profilePic = "";
+    user.phoneNumber = "";
+    user.pin = "";
+    user.about = "This account was deleted.";
+    user.linkedDevices = [];
+    user.pushSubscriptions = [];
+    user.syncedContacts = [];
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    await user.save();
 
-    // Add to BullMQ ONLY if Redis is connected, otherwise skip to prevent hanging
-    if (redisConnection.status === "ready") {
-      await deletionQueue.add("account-deletion", { userId }, { jobId });
-    } else {
-      console.warn("⚠️ Redis is not connected. Skipping background deletion job for user:", userId);
-      await DeletionJob.findOneAndUpdate({ jobId }, { status: "failed", $push: { errorLog: { message: "Redis unavailable" } } });
+    // Phase 2: Remove from other users' contacts and blocked lists
+    await User.updateMany(
+      { contacts: userId },
+      { $pull: { contacts: userId } }
+    );
+    await User.updateMany(
+      { blockedUsers: userId },
+      { $pull: { blockedUsers: userId } }
+    );
+
+    // Phase 3: Groups Cleanup
+    const userGroups = await Group.find({ members: userId });
+    for (const group of userGroups) {
+      group.members = group.members.filter(m => m.toString() !== userId.toString());
+      group.admins = group.admins.filter(a => a.toString() !== userId.toString());
+
+      if (group.creator.toString() === userId.toString()) {
+        if (group.admins.length > 0) {
+          group.creator = group.admins[0];
+        } else if (group.members.length > 0) {
+          group.creator = group.members[0];
+          group.admins.push(group.members[0]);
+        }
+      }
+      await group.save();
     }
 
-    // Mark as soft deleted immediately
-    user.isDeleted = true;
-    await user.save();
+    // Phase 4: Stories Cleanup
+    await Story.deleteMany({ userId });
+
+    // Phase 5: Create deleted account record
+    await DeletedAccount.create({
+      userId,
+      deletedAt: new Date(),
+      scheduledPermanentDeleteAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      status: "completed"
+    });
 
     // Clear JWT cookie
     res.cookie("jwt", "", { maxAge: 0 });
@@ -723,7 +758,10 @@ export const deleteAccount = async (req, res) => {
       if (socket) socket.disconnect(true);
     }
 
-    res.status(200).json({ message: "Account deletion started successfully", jobId });
+    // Notify connected clients
+    io.emit("userDeleted", { userId });
+
+    res.status(200).json({ message: "Account deleted successfully" });
   } catch (error) {
     console.error("Error in deleteAccount controller:", error.message);
     res.status(500).json({ message: "Internal server error" });

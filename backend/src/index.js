@@ -17,7 +17,6 @@ import groupRoutes from "./routes/group.route.js";
 import settingsRoutes from "./routes/settings.route.js";
 import storySettingsRoutes from "./routes/storySettings.route.js";
 import { app, server} from "./lib/socket.js";
-import "./workers/deletion.worker.js";
 import webpush from "web-push";
 
 app.set("trust proxy", 1); // Required for secure cookies on Render/Vercel
