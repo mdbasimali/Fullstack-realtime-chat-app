@@ -876,6 +876,20 @@ export const useCallStore = create((set, get) => ({
           await get().createSendTransport(groupId);
           console.log("Creating Recv Transport...");
           await get().createRecvTransport(groupId);
+          
+          console.log("Fetching existing producers in the room...");
+          socket.emit("get-producers", { roomId: groupId }, (prodRes) => {
+            if (prodRes.producers && prodRes.producers.length > 0) {
+              console.log("Found existing producers:", prodRes.producers);
+              prodRes.producers.forEach(p => {
+                get().handleGroupCallUserJoined({ userId: p.userId, socketId: p.socketId });
+                get().consumeTrack(p.producerId, p.socketId, p.userId, p.kind);
+              });
+            } else {
+              console.log("No existing producers found in the room.");
+            }
+          });
+          
           console.log("Successfully joined SFU room!");
         } catch (sfuError) {
           console.error("Critical SFU Error in join-room callback:", sfuError);

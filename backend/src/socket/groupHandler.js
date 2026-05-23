@@ -162,4 +162,28 @@ export default (io, socket, userId) => {
       }
     }
   });
+
+  // 8. Get Existing Producers
+  socket.on("get-producers", ({ roomId }, callback) => {
+    try {
+      const room = rooms.get(roomId);
+      if (!room) return callback({ producers: [] });
+      
+      const producersList = [];
+      for (const [peerSocketId, peerData] of room.peers.entries()) {
+        if (peerSocketId === socket.id) continue;
+        for (const [producerId, producer] of peerData.producers.entries()) {
+          producersList.push({
+            producerId: producer.id,
+            socketId: peerSocketId,
+            userId: peerData.userId,
+            kind: producer.kind
+          });
+        }
+      }
+      callback({ producers: producersList });
+    } catch (error) {
+      callback({ error: error.message });
+    }
+  });
 };
