@@ -729,6 +729,10 @@ const CallModal = () => {
 
   // Native PiP is handled automatically by el.autoPictureInPicture = true on the pipVideoRef
 
+  const [duration, setDuration] = useState(0);
+  const [isMirrored, setIsMirrored] = useState(true);
+  const [manualFullView, setManualFullView] = useState(false);
+
   const hiddenLocalVideoRef = useRef(null);
   const pipCanvasRef = useRef(null);
   const pipVideoRef = useRef(null);
@@ -834,10 +838,6 @@ const CallModal = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remoteStream]);
-
-  const [duration, setDuration] = useState(0);
-  const [isMirrored, setIsMirrored] = useState(true);
-  const [manualFullView, setManualFullView] = useState(false);
 
   // Sync manual toggle with remote status
   useEffect(() => {
