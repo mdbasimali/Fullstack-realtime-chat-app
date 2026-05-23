@@ -76,6 +76,14 @@ const userSchema = new mongoose.Schema(
     pin: {
       type: String,
       default: ""
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
     }
   },
 {timestamps:true}

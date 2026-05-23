@@ -1,5 +1,5 @@
 import express from "express";
-import { checkAuth, login, logout, signup, updateProfile, googleAuth, getGoogleClientId, googleRedirect, linkDevice, getLinkedDevices, revokeLinkedDevice, firebaseLogin, checkUsername, createPin, changePin, verifyPin } from "../controllers/auth.controller.js";
+import { checkAuth, login, logout, signup, updateProfile, googleAuth, getGoogleClientId, googleRedirect, linkDevice, getLinkedDevices, revokeLinkedDevice, firebaseLogin, checkUsername, createPin, changePin, verifyPin, deleteAccount } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router =express.Router()
@@ -22,5 +22,7 @@ router.get("/check-username", checkUsername);
 router.post("/link-device", protectRoute, linkDevice);
 router.get("/linked-devices", protectRoute, getLinkedDevices);
 router.delete("/linked-devices/:sessionId", protectRoute, revokeLinkedDevice);
+
+router.post("/delete-account", protectRoute, deleteAccount);
 
 export default router

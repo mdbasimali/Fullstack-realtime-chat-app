@@ -33,6 +33,7 @@ const ChangePinPage = React.lazy(() => import("./pages/ChangePinPage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const SettingsPage = React.lazy(() => import("./pages/SettingsPage"));
 const AccountPage = React.lazy(() => import("./pages/AccountPage"));
+const DeleteAccountPage = React.lazy(() => import("./pages/DeleteAccountPage"));
 const AddPhoneNumberPage = React.lazy(() => import("./pages/AddPhoneNumberPage"));
 const AppearancePage = React.lazy(() => import("./pages/AppearancePage"));
 const ChatColorWallpaperPage = React.lazy(() => import("./pages/ChatColorWallpaperPage"));
@@ -343,8 +344,9 @@ const App = () => {
               <Route path="/settings" element={<PageWrapper>{authUser ? <SettingsPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/account" element={<PageWrapper>{authUser ? <AccountPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/account/change-pin" element={<PageWrapper>{authUser ? <ChangePinPage /> : <Navigate to="/login" />}</PageWrapper>} />
-              <Route path="/settings/chats" element={<PageWrapper>{authUser ? <ChatsSettingsPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/account/add-number" element={<PageWrapper>{authUser ? <AddPhoneNumberPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/account/delete" element={<PageWrapper>{authUser ? <DeleteAccountPage /> : <Navigate to="/login" />}</PageWrapper>} />
+              <Route path="/settings/chats" element={<PageWrapper>{authUser ? <ChatsSettingsPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance" element={<PageWrapper>{authUser ? <AppearancePage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance/chat-color" element={<PageWrapper>{authUser ? <ChatColorWallpaperPage /> : <Navigate to="/login" />}</PageWrapper>} />
               <Route path="/settings/appearance/app-icon" element={<PageWrapper>{authUser ? <AppIconPage /> : <Navigate to="/login" />}</PageWrapper>} />

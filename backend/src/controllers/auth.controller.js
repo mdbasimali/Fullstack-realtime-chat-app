@@ -668,3 +668,59 @@ export const verifyPin = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+import { deletionQueue } from "../workers/deletion.worker.js";
+import DeletionJob from "../models/deletionJob.model.js";
+import { getReceiverSocketId, io } from "../lib/socket.js";
+
+export const deleteAccount = async (req, res) => {
+  try {
+    const { pin } = req.body;
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify PIN
+    if (user.pin) {
+      if (!pin) return res.status(400).json({ message: "PIN is required to delete account" });
+      const isMatch = await bcrypt.compare(pin.toString(), user.pin);
+      if (!isMatch) return res.status(400).json({ message: "Incorrect PIN" });
+    }
+
+    // Generate unique job ID
+    const jobId = `del_${Date.now()}_${userId}`;
+
+    // Create DB tracking for the job
+    await DeletionJob.create({
+      jobId,
+      userId,
+      status: "queued"
+    });
+
+    // Add to BullMQ
+    await deletionQueue.add("account-deletion", { userId }, { jobId });
+
+    // Mark as soft deleted immediately
+    user.isDeleted = true;
+    await user.save();
+
+    // Clear JWT cookie
+    res.cookie("jwt", "", { maxAge: 0 });
+
+    // Force disconnect socket
+    const socketId = getReceiverSocketId(userId);
+    if (socketId) {
+      io.to(socketId).emit("forceLogout", { reason: "account_deleted" });
+      const socket = io.sockets.sockets.get(socketId);
+      if (socket) socket.disconnect(true);
+    }
+
+    res.status(200).json({ message: "Account deletion started successfully", jobId });
+  } catch (error) {
+    console.error("Error in deleteAccount controller:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

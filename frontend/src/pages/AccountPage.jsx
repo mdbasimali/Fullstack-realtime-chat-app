@@ -99,7 +99,10 @@ const AccountPage = () => {
             <span className="text-[16px] text-base-content font-medium">Your account data</span>
           </button>
 
-          <button className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left">
+          <button 
+            onClick={() => navigate('/settings/account/delete')}
+            className="w-full px-6 py-4 flex flex-col hover:bg-base-200 transition-colors text-left"
+          >
             <span className="text-[16px] text-rose-500 font-medium">Delete account</span>
           </button>
         </div>

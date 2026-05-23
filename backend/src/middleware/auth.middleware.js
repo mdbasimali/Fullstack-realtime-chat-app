@@ -21,6 +21,10 @@ export const protectRoute = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    if (user.isDeleted) {
+      return res.status(403).json({ message: "Account has been deleted" });
+    }
+
     if (decoded.sessionId) {
       const isSessionActive = user.linkedDevices.some(
         (device) => device.sessionId === decoded.sessionId

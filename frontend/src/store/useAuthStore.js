@@ -182,6 +182,21 @@ export const useAuthStore = create((set,get) => ({
     }
   },
 
+  deleteAccount: async (pin) => {
+    try {
+      const res = await axiosInstance.post("/auth/delete-account", { pin });
+      // The controller handles the socket forceLogout which will clean up state,
+      // but we can proactively clear it here.
+      set({ authUser: null, isAppLocked: false });
+      localStorage.removeItem("token");
+      get().disconnectSocket();
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete account");
+      return false;
+    }
+  },
+
   initAppLockListener: () => {
     if (get()._hasInitializedLockListener) return;
     set({ _hasInitializedLockListener: true });
