@@ -83,8 +83,8 @@ export const useChatstore = create((set,get) => ({
   },
   clearGlobalSearch: () => set({ globalUsers: [] }),
 
-  getUsers: async () => {
-    set({ isUsersLoading: true });
+  getUsers: async (silent = false) => {
+    if (!silent) set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/messages/users");
       set({ users: res.data });
@@ -120,7 +120,7 @@ export const useChatstore = create((set,get) => ({
     } catch (error) {
       console.error("GetUsers error:", error);
     } finally {
-      set({ isUsersLoading: false });
+      if (!silent) set({ isUsersLoading: false });
     }
   },
   
@@ -179,7 +179,7 @@ export const useChatstore = create((set,get) => ({
         m => !m.isOptimistic && !fetchedIds.has(m._id)
       );
       set({ messages: [...res.data, ...socketOnlyMessages] });
-      get().getUsers(); // Update sidebar unread badge states and previews instantly!
+      get().getUsers(true); // Silent refresh - no loading spinner
     } catch (error) {
       console.error("GetMessages error:", error);
     } finally {
@@ -233,7 +233,7 @@ export const useChatstore = create((set,get) => ({
         set({ activeConversations: updated });
       }
 
-      getUsers(); // Refresh sidebar for lastMessage preview
+      getUsers(true); // Silent refresh sidebar for lastMessage preview
       return true;
     } catch (error) {
       // 5. If sending fails, remove the optimistic message
@@ -286,9 +286,9 @@ export const useChatstore = create((set,get) => ({
         const updated = [...activeConversations, newMessage.senderId];
         localStorage.setItem(activeKey, JSON.stringify(updated));
         set({ activeConversations: updated });
-        getUsers();
+        getUsers(true);
       } else {
-        getUsers();
+        getUsers(true);
       }
     });
 
@@ -296,7 +296,7 @@ export const useChatstore = create((set,get) => ({
       set({
         messages: get().messages.filter((msg) => msg._id !== messageId),
       });
-      get().getUsers();
+      get().getUsers(true);
     });
 
     // Handle real-time read notifications from the recipient
@@ -313,7 +313,7 @@ export const useChatstore = create((set,get) => ({
         set({ messages: updatedMessages });
       }
       // Also refresh sidebar list so that the lastMessage checkmark turns blue instantly
-      getUsers();
+      getUsers(true);
     });
   },
 
