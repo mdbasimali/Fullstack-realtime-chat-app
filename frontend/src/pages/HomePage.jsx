@@ -66,40 +66,34 @@ const HomePage = () => {
       {/* 1. Core Content Layout */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* DESKTOP SPLIT VIEWPORT (Widths >= md) */}
-        <div className="hidden md:flex w-full h-full overflow-hidden">
-          {/* Left Sidebar Pane */}
+        {/* UNIFIED RESPONSIVE VIEWPORT */}
+        <div className="flex w-full h-full overflow-hidden" style={{ '--sidebar-width': `${sidebarWidth}px` }}>
+          
+          {/* Sidebar Pane */}
+          {/* Mobile: hidden when a chat is open. Desktop: always visible */}
           <div 
-            style={{ width: `${sidebarWidth}px` }} 
-            className="h-full flex-shrink-0 relative overflow-hidden"
+            className={`h-full flex-shrink-0 flex-col overflow-hidden relative w-full md:w-[var(--sidebar-width)] ${
+              (!selectedUser && !selectedGroup) ? 'flex' : 'hidden md:flex'
+            }`}
           >
             <Sidebar />
           </div>
 
-          {/* Resizer Handle */}
+          {/* Resizer Handle (Desktop only) */}
           <div
             onMouseDown={startResizing}
             onDoubleClick={resetWidth}
-            className="w-1.5 cursor-col-resize h-full select-none flex-shrink-0 relative group z-30"
+            className="hidden md:block w-1.5 cursor-col-resize h-full select-none flex-shrink-0 relative group z-30"
           >
-            {/* Visual Border Line */}
             <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1px] bg-base-300 group-hover:bg-primary group-hover:w-[3px] group-active:bg-primary group-active:w-[3px] transition-all" />
           </div>
 
-          {/* Right Chat Container Pane */}
-          <div className="flex-1 h-full flex flex-col bg-base-100/50 overflow-hidden">
+          {/* Chat Container Pane */}
+          {/* Mobile: hidden when NO chat is selected. Desktop: always visible */}
+          <div className={`h-full flex-col bg-base-100/50 overflow-hidden flex-1 ${
+            (!selectedUser && !selectedGroup) ? 'hidden md:flex' : 'flex'
+          }`}>
             {(!selectedUser && !selectedGroup) ? <NoChatSelected /> : <ChatContainer />}
-          </div>
-        </div>
-
-        {/* MOBILE VIEWPORT (Widths < md) */}
-        <div className="flex md:hidden w-full h-full overflow-hidden">
-          <div className="flex-1 h-full flex flex-col overflow-hidden">
-            {(!selectedUser && !selectedGroup) ? (
-              <Sidebar />
-            ) : (
-              <ChatContainer />
-            )}
           </div>
         </div>
 

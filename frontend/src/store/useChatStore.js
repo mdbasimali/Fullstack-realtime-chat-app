@@ -234,7 +234,19 @@ export const useChatstore = create((set,get) => ({
         set({ activeConversations: updated });
       }
 
-      getUsers(true); // Silent refresh sidebar for lastMessage preview
+      // Optimistically update the lastMessage in the users array for immediate sidebar UI update
+      const { users } = get();
+      const userExists = users.some(u => u._id === targetUserId);
+      if (userExists) {
+        set({
+          users: users.map(u => 
+            u._id === targetUserId ? { ...u, lastMessage: res.data } : u
+          )
+        });
+      } else {
+        getUsers(true);
+      }
+      
       return true;
     } catch (error) {
       // 5. If sending fails, remove the optimistic message
@@ -282,13 +294,24 @@ export const useChatstore = create((set,get) => ({
 
       // Automatically register the sender as an active conversation
       const activeKey = `active_conversations_${authUser._id}`;
-      const { activeConversations } = get();
+      const { activeConversations, users } = get();
+      
+      // Optimistically update the lastMessage in the users array
+      const userExists = users.some(u => u._id === newMessage.senderId);
+      if (userExists) {
+        set({ 
+          users: users.map(u => 
+            u._id === newMessage.senderId ? { ...u, lastMessage: newMessage } : u
+          ) 
+        });
+      }
+
       if (!activeConversations.includes(newMessage.senderId)) {
         const updated = [...activeConversations, newMessage.senderId];
         localStorage.setItem(activeKey, JSON.stringify(updated));
         set({ activeConversations: updated });
-        getUsers(true);
-      } else {
+        if (!userExists) getUsers(true); // Only fetch if user wasn't in list at all
+      } else if (!userExists) {
         getUsers(true);
       }
     });
