@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { useAuthStore } from "./useAuthStore";
+import * as mediasoupClient from "mediasoup-client";
 
 const ICE_SERVERS = {
   iceServers: [
@@ -175,6 +176,11 @@ export const useCallStore = create((set, get) => ({
   isGroupIncomingCall: false,
   groupCallInviteData: null,
   activeGroupCalls: {},
+  device: null,
+  sendTransport: null,
+  recvTransport: null,
+  producers: {},
+  consumers: {},
 
   toggleMic: () => {
     const { localStream, isMuted } = get();
@@ -448,7 +454,7 @@ export const useCallStore = create((set, get) => ({
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
-          socket.emit("ice:candidate", { to: receiver._id, candidate: event.candidate });
+          socket.emit("ice-candidate", { to: receiver._id, candidate: event.candidate });
         }
       };
 
@@ -471,7 +477,7 @@ export const useCallStore = create((set, get) => ({
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      socket.emit("call:user", { to: receiver._id, offer, type });
+      socket.emit("call-user", { to: receiver._id, offer, type });
 
       playSound("ringing");
 
@@ -575,7 +581,7 @@ export const useCallStore = create((set, get) => ({
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
-          socket.emit("ice:candidate", { to: remoteUser._id, candidate: event.candidate });
+          socket.emit("ice-candidate", { to: remoteUser._id, candidate: event.candidate });
         }
       };
 
@@ -611,7 +617,7 @@ export const useCallStore = create((set, get) => ({
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
-      socket.emit("call:accepted", { to: remoteUser._id, answer });
+      socket.emit("answer-call", { to: remoteUser._id, answer, callId: pendingOffer?.callId || "" });
 
       stopAllSounds();
 
@@ -638,7 +644,7 @@ export const useCallStore = create((set, get) => ({
     const { remoteUser, callType } = get();
     const socket = useAuthStore.getState().socket;
     if (socket && remoteUser) {
-      socket.emit("call:rejected", { to: remoteUser._id, type: callType });
+      socket.emit("reject-call", { to: remoteUser._id, type: callType, callId: pendingOffer?.callId || "" });
     }
     get().resetCallState();
   },
@@ -788,7 +794,7 @@ export const useCallStore = create((set, get) => ({
     }
 
     if (socket && remoteUser) {
-      socket.emit("call:ended", { 
+      socket.emit("end-call", { 
         to: remoteUser._id, 
         type: callType, 
         duration,
@@ -843,27 +849,142 @@ export const useCallStore = create((set, get) => ({
       get().setupActiveSpeakerDetection(stream, "self");
 
       const socket = useAuthStore.getState().socket;
-      if (socket) {
-        socket.emit("group-call:join", { groupId });
-      }
+      if (!socket) return;
+      
+      socket.emit("join-room", { roomId: groupId }, async (response) => {
+        if (response.error) {
+          console.error("Error joining room:", response.error);
+          return;
+        }
+
+        const device = new mediasoupClient.Device();
+        await device.load({ routerRtpCapabilities: response.rtpCapabilities });
+        set({ device });
+
+        await get().createSendTransport(groupId);
+        await get().createRecvTransport(groupId);
+      });
     } catch (error) {
       console.error("Error joining group call:", error);
     }
   },
 
-  leaveGroupCall: () => {
-    const { groupPeers, localStream, groupId } = get();
+  createSendTransport: async (groupId) => {
+    const { device, localStream, callType } = get();
     const socket = useAuthStore.getState().socket;
+
+    socket.emit("create-transport", { roomId: groupId, direction: "send" }, async (params) => {
+      if (params.error) return console.error(params.error);
+
+      const sendTransport = device.createSendTransport(params);
+      
+      sendTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
+        socket.emit("connect-transport", { roomId: groupId, transportId: sendTransport.id, dtlsParameters }, (res) => {
+          if (res.error) errback(res.error);
+          else callback();
+        });
+      });
+
+      sendTransport.on("produce", ({ kind, rtpParameters }, callback, errback) => {
+        socket.emit("produce-track", { roomId: groupId, transportId: sendTransport.id, kind, rtpParameters }, (res) => {
+          if (res.error) errback(res.error);
+          else callback({ id: res.id });
+        });
+      });
+
+      set({ sendTransport });
+
+      // Produce Audio
+      if (localStream.getAudioTracks().length > 0) {
+        const audioProducer = await sendTransport.produce({ track: localStream.getAudioTracks()[0] });
+        set((state) => ({ producers: { ...state.producers, [audioProducer.id]: audioProducer } }));
+      }
+      
+      // Produce Video
+      if (callType === "video" && localStream.getVideoTracks().length > 0) {
+        const videoProducer = await sendTransport.produce({ track: localStream.getVideoTracks()[0] });
+        set((state) => ({ producers: { ...state.producers, [videoProducer.id]: videoProducer } }));
+      }
+    });
+  },
+
+  createRecvTransport: async (groupId) => {
+    const { device } = get();
+    const socket = useAuthStore.getState().socket;
+
+    socket.emit("create-transport", { roomId: groupId, direction: "recv" }, async (params) => {
+      if (params.error) return console.error(params.error);
+
+      const recvTransport = device.createRecvTransport(params);
+      
+      recvTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
+        socket.emit("connect-transport", { roomId: groupId, transportId: recvTransport.id, dtlsParameters }, (res) => {
+          if (res.error) errback(res.error);
+          else callback();
+        });
+      });
+
+      set({ recvTransport });
+    });
+  },
+
+  consumeTrack: async (producerId, socketId, userId, kind) => {
+    const { device, recvTransport, groupId } = get();
+    const socket = useAuthStore.getState().socket;
+    if (!recvTransport) return;
+
+    socket.emit("consume-track", { 
+      roomId: groupId, 
+      transportId: recvTransport.id, 
+      producerId, 
+      rtpCapabilities: device.rtpCapabilities 
+    }, async (params) => {
+      if (params.error) return console.error("Consume error:", params.error);
+
+      const consumer = await recvTransport.consume({
+        id: params.id,
+        producerId: params.producerId,
+        kind: params.kind,
+        rtpParameters: params.rtpParameters,
+      });
+
+      set((state) => ({ consumers: { ...state.consumers, [consumer.id]: consumer } }));
+
+      // Attach track to peer
+      set((state) => {
+        const peers = { ...state.groupPeers };
+        if (!peers[socketId]) {
+          peers[socketId] = { userId, socketId, stream: new MediaStream() };
+        }
+        peers[socketId].stream.addTrack(consumer.track);
+        return { groupPeers: peers };
+      });
+
+      // Resume on backend
+      socket.emit("resume-consumer", { roomId: groupId, consumerId: consumer.id }, () => {
+        console.log("Consumer resumed!");
+      });
+    });
+  },
+
+  handleGroupCallNewProducer: ({ producerId, socketId, userId, kind }) => {
+    // A new track was published by someone else. Consume it!
+    get().consumeTrack(producerId, socketId, userId, kind);
+  },
+
+  leaveGroupCall: () => {
+    const { sendTransport, recvTransport, producers, consumers, localStream, groupId } = get();
+    const socket = useAuthStore.getState().socket;
+    
     if (socket && groupId) {
-      socket.emit("group-call:leave", { groupId });
+      socket.emit("leave-room", { roomId: groupId });
     }
 
-    // Close all peer connections
-    Object.values(groupPeers).forEach(peer => {
-      if (peer.pc) peer.pc.close();
-    });
+    if (sendTransport) sendTransport.close();
+    if (recvTransport) recvTransport.close();
+    Object.values(producers).forEach(p => p.close());
+    Object.values(consumers).forEach(c => c.close());
 
-    // Close local stream
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
     }
@@ -871,281 +992,15 @@ export const useCallStore = create((set, get) => ({
     get().resetCallState();
   },
 
-  handleGroupCallUserJoined: async ({ userId, socketId }) => {
-    const socket = useAuthStore.getState().socket;
-    const { localStream } = get();
-    if (!socket) return;
-
-    try {
-      const pc = new RTCPeerConnection(ICE_SERVERS);
-
-      const { useChatstore } = await import("./useChatStore");
-      const users = useChatstore.getState().users;
-      const user = users.find(u => u._id === userId) || { fullName: "Group Member" };
-
-      // Initialize peer structure first to avoid ontrack race conditions
-      set((state) => ({
-        groupPeers: {
-          ...state.groupPeers,
-          [socketId]: {
-            userId,
-            socketId,
-            pc,
-            fullName: user.fullName,
-            profilePic: user.profilePic,
-            stream: null,
-            iceCandidatesQueue: []
-          }
-        }
-      }));
-
-      if (localStream) {
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      }
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit("group-call:ice-candidate", { toSocketId: socketId, candidate: event.candidate });
-        }
-      };
-
-      pc.ontrack = (event) => {
-        set((state) => {
-          const currentPeer = state.groupPeers[socketId];
-          if (!currentPeer) return {};
-
-          const existingStream = currentPeer.stream;
-          const existingTracks = existingStream ? existingStream.getTracks() : [];
-          const newTracks = event.streams && event.streams[0]
-            ? event.streams[0].getTracks()
-            : [event.track];
-
-          const allTracks = [...existingTracks];
-          newTracks.forEach(track => {
-            if (!allTracks.some(t => t.id === track.id)) {
-              allTracks.push(track);
-            }
-          });
-
-          const combinedStream = new MediaStream(allTracks);
-          return {
-            groupPeers: {
-              ...state.groupPeers,
-              [socketId]: {
-                ...currentPeer,
-                stream: combinedStream
-              }
-            }
-          };
-        });
-
-        setTimeout(() => {
-          const updatedPeer = get().groupPeers[socketId];
-          if (updatedPeer && updatedPeer.stream) {
-            get().setupActiveSpeakerDetection(updatedPeer.stream, socketId);
-          }
-        }, 100);
-      };
-
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
-          console.warn(`Connection to peer ${socketId} failed. Reconnecting...`);
-          get().reconnectGroupPeer(socketId, userId);
-        }
-      };
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit("group-call:offer", { toSocketId: socketId, offer });
-    } catch (error) {
-      console.error("Error setting up peer for joined user:", error);
-    }
-  },
-
-  handleGroupCallOffer: async ({ fromSocketId, fromUserId, offer }) => {
-    const socket = useAuthStore.getState().socket;
-    const { localStream } = get();
-    if (!socket) return;
-
-    try {
-      const pc = new RTCPeerConnection(ICE_SERVERS);
-
-      const { useChatstore } = await import("./useChatStore");
-      const users = useChatstore.getState().users;
-      const user = users.find(u => u._id === fromUserId) || { fullName: "Group Member" };
-
-      // Initialize peer structure first to avoid ontrack race conditions
-      set((state) => ({
-        groupPeers: {
-          ...state.groupPeers,
-          [fromSocketId]: {
-            userId: fromUserId,
-            socketId: fromSocketId,
-            pc,
-            fullName: user.fullName,
-            profilePic: user.profilePic,
-            stream: null,
-            iceCandidatesQueue: []
-          }
-        }
-      }));
-
-      if (localStream) {
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      }
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit("group-call:ice-candidate", { toSocketId: fromSocketId, candidate: event.candidate });
-        }
-      };
-
-      pc.ontrack = (event) => {
-        set((state) => {
-          const currentPeer = state.groupPeers[fromSocketId];
-          if (!currentPeer) return {};
-
-          const existingStream = currentPeer.stream;
-          const existingTracks = existingStream ? existingStream.getTracks() : [];
-          const newTracks = event.streams && event.streams[0]
-            ? event.streams[0].getTracks()
-            : [event.track];
-
-          const allTracks = [...existingTracks];
-          newTracks.forEach(track => {
-            if (!allTracks.some(t => t.id === track.id)) {
-              allTracks.push(track);
-            }
-          });
-
-          const combinedStream = new MediaStream(allTracks);
-          return {
-            groupPeers: {
-              ...state.groupPeers,
-              [fromSocketId]: {
-                ...currentPeer,
-                stream: combinedStream
-              }
-            }
-          };
-        });
-
-        setTimeout(() => {
-          const updatedPeer = get().groupPeers[fromSocketId];
-          if (updatedPeer && updatedPeer.stream) {
-            get().setupActiveSpeakerDetection(updatedPeer.stream, fromSocketId);
-          }
-        }, 100);
-      };
-
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
-          console.warn(`Connection from peer ${fromSocketId} failed.`);
-        }
-      };
-
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-
-      // Drain queued ICE candidates
-      const peer = get().groupPeers[fromSocketId];
-      if (peer && peer.iceCandidatesQueue) {
-        for (const cand of peer.iceCandidatesQueue) {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(cand));
-          } catch (e) {
-            console.error("Error adding queued ICE candidate for peer:", e);
-          }
-        }
-        peer.iceCandidatesQueue = [];
-      }
-
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      socket.emit("group-call:answer", { toSocketId: fromSocketId, answer });
-    } catch (error) {
-      console.error("Error handling group call offer:", error);
-    }
-  },
-
-  handleGroupCallAnswer: async ({ fromSocketId, answer }) => {
-    const { groupPeers } = get();
-    const peer = groupPeers[fromSocketId];
-    if (peer && peer.pc) {
-      try {
-        await peer.pc.setRemoteDescription(new RTCSessionDescription(answer));
-
-        // Drain queued ICE candidates
-        if (peer.iceCandidatesQueue) {
-          for (const cand of peer.iceCandidatesQueue) {
-            try {
-              await peer.pc.addIceCandidate(new RTCIceCandidate(cand));
-            } catch (e) {
-              console.error("Error adding queued ICE candidate for peer:", e);
-            }
-          }
-          peer.iceCandidatesQueue = [];
-        }
-      } catch (error) {
-        console.error("Error handling group call answer:", error);
-      }
-    }
-  },
-
-  handleGroupCallIceCandidate: async ({ fromSocketId, candidate }) => {
-    const { groupPeers } = get();
-    const peer = groupPeers[fromSocketId];
-    if (peer) {
-      if (peer.pc && peer.pc.remoteDescription && peer.pc.remoteDescription.type) {
-        try {
-          await peer.pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (error) {
-          console.error("Error adding group call ice candidate:", error);
-        }
-      } else {
-        const queue = peer.iceCandidatesQueue || [];
-        peer.iceCandidatesQueue = [...queue, candidate];
-      }
-    }
-  },
-
   handleGroupCallUserLeft: ({ userId, socketId }) => {
-    const { groupPeers } = get();
-    const peer = groupPeers[socketId];
-    if (peer) {
-      if (peer.pc) peer.pc.close();
-      set((state) => {
-        const newPeers = { ...state.groupPeers };
-        delete newPeers[socketId];
-        return { groupPeers: newPeers };
-      });
-    }
+    set((state) => {
+      const newPeers = { ...state.groupPeers };
+      delete newPeers[socketId];
+      return { groupPeers: newPeers };
+    });
   },
 
-  optimizeGroupPeerBitrate: (socketId, highQuality = true) => {
-    const { groupPeers } = get();
-    const peer = groupPeers[socketId];
-    if (!peer || !peer.pc) return;
-
-    try {
-      const senders = peer.pc.getSenders();
-      const videoSender = senders.find(s => s.track && s.track.kind === "video");
-      if (videoSender) {
-        const params = videoSender.getParameters();
-        if (!params.encodings) params.encodings = [{}];
-        if (highQuality) {
-          params.encodings[0].maxBitrate = 600000; // 600kbps
-          params.encodings[0].scaleResolutionDownBy = 1.0;
-        } else {
-          params.encodings[0].maxBitrate = 100000; // 100kbps (non-active screen saver)
-          params.encodings[0].scaleResolutionDownBy = 2.0; // Half resolution
-        }
-        videoSender.setParameters(params).catch(err => console.log("Failed to adjust sender parameters", err));
-      }
-    } catch (e) {
-      console.warn("Bitrate optimization error:", e);
-    }
-  },
+  // Deleted legacy group mesh handlers: handleGroupCallUserJoined, handleGroupCallOffer, etc.
 
   setupActiveSpeakerDetection: (stream, socketIdOrSelf) => {
     try {

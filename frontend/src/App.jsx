@@ -170,6 +170,8 @@ const App = () => {
     handleGroupCallAnswer,
     handleGroupCallIceCandidate,
     handleGroupCallUserLeft,
+    handleGroupCallNewProducer,
+    handleGroupCallNewProducer,
     handleGroupCallIncomingInvite,
     handleGroupCallActiveState,
   } = useCallStore();
@@ -177,20 +179,20 @@ const App = () => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("call:incoming", handleIncomingCall);
-    socket.on("call:accepted", handleCallAccepted);
-    socket.on("call:rejected", handleCallRejected);
-    socket.on("call:ended", handleCallEnded);
-    socket.on("ice:candidate", handleIceCandidate);
+    socket.on("incoming-call", handleIncomingCall);
+    socket.on("call-answered", handleCallAccepted);
+    socket.on("call-rejected", handleCallRejected);
+    socket.on("call-ended", handleCallEnded);
+    socket.on("ice-candidate", handleIceCandidate);
     socket.on("call:screen-share-started", handleScreenShareStarted);
     socket.on("call:screen-share-stopped", handleScreenShareStopped);
     socket.on("call:active-sync", handleActiveSync);
 
-    socket.on("group-call:user-joined", handleGroupCallUserJoined);
-    socket.on("group-call:offer", handleGroupCallOffer);
-    socket.on("group-call:answer", handleGroupCallAnswer);
-    socket.on("group-call:ice-candidate", handleGroupCallIceCandidate);
-    socket.on("group-call:user-left", handleGroupCallUserLeft);
+    socket.on("participant-joined", handleGroupCallUserJoined);
+    socket.on("new-producer", handleGroupCallNewProducer);
+    
+    
+    socket.on("participant-left", handleGroupCallUserLeft);
     socket.on("group-call:incoming-invite", handleGroupCallIncomingInvite);
     socket.on("group-call:active-state", handleGroupCallActiveState);
 
@@ -200,20 +202,20 @@ const App = () => {
     }
 
     return () => {
-      socket.off("call:incoming");
-      socket.off("call:accepted");
-      socket.off("call:rejected");
-      socket.off("call:ended");
-      socket.off("ice:candidate");
+      socket.off("incoming-call");
+      socket.off("call-answered");
+      socket.off("call-rejected");
+      socket.off("call-ended");
+      socket.off("ice-candidate");
       socket.off("call:screen-share-started");
       socket.off("call:screen-share-stopped");
       socket.off("call:active-sync");
 
-      socket.off("group-call:user-joined");
-      socket.off("group-call:offer");
-      socket.off("group-call:answer");
-      socket.off("group-call:ice-candidate");
-      socket.off("group-call:user-left");
+      socket.off("participant-joined");
+      socket.off("new-producer");
+      
+      
+      socket.off("participant-left");
       socket.off("group-call:incoming-invite");
       socket.off("group-call:active-state");
     };
