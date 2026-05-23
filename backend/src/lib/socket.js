@@ -121,88 +121,6 @@ io.on("connection", (socket) =>{
        socket.emit("qr:session", sessionId);
      });
 
-  // Video Call Signaling Logic
-  socket.on("call:user", async ({ to, offer, type }) => {
-    const receiverSocketId = getReceiverSocketId(to);
-    const sender = await User.findById(userId).select("fullName profilePic");
-    
-    sendPushNotification(to, {
-        title: `Incoming ${type} call`,
-        body: `${sender?.fullName || "Someone"} is calling you...`,
-        data: {
-            type: "incoming_call",
-            callType: type,
-            from: userId,
-            senderName: sender?.fullName,
-            senderPic: sender?.profilePic,
-            offer: offer
-        }
-    });
-
-    pendingCalls.set(to, { from: userId, offer, type, timestamp: Date.now() });
-
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("call:incoming", { from: userId, offer, type });
-    }
-  });
-
-  socket.on("call:accepted", ({ to, answer }) => {
-    pendingCalls.delete(userId);
-    const receiverSocketId = getReceiverSocketId(to);
-    
-    activeCalls.set(userId, { partnerId: to, type: "accepted", startTime: Date.now() });
-    activeCalls.set(to, { partnerId: userId, type: "accepted", startTime: Date.now() });
-
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("call:accepted", { from: userId, answer });
-    }
-  });
-
-  socket.on("call:rejected", ({ to }) => {
-    pendingCalls.delete(userId);
-    saveCallLog(to, userId, "voice", "rejected");
-    const receiverSocketId = getReceiverSocketId(to);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("call:rejected", { from: userId });
-    }
-  });
-
-  socket.on("call:ended", ({ to, type, duration }) => {
-    pendingCalls.delete(to);
-    activeCalls.delete(userId);
-    activeCalls.delete(to);
-
-    if (to && userId) {
-        saveCallLog(userId, to, type || "voice", "ended", duration || 0);
-    }
-
-    const receiverSocketId = getReceiverSocketId(to);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("call:ended", { from: userId });
-    }
-  });
-
-  socket.on("ice:candidate", ({ to, candidate }) => {
-    const receiverSocketId = getReceiverSocketId(to);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("ice:candidate", { from: userId, candidate });
-    }
-  });
-
-  socket.on("call:screen-share-started", ({ to }) => {
-    const receiverSocketId = getReceiverSocketId(to);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("call:screen-share-started", { from: userId });
-    }
-  });
-
-  socket.on("call:screen-share-stopped", ({ to }) => {
-    const receiverSocketId = getReceiverSocketId(to);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("call:screen-share-stopped", { from: userId });
-    }
-  });
-
     // Join a personal room for distributed 1-to-1 signaling
     socket.join(`user:${userId}`);
 
@@ -267,13 +185,7 @@ io.on("connection", (socket) =>{
   };
 
   // Group calling WebRTC Mesh Signaling events
-  socket.on("group-call:join", ({ groupId }) => {
-    socket.join(`group_call_${groupId}`);
-    // Broadcast active status to the general group room
-    io.to(`group_${groupId}`).emit("group-call:active-state", {
-      groupId,
-      isActive: true
-    });
+  
     // Notify others in the room
     socket.to(`group_call_${groupId}`).emit("group-call:user-joined", {
       userId,
@@ -312,34 +224,16 @@ io.on("connection", (socket) =>{
     }
   });
 
-  socket.on("group-call:offer", ({ toSocketId, offer }) => {
-    io.to(toSocketId).emit("group-call:offer", {
-      fromSocketId: socket.id,
-      fromUserId: userId,
-      offer
-    });
+  
   });
 
-  socket.on("group-call:answer", ({ toSocketId, answer }) => {
-    io.to(toSocketId).emit("group-call:answer", {
-      fromSocketId: socket.id,
-      answer
-    });
+  
   });
 
-  socket.on("group-call:ice-candidate", ({ toSocketId, candidate }) => {
-    io.to(toSocketId).emit("group-call:ice-candidate", {
-      fromSocketId: socket.id,
-      candidate
-    });
+  
   });
 
-  socket.on("group-call:leave", ({ groupId }) => {
-    socket.leave(`group_call_${groupId}`);
-    socket.to(`group_call_${groupId}`).emit("group-call:user-left", {
-      userId,
-      socketId: socket.id
-    });
+  
     checkGroupCallRoomEmpty(groupId);
   });
 
