@@ -181,7 +181,7 @@ const ProfileModal = ({ profile, onClose }) => {
   return (
     <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm transition-all" onClick={onClose}>
       <div 
-        className="w-full sm:w-[400px] bg-base-100 sm:rounded-[2rem] rounded-t-[2rem] shadow-2xl flex flex-col overflow-hidden animate-slide-up sm:animate-fade-in"
+        className="w-full sm:w-[400px] bg-base-100 sm:rounded-[2rem] rounded-t-[2rem] shadow-2xl flex flex-col overflow-hidden animate-slide-up sm:animate-modal-enter"
         onClick={(e) => e.stopPropagation()}
         style={{ transform: `translateY(${dragYState}px)`, transition: isDragging.current ? 'none' : 'transform 0.3s ease' }}
         onTouchStart={handleTouchStart}

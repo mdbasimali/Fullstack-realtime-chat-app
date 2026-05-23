@@ -74,12 +74,13 @@ const HomePage = () => {
           <div 
             className={`h-full flex-shrink-0 flex-col overflow-hidden w-full md:w-[var(--sidebar-width)] ${
               (!selectedUser && !selectedGroup) 
-                ? 'translate-x-0 scale-100 opacity-100 md:opacity-100' 
-                : '-translate-x-[25%] scale-95 opacity-0 md:opacity-100 md:translate-x-0 md:scale-100 pointer-events-none md:pointer-events-auto'
+                ? 'translate-x-0 scale-100 opacity-100 md:opacity-100 brightness-100' 
+                : '-translate-x-[15%] scale-[0.97] opacity-0 md:opacity-100 md:translate-x-0 md:scale-100 pointer-events-none md:pointer-events-auto brightness-75 md:brightness-100'
             } flex`}
             style={{ 
-              transition: `transform ${(!selectedUser && !selectedGroup) ? '600ms' : '330ms'} cubic-bezier(0.25, 1, 0.5, 1), opacity ${(!selectedUser && !selectedGroup) ? '600ms' : '330ms'} ease`,
-              willChange: 'transform, opacity'
+              transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, filter 0.35s ease',
+              willChange: 'transform, opacity, filter',
+              transformOrigin: 'left center'
             }}
           >
             <Sidebar />
@@ -102,7 +103,7 @@ const HomePage = () => {
               : 'translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.1)] md:shadow-none'
           } flex`}
             style={{ 
-              transition: `transform ${(!selectedUser && !selectedGroup) ? '600ms' : '330ms'} cubic-bezier(0.25, 1, 0.5, 1), box-shadow ${(!selectedUser && !selectedGroup) ? '600ms' : '330ms'} ease`,
+              transition: `transform ${(!selectedUser && !selectedGroup) ? '0.4s' : '0.35s'} cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s ease`,
               willChange: 'transform, box-shadow'
             }}
           >

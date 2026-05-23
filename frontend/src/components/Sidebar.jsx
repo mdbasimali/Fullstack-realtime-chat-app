@@ -894,7 +894,7 @@ const Sidebar = () => {
                       onTouchEnd={endLongPress}
                       onMouseDown={(e) => startLongPress(e, user._id)}
                       onMouseUp={endLongPress}
-                      className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none ${
+                      className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none active:scale-[0.98] ${
                         isSelected 
                           ? "bg-primary/10 border border-primary/20 shadow-sm" 
                           : "hover:bg-base-200 border border-transparent"
@@ -1022,7 +1022,7 @@ const Sidebar = () => {
                               localStorage.setItem(`active_conversations_${authUser?._id}`, JSON.stringify(updated));
                             }
                           }}
-                          className="group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none hover:bg-base-200 border border-transparent"
+                          className="group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none active:scale-[0.98] hover:bg-base-200 border border-transparent"
                         >
                           <div className="flex items-center gap-3.5 min-w-0 flex-1 mr-2">
                             {/* Avatar */}
@@ -1238,7 +1238,7 @@ const Sidebar = () => {
                             onTouchEnd={endLongPress}
                             onMouseDown={(e) => startGroupLongPress(e, group._id)}
                             onMouseUp={endLongPress}
-                            className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none ${
+                            className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none active:scale-[0.98] ${
                               isSelected 
                                 ? "bg-blue-50 dark:bg-blue-950/20 border border-primary/20" 
                                 : "hover:bg-base-200/55 border border-transparent"

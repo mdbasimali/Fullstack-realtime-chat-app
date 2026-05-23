@@ -334,7 +334,7 @@ const MessageInput = () => {
                 <button
                   type="button"
                   disabled={isUploadingAudio}
-                  className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer text-base-content/50 ${isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`btn-tactile flex-shrink-0 hover:text-primary transition-colors cursor-pointer text-base-content/50 ${isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""}`}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Paperclip size={22} strokeWidth={1.5} />
@@ -358,7 +358,7 @@ const MessageInput = () => {
             onClick={text.trim() || imagePreview ? undefined : startRecording}
             disabled={isUploadingAudio}
             onMouseDown={(e) => e.preventDefault()}
-            className="flex-shrink-0 flex items-center justify-center size-[42px] md:size-[48px] rounded-full transition-all duration-200 active:scale-90 shadow-sm cursor-pointer"
+            className="btn-tactile flex-shrink-0 flex items-center justify-center size-[42px] md:size-[48px] rounded-full transition-all duration-200 active:scale-90 shadow-sm cursor-pointer"
             style={{
               background: "#2AABEE", // Telegram Blue
               color: "#fff",

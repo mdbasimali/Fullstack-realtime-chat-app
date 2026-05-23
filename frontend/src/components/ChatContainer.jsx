@@ -88,6 +88,7 @@ const ChatContainer = () => {
   const messageEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const isInitialLoadRef = useRef(true);
+  const renderedMessageIds = useRef(new Set());
   
   const currentChatId = activeGroup ? activeGroup._id : activeUser?._id;
   const prevChatIdRef = useRef(currentChatId);
@@ -96,6 +97,7 @@ const ChatContainer = () => {
   if (prevChatIdRef.current !== currentChatId) {
     isInitialLoadRef.current = true;
     prevChatIdRef.current = currentChatId;
+    renderedMessageIds.current.clear();
   }
 
   const groupCreatorUser = 
@@ -282,7 +284,7 @@ const ChatContainer = () => {
       if (isInitialLoadRef.current) {
         // First load
         const cachedScroll = useChatstore.getState().scrollCache[currentChatId];
-        if (cachedScroll !== undefined) {
+        if (cachedScroll !== undefined && cachedScroll !== -1) {
            scrollContainerRef.current.scrollTop = cachedScroll;
         } else {
            messageEndRef.current.scrollIntoView({ behavior: "instant" });
@@ -299,6 +301,13 @@ const ChatContainer = () => {
       }
     }
   }, [messages, currentChatId]);
+
+  // Track rendered messages to animate only new ones
+  useEffect(() => {
+    if (messages && messages.length > 0) {
+      messages.forEach(m => renderedMessageIds.current.add(m._id));
+    }
+  }, [messages]);
 
   return (
     <div className="flex-1 flex overflow-hidden h-full relative bg-base-100">
@@ -396,17 +405,15 @@ const ChatContainer = () => {
           )}
 
           {/* Message bubbles */}
-          {messages.map((message, idx) => {
-            const isMyMessage = message.senderId === authUser._id || message.senderId?._id === authUser._id;
-            const prevMessage = idx > 0 ? messages[idx - 1] : null;
+          {messages.map((message, idx) => {            const isMyMessage = message.senderId === authUser._id || message.senderId?._id === authUser._id;
+            const showDateHeader = idx === 0 || new Date(messages[idx - 1].createdAt).toDateString() !== new Date(message.createdAt).toDateString();
             
-            const currentDate = new Date(message.createdAt).toDateString();
-            const prevDate = prevMessage ? new Date(prevMessage.createdAt).toDateString() : null;
-            const isSameDay = currentDate === prevDate;
+            // Only animate new messages arriving AFTER the initial load
+            const isNewIncoming = !isInitialLoadRef.current && !renderedMessageIds.current.has(message._id);
+            const animationClass = isNewIncoming ? 'animate-message-pop' : '';
 
-            const isSameSender = isSameDay && prevMessage && (
-              (prevMessage.senderId === message.senderId || prevMessage.senderId?._id === message.senderId?._id)
-            );
+            // Ensure optimistic messages feel smooth too
+            const opacityClass = message.isOptimistic ? "opacity-70" : "opacity-100";
 
             return (
               <React.Fragment key={message._id}>
