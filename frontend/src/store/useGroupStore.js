@@ -132,23 +132,37 @@ export const useGroupStore = create((set, get) => ({
 
   fetchGroupMessages: async (groupId) => {
     const cachedMessages = get().messageCache[groupId] || [];
-    if (cachedMessages.length === 0) set({ isMessagesLoading: true });
+    const hasCached = !!get().messageCache[groupId];
+    if (!hasCached) {
+      set({ isMessagesLoading: true });
+    }
+    
     try {
       const res = await axiosInstance.get(`/groups/${groupId}/messages`);
-      const currentMessages = get().messageCache[groupId] || get().messages;
-      const fetchedIds = new Set(res.data.map(m => m._id));
-      const socketOnlyMessages = currentMessages.filter(
-        m => !m.isOptimistic && !fetchedIds.has(m._id)
-      );
-      const finalMessages = [...res.data, ...socketOnlyMessages];
       
-      set(state => ({
-        messageCache: { ...state.messageCache, [groupId]: finalMessages },
-        ...(state.selectedGroup?._id === groupId ? { messages: finalMessages } : {})
-      }));
+      set((state) => {
+        const currentMessages = state.messageCache[groupId] || state.messages;
+        const fetchedIds = new Set(res.data.map(m => m._id));
+        const socketOnlyMessages = currentMessages.filter(
+          m => !m.isOptimistic && !fetchedIds.has(m._id)
+        );
+        const finalMessages = [...res.data, ...socketOnlyMessages];
+
+        const isIdentical = currentMessages.length === finalMessages.length && 
+          (finalMessages.length === 0 || currentMessages[currentMessages.length - 1]._id === finalMessages[finalMessages.length - 1]._id);
+
+        if (isIdentical && hasCached) {
+          return { isMessagesLoading: false };
+        }
+
+        const newCache = { ...state.messageCache, [groupId]: finalMessages };
+        if (state.selectedGroup && state.selectedGroup._id === groupId) {
+          return { messages: finalMessages, messageCache: newCache, isMessagesLoading: false };
+        }
+        return { messageCache: newCache, isMessagesLoading: false };
+      });
     } catch (error) {
       console.error("Error fetching group messages:", error);
-    } finally {
       set({ isMessagesLoading: false });
     }
   },

@@ -174,25 +174,45 @@ export const useChatstore = create((set,get) => ({
   
   getMessages: async (userId) => {
     const cachedMessages = get().messageCache[userId] || [];
-    if (cachedMessages.length === 0) set({ isMessagesLoading: true });
+    const hasCached = !!get().messageCache[userId];
+    if (!hasCached) {
+      set({ isMessagesLoading: true });
+    }
+    
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
-      // Merge: keep any socket-delivered messages that arrived during this API fetch
-      const currentMessages = get().messageCache[userId] || get().messages;
-      const fetchedIds = new Set(res.data.map(m => m._id));
-      const socketOnlyMessages = currentMessages.filter(
-        m => !m.isOptimistic && !fetchedIds.has(m._id)
-      );
-      const finalMessages = [...res.data, ...socketOnlyMessages];
       
-      set(state => ({ 
-        messageCache: { ...state.messageCache, [userId]: finalMessages },
-        ...(state.selectedUser?._id === userId ? { messages: finalMessages } : {})
-      }));
+      set((state) => {
+        // Merge: keep any socket-delivered messages that arrived during this API fetch
+        const currentMessages = state.messageCache[userId] || state.messages;
+        const fetchedIds = new Set(res.data.map(m => m._id));
+        const socketOnlyMessages = currentMessages.filter(
+          m => !m.isOptimistic && !fetchedIds.has(m._id)
+        );
+        const finalMessages = [...res.data, ...socketOnlyMessages];
+
+        // Prevent unnecessary array reference change if messages are identical (by length and last message ID)
+        const isIdentical = currentMessages.length === finalMessages.length && 
+          (finalMessages.length === 0 || currentMessages[currentMessages.length - 1]._id === finalMessages[finalMessages.length - 1]._id);
+
+        if (isIdentical && hasCached) {
+          return { isMessagesLoading: false }; // No change needed
+        }
+
+        const newCache = { ...state.messageCache, [userId]: finalMessages };
+        // Only update `messages` if this user is still the selected user
+        if (state.selectedUser && state.selectedUser._id === userId) {
+          return { 
+            messages: finalMessages, 
+            messageCache: newCache,
+            isMessagesLoading: false 
+          };
+        }
+        return { messageCache: newCache, isMessagesLoading: false };
+      });
       get().getUsers(true); // Silent refresh - no loading spinner
     } catch (error) {
       console.error("GetMessages error:", error);
-    } finally {
       set({ isMessagesLoading: false });
     }
   },

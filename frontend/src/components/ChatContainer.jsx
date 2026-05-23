@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useLayoutEffect } from "react";
 import { useChatstore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
 
@@ -91,6 +91,12 @@ const ChatContainer = () => {
   
   const currentChatId = activeGroup ? activeGroup._id : activeUser?._id;
   const prevChatIdRef = useRef(currentChatId);
+
+  // Synchronously update initialization flag to prevent 1-frame layout jumps when switching chats
+  if (prevChatIdRef.current !== currentChatId) {
+    isInitialLoadRef.current = true;
+    prevChatIdRef.current = currentChatId;
+  }
 
   const groupCreatorUser = 
     users?.find((u) => u._id === activeGroup?.creatorId) || 
@@ -233,9 +239,8 @@ const ChatContainer = () => {
     }
   };
 
-  // Reset initial load flag when switching chats
-  useEffect(() => {
-    isInitialLoadRef.current = true;
+  // Reset initial load flag when switching chats (sync is handled above, but keeping effect for related state)
+  useLayoutEffect(() => {
     setIsEditingGroup(false);
   }, [currentChatId]);
 
@@ -270,8 +275,9 @@ const ChatContainer = () => {
     };
   }, []);
 
-  // Handle restoring scroll or scrolling to bottom
-  useEffect(() => {
+  // Handle Restore scroll position or auto-scroll to bottom on mount/switch
+  // Using useLayoutEffect ensures scroll happens BEFORE browser paints, preventing 1-frame layout flicker
+  useLayoutEffect(() => {
     if (messageEndRef.current && messages && scrollContainerRef.current) {
       if (isInitialLoadRef.current) {
         // First load
