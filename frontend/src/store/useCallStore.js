@@ -876,62 +876,75 @@ export const useCallStore = create((set, get) => ({
     }
   },
 
-  createSendTransport: async (groupId) => {
-    const { device, localStream, callType } = get();
-    const socket = useAuthStore.getState().socket;
+  createSendTransport: (groupId) => {
+    return new Promise((resolve, reject) => {
+      const { device, localStream, callType } = get();
+      const socket = useAuthStore.getState().socket;
 
-    socket.emit("create-transport", { roomId: groupId, direction: "send" }, async (params) => {
-      if (params.error) return console.error(params.error);
+      socket.emit("create-transport", { roomId: groupId, direction: "send" }, async (params) => {
+        if (params.error) {
+          console.error(params.error);
+          return reject(params.error);
+        }
 
-      const sendTransport = device.createSendTransport(params);
-      
-      sendTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
-        socket.emit("connect-transport", { roomId: groupId, transportId: sendTransport.id, dtlsParameters }, (res) => {
-          if (res.error) errback(res.error);
-          else callback();
+        const sendTransport = device.createSendTransport(params);
+        
+        sendTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
+          socket.emit("connect-transport", { roomId: groupId, transportId: sendTransport.id, dtlsParameters }, (res) => {
+            if (res.error) errback(res.error);
+            else callback();
+          });
         });
-      });
 
-      sendTransport.on("produce", ({ kind, rtpParameters }, callback, errback) => {
-        socket.emit("produce-track", { roomId: groupId, transportId: sendTransport.id, kind, rtpParameters }, (res) => {
-          if (res.error) errback(res.error);
-          else callback({ id: res.id });
+        sendTransport.on("produce", ({ kind, rtpParameters }, callback, errback) => {
+          socket.emit("produce-track", { roomId: groupId, transportId: sendTransport.id, kind, rtpParameters }, (res) => {
+            if (res.error) errback(res.error);
+            else callback({ id: res.id });
+          });
         });
+
+        set({ sendTransport });
+
+        // Produce Audio
+        if (localStream.getAudioTracks().length > 0) {
+          const audioProducer = await sendTransport.produce({ track: localStream.getAudioTracks()[0] });
+          set((state) => ({ producers: { ...state.producers, [audioProducer.id]: audioProducer } }));
+        }
+        
+        // Produce Video
+        if (callType === "video" && localStream.getVideoTracks().length > 0) {
+          const videoProducer = await sendTransport.produce({ track: localStream.getVideoTracks()[0] });
+          set((state) => ({ producers: { ...state.producers, [videoProducer.id]: videoProducer } }));
+        }
+
+        resolve(sendTransport);
       });
-
-      set({ sendTransport });
-
-      // Produce Audio
-      if (localStream.getAudioTracks().length > 0) {
-        const audioProducer = await sendTransport.produce({ track: localStream.getAudioTracks()[0] });
-        set((state) => ({ producers: { ...state.producers, [audioProducer.id]: audioProducer } }));
-      }
-      
-      // Produce Video
-      if (callType === "video" && localStream.getVideoTracks().length > 0) {
-        const videoProducer = await sendTransport.produce({ track: localStream.getVideoTracks()[0] });
-        set((state) => ({ producers: { ...state.producers, [videoProducer.id]: videoProducer } }));
-      }
     });
   },
 
-  createRecvTransport: async (groupId) => {
-    const { device } = get();
-    const socket = useAuthStore.getState().socket;
+  createRecvTransport: (groupId) => {
+    return new Promise((resolve, reject) => {
+      const { device } = get();
+      const socket = useAuthStore.getState().socket;
 
-    socket.emit("create-transport", { roomId: groupId, direction: "recv" }, async (params) => {
-      if (params.error) return console.error(params.error);
+      socket.emit("create-transport", { roomId: groupId, direction: "recv" }, async (params) => {
+        if (params.error) {
+          console.error(params.error);
+          return reject(params.error);
+        }
 
-      const recvTransport = device.createRecvTransport(params);
-      
-      recvTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
-        socket.emit("connect-transport", { roomId: groupId, transportId: recvTransport.id, dtlsParameters }, (res) => {
-          if (res.error) errback(res.error);
-          else callback();
+        const recvTransport = device.createRecvTransport(params);
+        
+        recvTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
+          socket.emit("connect-transport", { roomId: groupId, transportId: recvTransport.id, dtlsParameters }, (res) => {
+            if (res.error) errback(res.error);
+            else callback();
+          });
         });
-      });
 
-      set({ recvTransport });
+        set({ recvTransport });
+        resolve(recvTransport);
+      });
     });
   },
 
@@ -1150,6 +1163,11 @@ export const useCallStore = create((set, get) => ({
       isGroupIncomingCall: false,
       groupCallInviteData: null,
       activeGroupCalls: {},
+      device: null,
+      sendTransport: null,
+      recvTransport: null,
+      producers: {},
+      consumers: {},
     });
   },
 
