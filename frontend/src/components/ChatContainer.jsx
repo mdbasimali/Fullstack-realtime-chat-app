@@ -405,8 +405,17 @@ const ChatContainer = () => {
           )}
 
           {/* Message bubbles */}
-          {messages.map((message, idx) => {            const isMyMessage = message.senderId === authUser._id || message.senderId?._id === authUser._id;
-            const showDateHeader = idx === 0 || new Date(messages[idx - 1].createdAt).toDateString() !== new Date(message.createdAt).toDateString();
+          {messages.map((message, idx) => {            
+            const isMyMessage = message.senderId === authUser._id || message.senderId?._id === authUser._id;
+            
+            const currentDate = new Date(message.createdAt).toDateString();
+            const prevMessage = idx > 0 ? messages[idx - 1] : null;
+            const prevDate = prevMessage ? new Date(prevMessage.createdAt).toDateString() : null;
+            const isSameDay = currentDate === prevDate;
+            const isSameSender = prevMessage && (
+              (prevMessage.senderId === message.senderId) || 
+              (prevMessage.senderId?._id === message.senderId?._id)
+            );
             
             // Only animate new messages arriving AFTER the initial load
             const isNewIncoming = !isInitialLoadRef.current && !renderedMessageIds.current.has(message._id);
@@ -487,7 +496,7 @@ const ChatContainer = () => {
                             msUserSelect: "none",
                             userSelect: "none"
                           }}
-                          className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all cursor-pointer select-none active:opacity-95 overflow-hidden ${paddingClass} ${
+                          className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all cursor-pointer select-none active:opacity-95 overflow-hidden ${animationClass} ${opacityClass} ${paddingClass} ${
                             isMyMessage 
                               ? "text-white rounded-tr-[4px]" 
                               : "bg-base-100 text-base-content rounded-tl-[4px]"
