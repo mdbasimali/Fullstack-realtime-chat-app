@@ -1323,112 +1323,115 @@ const CallModal = () => {
 
       {/* Rest of full-screen UI controls - Only render when NOT minimized */}
       {!isMinimized && (
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between w-full px-6 pt-12 pb-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-        <div className="flex items-center gap-4 pointer-events-auto">
-          <button 
-            onClick={() => setIsMinimized(true)} 
-            className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
-            title="Minimize call"
-          >
-            <ArrowLeft className="w-6 h-6 text-white" />
-          </button>
-          <div className="flex flex-col">
-            <h2 className="text-xl font-semibold tracking-wide text-white drop-shadow-md">
-              {remoteUser?.fullName || "Chat User"}
-            </h2>
-            <span className="text-sm font-light text-white/85 drop-shadow-sm">
-              {callStatus === "ongoing" 
-                ? formatDuration(duration) 
-                : callStatus === "calling" 
-                  ? "Calling..." 
-                  : callStatus === "ringing" 
-                    ? "Ringing..." 
-                    : callStatus}
-            </span>
+      <>
+        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between w-full px-6 pt-12 pb-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+          <div className="flex items-center gap-4 pointer-events-auto">
+            <button 
+              onClick={() => setIsMinimized(true)} 
+              className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
+              title="Minimize call"
+            >
+              <ArrowLeft className="w-6 h-6 text-white" />
+            </button>
+            <div className="flex flex-col">
+              <h2 className="text-xl font-semibold tracking-wide text-white drop-shadow-md">
+                {remoteUser?.fullName || "Chat User"}
+              </h2>
+              <span className="text-sm font-light text-white/85 drop-shadow-sm">
+                {callStatus === "ongoing" 
+                  ? formatDuration(duration) 
+                  : callStatus === "calling" 
+                    ? "Calling..." 
+                    : callStatus === "ringing" 
+                      ? "Ringing..." 
+                      : callStatus}
+              </span>
+            </div>
           </div>
+          
+          <button className="p-2 rounded-full hover:bg-white/10 transition-colors pointer-events-auto">
+            <Info className="w-6 h-6 text-white" />
+          </button>
         </div>
-        
-        <button className="p-2 rounded-full hover:bg-white/10 transition-colors pointer-events-auto">
-          <Info className="w-6 h-6 text-white" />
-        </button>
-      </div>
 
-      {/* Floating Capsule Control Panel */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg bg-[#1c1f26]/80 backdrop-blur-xl border border-white/10 rounded-full py-3 px-6 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-around z-30 transition-all duration-300">
-        {/* Video Toggle Button */}
-        <button
-          onClick={toggleVideo}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
-            isVideoOff 
-              ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
-              : "bg-white/10 hover:bg-white/20 text-white"
-          }`}
-          title={isVideoOff ? "Turn video on" : "Turn video off"}
-        >
-          {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
-        </button>
-
-        {/* Microphone Toggle Button */}
-        <button
-          onClick={toggleMic}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
-            isMuted 
-              ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
-              : "bg-white/10 hover:bg-white/20 text-white"
-          }`}
-          title={isMuted ? "Unmute mic" : "Mute mic"}
-        >
-          {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
-        </button>
-
-        {/* Camera Switch (Flip) for Mobile */}
-        {callType === "video" && (
+        {/* Floating Capsule Control Panel */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg bg-[#1c1f26]/80 backdrop-blur-xl border border-white/10 rounded-full py-3 px-6 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-around z-30 transition-all duration-300">
+          {/* Video Toggle Button */}
           <button
-            onClick={switchCamera}
-            className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
-            title="Switch Camera"
-          >
-            <RefreshCw size={18} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
-          </button>
-        )}
-
-        {/* Speaker / Earpiece Toggle */}
-        <button
-          onClick={toggleSpeaker}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
-            isSpeakerOn
-              ? "bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30"
-              : "bg-white/10 hover:bg-white/20 text-white"
-          }`}
-          title={isSpeakerOn ? "Switch to Earpiece" : "Switch to Speaker"}
-        >
-          {isSpeakerOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
-        </button>
-
-        {/* Screen Share (Desktop only) */}
-        {callType === "video" && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia && (
-          <button 
-            onClick={toggleScreenShare}
-            className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all active:scale-95 shadow-lg ${
-              isSharingScreen 
-                ? "bg-primary text-primary-content border-primary" 
-                : "bg-white/10 border-white/10 text-white hover:bg-white/20"
+            onClick={toggleVideo}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+              isVideoOff 
+                ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
+                : "bg-white/10 hover:bg-white/20 text-white"
             }`}
-            title={isSharingScreen ? "Stop Screen Share" : "Share Screen"}
+            title={isVideoOff ? "Turn video on" : "Turn video off"}
           >
-            <Monitor size={18} />
+            {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
           </button>
-        )}
 
-        {/* End Call / Hang Up Button */}
-        <button
-          onClick={endCall}
-          className="w-12 h-12 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-red-600 text-white transition-all duration-300 active:scale-95 shadow-lg shadow-red-500/20"
-          title="End Call"
-        >
-          <Phone size={20} className="rotate-[135deg]" />
-        </button>
-      </div>
+          {/* Microphone Toggle Button */}
+          <button
+            onClick={toggleMic}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+              isMuted 
+                ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
+                : "bg-white/10 hover:bg-white/20 text-white"
+            }`}
+            title={isMuted ? "Unmute mic" : "Mute mic"}
+          >
+            {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+          </button>
+
+          {/* Camera Switch (Flip) for Mobile */}
+          {callType === "video" && (
+            <button
+              onClick={switchCamera}
+              className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
+              title="Switch Camera"
+            >
+              <RefreshCw size={18} className={`${facingMode === "user" ? "" : "rotate-180"} transition-transform duration-500`} />
+            </button>
+          )}
+
+          {/* Speaker / Earpiece Toggle */}
+          <button
+            onClick={toggleSpeaker}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+              isSpeakerOn
+                ? "bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30"
+                : "bg-white/10 hover:bg-white/20 text-white"
+            }`}
+            title={isSpeakerOn ? "Switch to Earpiece" : "Switch to Speaker"}
+          >
+            {isSpeakerOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
+          </button>
+
+          {/* Screen Share (Desktop only) */}
+          {callType === "video" && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia && (
+            <button 
+              onClick={toggleScreenShare}
+              className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all active:scale-95 shadow-lg ${
+                isSharingScreen 
+                  ? "bg-primary text-primary-content border-primary" 
+                  : "bg-white/10 border-white/10 text-white hover:bg-white/20"
+              }`}
+              title={isSharingScreen ? "Stop Screen Share" : "Share Screen"}
+            >
+              <Monitor size={18} />
+            </button>
+          )}
+
+          {/* End Call / Hang Up Button */}
+          <button
+            onClick={endCall}
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-red-600 text-white transition-all duration-300 active:scale-95 shadow-lg shadow-red-500/20"
+            title="End Call"
+          >
+            <Phone size={20} className="rotate-[135deg]" />
+          </button>
+        </div>
+      </>
+      )}
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ping-slow {
