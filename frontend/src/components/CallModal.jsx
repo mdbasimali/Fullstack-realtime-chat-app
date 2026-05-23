@@ -469,7 +469,10 @@ const CallModal = () => {
     }
   }, [localStream]);
 
+  const remoteVideoElRef = useRef(null);
+
   const remoteVideoRef = React.useCallback((el) => {
+    remoteVideoElRef.current = el;
     if (el && remoteStream) {
       if (el.srcObject !== remoteStream) {
         el.srcObject = remoteStream;
@@ -477,6 +480,36 @@ const CallModal = () => {
       el.play().catch((err) => console.log("remoteVideoRef play error:", err));
     }
   }, [remoteStream]);
+
+  // Handle PiP on app background
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "hidden") {
+        if (callType === "video" && callStatus === "ongoing" && remoteVideoElRef.current) {
+          try {
+            if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+              await remoteVideoElRef.current.requestPictureInPicture();
+            }
+          } catch (err) {
+            console.error("Failed to enter PiP:", err);
+          }
+        }
+      } else {
+        if (document.pictureInPictureElement) {
+          try {
+            await document.exitPictureInPicture();
+          } catch (err) {
+            console.error("Failed to exit PiP:", err);
+          }
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [callType, callStatus]);
 
   const remoteAudioRef = React.useCallback((el) => {
     remoteAudioElRef.current = el;
