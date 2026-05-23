@@ -213,7 +213,18 @@ const MessageInput = () => {
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pt-2 pb-4 md:px-6 md:pt-3 md:pb-6 w-full bg-transparent max-w-3xl mx-auto pointer-events-none" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}>
+    <div className="absolute bottom-0 left-0 right-0 z-20 w-full max-w-3xl mx-auto pointer-events-none" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}>
+      {/* Gradient Blur Background Element */}
+      <div className="absolute inset-0 z-0 pointer-events-none" style={{
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          background: 'linear-gradient(to bottom, transparent 0%, rgba(128, 128, 128, 0.1) 100%)',
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 100%)'
+      }}></div>
+
+      {/* Content Container */}
+      <div className="relative z-10 w-full px-3 pt-2 pb-4 md:px-6 md:pt-3 md:pb-6">
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2 pointer-events-auto">
           <div className="relative">
@@ -272,7 +283,7 @@ const MessageInput = () => {
           </div>
         ) : (
           /* Standard Input Bar */
-          <div className="flex-1 min-w-0 flex items-center gap-3 px-4 py-2 md:py-2.5 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 shadow-sm rounded-full relative">
+          <div className="flex-1 min-w-0 flex items-center gap-3 px-4 py-2 md:py-2.5 bg-base-100 dark:bg-base-900 border border-base-200/50 dark:border-base-800/50 shadow-sm rounded-full relative">
             {showEmojiPicker && (
               <EmojiPicker
                 onSelect={handleEmojiSelect}
@@ -355,6 +366,7 @@ const MessageInput = () => {
           )}
         </button>
       </form>
+      </div>
     </div>
   );
 };
