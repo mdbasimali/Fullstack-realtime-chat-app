@@ -829,18 +829,24 @@ export const useCallStore = create((set, get) => ({
       return;
     }
 
+    // Set UI to joining to prevent modal from unmounting while we wait for permissions/devices
+    set({
+      isGroupCall: true,
+      groupId,
+      isInCall: true,
+      callType: type,
+      callStatus: "joining"
+    });
+
     try {
       const stream = await get().setupMediaStream(type);
       if (!stream) {
         console.error("Failed to acquire any media stream for group call.");
+        get().resetCallState();
         return;
       }
 
       set({
-        isGroupCall: true,
-        groupId,
-        isInCall: true,
-        callType: type,
         localStream: stream,
         callStatus: "ongoing",
         callStartTime: Date.now()
