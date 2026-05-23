@@ -357,6 +357,225 @@ const DraggableSelfPreview = React.memo(({
 
 DraggableSelfPreview.displayName = "DraggableSelfPreview";
 
+const DraggableBubble = React.memo(({
+  callType,
+  remoteStream,
+  remoteUser,
+  formatDuration,
+  duration,
+  isMuted,
+  isVideoOff,
+  setIsMinimized
+}) => {
+  const containerRef = useRef(null);
+  const videoRef = useRef(null);
+
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const startOffset = useRef({ x: 0, y: 0 });
+  const hasMoved = useRef(false);
+
+  useEffect(() => {
+    if (videoRef.current && remoteStream && callType === "video") {
+      if (videoRef.current.srcObject !== remoteStream) {
+        videoRef.current.srcObject = remoteStream;
+      }
+      videoRef.current.play().catch((err) => console.log("Draggable bubble play error:", err));
+      
+      if ('autoPictureInPicture' in videoRef.current) {
+        videoRef.current.autoPictureInPicture = true;
+      }
+    }
+  }, [remoteStream, callType]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const initialLeft = rect.left - offset.x;
+      const initialTop = rect.top - offset.y;
+
+      const minX = 16 - initialLeft;
+      const maxX = (window.innerWidth - rect.width - 16) - initialLeft;
+      const minY = 96 - initialTop;
+      const maxY = (window.innerHeight - rect.height - 110) - initialTop;
+
+      setOffset(prev => ({
+        x: Math.max(minX, Math.min(maxX, prev.x)),
+        y: Math.max(minY, Math.min(maxY, prev.y))
+      }));
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [offset]);
+
+  const onStart = (clientX, clientY) => {
+    setIsDragging(true);
+    hasMoved.current = false;
+    dragStart.current = { x: clientX, y: clientY };
+    startOffset.current = { x: offset.x, y: offset.y };
+  };
+
+  const onMove = (clientX, clientY) => {
+    if (!dragStart.current.x) return;
+    const dx = clientX - dragStart.current.x;
+    const dy = clientY - dragStart.current.y;
+    
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      hasMoved.current = true;
+    }
+
+    let newX = startOffset.current.x + dx;
+    let newY = startOffset.current.y + dy;
+
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const initialLeft = rect.left - offset.x;
+      const initialTop = rect.top - offset.y;
+
+      const minX = 16 - initialLeft;
+      const maxX = (window.innerWidth - rect.width - 16) - initialLeft;
+      const minY = 96 - initialTop;
+      const maxY = (window.innerHeight - rect.height - 110) - initialTop;
+
+      newX = Math.max(minX, Math.min(maxX, newX));
+      newY = Math.max(minY, Math.min(maxY, newY));
+    }
+
+    setOffset({ x: newX, y: newY });
+  };
+
+  const onEnd = () => {
+    setIsDragging(false);
+    dragStart.current = { x: 0, y: 0 };
+
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const initialLeft = rect.left - offset.x;
+      const initialTop = rect.top - offset.y;
+
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const elementWidth = rect.width;
+      const elementHeight = rect.height;
+
+      const paddingX = 16;
+      const paddingTop = 96;
+      const paddingBottom = 110;
+
+      const minX = paddingX;
+      const maxX = screenWidth - elementWidth - paddingX;
+      const minY = paddingTop;
+      const maxY = screenHeight - elementHeight - paddingBottom;
+
+      const targets = [
+        { x: minX, y: minY },
+        { x: maxX, y: minY },
+        { x: minX, y: maxY },
+        { x: maxX, y: maxY }
+      ];
+
+      let closestTarget = targets[0];
+      let minDistance = Infinity;
+
+      targets.forEach(target => {
+        const dist = Math.hypot(rect.left - target.x, rect.top - target.y);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestTarget = target;
+        }
+      });
+
+      const finalX = closestTarget.x - initialLeft;
+      const finalY = closestTarget.y - initialTop;
+
+      setOffset({ x: finalX, y: finalY });
+    }
+  };
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    onStart(e.clientX, e.clientY);
+    
+    const handleMouseMove = (moveEvent) => {
+      onMove(moveEvent.clientX, moveEvent.clientY);
+    };
+
+    const handleMouseUp = () => {
+      onEnd();
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      onStart(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 1) {
+      onMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleClick = (e) => {
+    if (hasMoved.current) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+    setIsMinimized(false);
+  };
+
+  return (
+    <div 
+      ref={containerRef}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={onEnd}
+      onClick={handleClick}
+      style={{
+        transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${isDragging ? 1.05 : 1})`,
+        transition: isDragging ? "none" : "transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
+        touchAction: "none"
+      }}
+      className={`fixed top-24 right-6 w-24 h-32 z-[1000] bg-[#1c1f26] rounded-2xl overflow-hidden border-2 cursor-pointer select-none animate-in zoom-in fade-in ${
+        isDragging 
+          ? "border-primary shadow-[0_0_25px_rgba(168,85,247,0.6)] cursor-grabbing" 
+          : "border-primary shadow-2xl cursor-grab active:cursor-grabbing"
+      }`}
+    >
+      {callType === "video" && remoteStream ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          className="w-full h-full object-cover pointer-events-none"
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 pointer-events-none">
+           <img src={remoteUser?.profilePic || "/avatar.png"} className="w-12 h-12 rounded-full object-cover" alt="user" />
+           <span className="text-[10px] text-white/70">{formatDuration(duration)}</span>
+        </div>
+      )}
+      {/* Indicators on bubble */}
+      <div className="absolute top-1 right-1 flex gap-1 pointer-events-none">
+        {isMuted && <MicOff size={10} className="text-red-500" />}
+        {isVideoOff && <VideoOff size={10} className="text-red-500" />}
+      </div>
+    </div>
+  );
+});
+
+DraggableBubble.displayName = "DraggableBubble";
+
 const CallModal = () => {
   const { authUser } = useAuthStore();
   const {
@@ -581,29 +800,16 @@ const CallModal = () => {
   // Minimized View (Bubble)
   if (isMinimized && isInCall) {
     return (
-      <div 
-        onClick={() => setIsMinimized(false)}
-        className="fixed top-24 right-6 w-24 h-32 z-[1000] bg-[#1c1f26] rounded-2xl overflow-hidden border-2 border-primary shadow-2xl cursor-pointer animate-in zoom-in fade-in"
-      >
-        {callType === "video" && remoteStream ? (
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-             <img src={remoteUser?.profilePic || "/avatar.png"} className="w-12 h-12 rounded-full object-cover" alt="user" />
-             <span className="text-[10px] text-white/70">{formatDuration(duration)}</span>
-          </div>
-        )}
-        {/* Indicators on bubble */}
-        <div className="absolute top-1 right-1 flex gap-1">
-          {isMuted && <MicOff size={10} className="text-red-500" />}
-          {isVideoOff && <VideoOff size={10} className="text-red-500" />}
-        </div>
-      </div>
+      <DraggableBubble
+        callType={callType}
+        remoteStream={remoteStream}
+        remoteUser={remoteUser}
+        formatDuration={formatDuration}
+        duration={duration}
+        isMuted={isMuted}
+        isVideoOff={isVideoOff}
+        setIsMinimized={setIsMinimized}
+      />
     );
   }
 
