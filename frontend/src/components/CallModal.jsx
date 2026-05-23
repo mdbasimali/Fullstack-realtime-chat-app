@@ -168,7 +168,8 @@ ParticipantVideoTile.displayName = "ParticipantVideoTile";
 const DraggableSelfPreview = React.memo(({ 
   localStream, 
   isVideoOff, 
-  isMirrored
+  isMirrored,
+  isMinimized
 }) => {
   const containerRef = useRef(null);
   const videoRef = useRef(null);
@@ -337,6 +338,8 @@ const DraggableSelfPreview = React.memo(({
         touchAction: "none"
       }}
       className={`fixed z-[80] w-[110px] md:w-[140px] aspect-[3/4] rounded-2xl overflow-hidden border-2 shadow-2xl cursor-grab active:cursor-grabbing top-28 right-6 select-none bg-[#1c1f26] ${
+        isMinimized ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto transition-opacity duration-300"
+      } ${
         isDragging 
           ? "border-blue-500 shadow-[0_0_25px_rgba(0, 122, 255,0.6)]" 
           : "border-white/20 hover:border-blue-500/50 shadow-black/80"
@@ -540,12 +543,12 @@ const DraggableVideoContainer = React.memo(({
   };
 
   const containerClasses = isMinimized
-    ? `fixed top-24 right-6 w-24 h-32 z-[1000] bg-[#1c1f26] rounded-2xl overflow-hidden border-2 cursor-pointer select-none animate-in zoom-in fade-in ${
+    ? `fixed top-24 right-6 w-24 h-32 z-[1000] bg-[#1c1f26] rounded-2xl overflow-hidden border-2 cursor-pointer select-none animate-in zoom-in fade-in pointer-events-auto ${
         isDragging 
           ? "border-primary shadow-[0_0_25px_rgba(168,85,247,0.6)] cursor-grabbing" 
           : "border-primary shadow-2xl cursor-grab active:cursor-grabbing"
       }`
-    : "absolute inset-0 flex items-center justify-center bg-black overflow-hidden z-10";
+    : "absolute inset-0 flex items-center justify-center bg-black overflow-hidden z-10 pointer-events-auto";
 
   const videoClasses = isMinimized
     ? "w-full h-full object-cover pointer-events-none"
@@ -1193,13 +1196,14 @@ const CallModal = () => {
           localStream={localStream}
           isVideoOff={isVideoOff}
           isMirrored={isMirrored}
+          isMinimized={false}
         />
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[999] flex flex-col bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
+    <div className={`fixed inset-0 z-[999] flex flex-col text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none ${isMinimized ? "pointer-events-none bg-transparent" : "bg-[#0b141a]"}`}>
       
       {/* Audio element to play remote stream audio in audio calls. */}
       {remoteStream && callType === "audio" && (
@@ -1213,7 +1217,7 @@ const CallModal = () => {
 
       {/* Video Streams Container (Continuously Rendered) */}
       {callType === "video" && (
-        <div className="absolute inset-0 bg-black">
+        <div className={`absolute inset-0 ${isMinimized ? "pointer-events-none bg-transparent" : "bg-black"}`}>
           {/* Background View */}
           {callStatus !== "ongoing" || !remoteStream ? (
             localStream && !isVideoOff && !isMinimized ? (
@@ -1288,8 +1292,8 @@ const CallModal = () => {
           )}
 
           {/* Local View (Floating PIP) */}
-          {callStatus === "ongoing" && remoteStream && !isMinimized && (
-            <DraggableSelfPreview localStream={localStream} isVideoOff={isVideoOff} isMirrored={isMirrored} />
+          {callStatus === "ongoing" && remoteStream && (
+            <DraggableSelfPreview localStream={localStream} isVideoOff={isVideoOff} isMirrored={isMirrored} isMinimized={isMinimized} />
           )}
         </div>
       )}
