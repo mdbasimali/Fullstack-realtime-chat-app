@@ -126,15 +126,6 @@ const ParticipantVideoTile = React.memo(({
       )}
 
       {/* Status Overlay Indicators */}
-      <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-1.5 border border-white/5">
-        {isLocal && <span className="text-[10px] text-blue-400 font-bold uppercase mr-0.5">You</span>}
-        <span className="truncate max-w-[80px]">{fullName}</span>
-      </div>
-
-      <div className="absolute top-3 right-3 flex gap-2">
-        {isMuted && (
-          <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
-            <MicOff size={12} />
       {!isMinimized && (
         <>
           <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-1.5 border border-white/5">
