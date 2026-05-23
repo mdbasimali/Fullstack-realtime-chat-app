@@ -993,6 +993,22 @@ export const useCallStore = create((set, get) => ({
     get().resetCallState();
   },
 
+  handleGroupCallUserJoined: ({ userId, socketId }) => {
+    set((state) => {
+      const peers = { ...state.groupPeers };
+      if (!peers[socketId]) {
+        peers[socketId] = { 
+          userId, 
+          socketId, 
+          stream: new MediaStream(),
+          fullName: "User",
+          profilePic: "/avatar.png"
+        };
+      }
+      return { groupPeers: peers };
+    });
+  },
+
   handleGroupCallUserLeft: ({ userId, socketId }) => {
     set((state) => {
       const newPeers = { ...state.groupPeers };
