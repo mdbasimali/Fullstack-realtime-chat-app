@@ -165,6 +165,12 @@ const ParticipantVideoTile = React.memo(({
 
 ParticipantVideoTile.displayName = "ParticipantVideoTile";
 
+const formatDuration = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
 const DraggableSelfPreview = React.memo(({ 
   localStream, 
   isVideoOff, 
@@ -856,13 +862,6 @@ const CallModal = () => {
     }
     return () => clearInterval(interval);
   }, [callStatus]);
-
-  const formatDuration = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
   useEffect(() => {
     if (!isInCall && !isIncomingCall && !isGroupIncomingCall) {
       if (document.pictureInPictureElement) {
