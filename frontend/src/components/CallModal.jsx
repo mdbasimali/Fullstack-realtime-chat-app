@@ -135,14 +135,27 @@ const ParticipantVideoTile = React.memo(({
         {isMuted && (
           <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
             <MicOff size={12} />
+      {!isMinimized && (
+        <>
+          <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-1.5 border border-white/5">
+            {isLocal && <span className="text-[10px] text-blue-400 font-bold uppercase mr-0.5">You</span>}
+            <span className="truncate max-w-[80px]">{fullName}</span>
           </div>
-        )}
-        {isVideoOff && (
-          <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
-            <VideoOff size={12} />
+
+          <div className="absolute top-3 right-3 flex gap-2">
+            {isMuted && (
+              <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
+                <MicOff size={12} />
+              </div>
+            )}
+            {isVideoOff && (
+              <div className="bg-red-500/90 p-1.5 rounded-full text-white shadow-md">
+                <VideoOff size={12} />
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }, (prevProps, nextProps) => {
@@ -357,7 +370,7 @@ const DraggableSelfPreview = React.memo(({
 
 DraggableSelfPreview.displayName = "DraggableSelfPreview";
 
-const DraggableBubble = React.memo(({
+const DraggableVideoContainer = React.memo(({
   callType,
   remoteStream,
   remoteUser,
@@ -366,7 +379,9 @@ const DraggableBubble = React.memo(({
   isMuted,
   isVideoOff,
   setIsMinimized,
-  remoteVideoRef
+  isMinimized,
+  remoteVideoRef,
+  manualFullView
 }) => {
   const containerRef = useRef(null);
 
@@ -377,8 +392,15 @@ const DraggableBubble = React.memo(({
   const hasMoved = useRef(false);
 
   useEffect(() => {
+    // Reset offset when returning to full screen
+    if (!isMinimized) {
+      setOffset({ x: 0, y: 0 });
+    }
+  }, [isMinimized]);
+
+  useEffect(() => {
     const handleResize = () => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || !isMinimized) return;
       const rect = containerRef.current.getBoundingClientRect();
       const initialLeft = rect.left - offset.x;
       const initialTop = rect.top - offset.y;
@@ -395,9 +417,10 @@ const DraggableBubble = React.memo(({
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [offset]);
+  }, [offset, isMinimized]);
 
   const onStart = (clientX, clientY) => {
+    if (!isMinimized) return;
     setIsDragging(true);
     hasMoved.current = false;
     dragStart.current = { x: clientX, y: clientY };
@@ -405,7 +428,7 @@ const DraggableBubble = React.memo(({
   };
 
   const onMove = (clientX, clientY) => {
-    if (!dragStart.current.x) return;
+    if (!dragStart.current.x || !isMinimized) return;
     const dx = clientX - dragStart.current.x;
     const dy = clientY - dragStart.current.y;
     
@@ -434,6 +457,7 @@ const DraggableBubble = React.memo(({
   };
 
   const onEnd = () => {
+    if (!isMinimized) return;
     setIsDragging(false);
     dragStart.current = { x: 0, y: 0 };
 
@@ -482,6 +506,7 @@ const DraggableBubble = React.memo(({
   };
 
   const handleMouseDown = (e) => {
+    if (!isMinimized) return;
     e.preventDefault();
     onStart(e.clientX, e.clientY);
     
@@ -500,18 +525,21 @@ const DraggableBubble = React.memo(({
   };
 
   const handleTouchStart = (e) => {
+    if (!isMinimized) return;
     if (e.touches.length === 1) {
       onStart(e.touches[0].clientX, e.touches[0].clientY);
     }
   };
 
   const handleTouchMove = (e) => {
+    if (!isMinimized) return;
     if (e.touches.length === 1) {
       onMove(e.touches[0].clientX, e.touches[0].clientY);
     }
   };
 
   const handleClick = (e) => {
+    if (!isMinimized) return;
     if (hasMoved.current) {
       e.stopPropagation();
       e.preventDefault();
@@ -519,6 +547,18 @@ const DraggableBubble = React.memo(({
     }
     setIsMinimized(false);
   };
+
+  const containerClasses = isMinimized
+    ? `fixed top-24 right-6 w-24 h-32 z-[1000] bg-[#1c1f26] rounded-2xl overflow-hidden border-2 cursor-pointer select-none animate-in zoom-in fade-in ${
+        isDragging 
+          ? "border-primary shadow-[0_0_25px_rgba(168,85,247,0.6)] cursor-grabbing" 
+          : "border-primary shadow-2xl cursor-grab active:cursor-grabbing"
+      }`
+    : "absolute inset-0 flex items-center justify-center bg-black overflow-hidden z-10";
+
+  const videoClasses = isMinimized
+    ? "w-full h-full object-cover pointer-events-none"
+    : `w-full h-full transition-all duration-500 ${manualFullView ? "object-contain bg-black shadow-2xl" : "object-cover"}`;
 
   return (
     <div 
@@ -529,39 +569,37 @@ const DraggableBubble = React.memo(({
       onTouchEnd={onEnd}
       onClick={handleClick}
       style={{
-        transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${isDragging ? 1.05 : 1})`,
-        transition: isDragging ? "none" : "transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
-        touchAction: "none"
+        transform: isMinimized ? `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${isDragging ? 1.05 : 1})` : 'none',
+        transition: isDragging || !isMinimized ? "none" : "transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
+        touchAction: isMinimized ? "none" : "auto"
       }}
-      className={`fixed top-24 right-6 w-24 h-32 z-[1000] bg-[#1c1f26] rounded-2xl overflow-hidden border-2 cursor-pointer select-none animate-in zoom-in fade-in ${
-        isDragging 
-          ? "border-primary shadow-[0_0_25px_rgba(168,85,247,0.6)] cursor-grabbing" 
-          : "border-primary shadow-2xl cursor-grab active:cursor-grabbing"
-      }`}
+      className={containerClasses}
     >
       {callType === "video" && remoteStream ? (
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="w-full h-full object-cover pointer-events-none"
+          className={videoClasses}
         />
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1 pointer-events-none">
-           <img src={remoteUser?.profilePic || "/avatar.png"} className="w-12 h-12 rounded-full object-cover" alt="user" />
-           <span className="text-[10px] text-white/70">{formatDuration(duration)}</span>
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 pointer-events-none bg-[#1c1f26]">
+           <img src={remoteUser?.profilePic || "/avatar.png"} className={isMinimized ? "w-12 h-12 rounded-full object-cover" : "w-32 h-32 rounded-full object-cover"} alt="user" />
+           {isMinimized && <span className="text-[10px] text-white/70">{formatDuration(duration)}</span>}
         </div>
       )}
       {/* Indicators on bubble */}
-      <div className="absolute top-1 right-1 flex gap-1 pointer-events-none">
-        {isMuted && <MicOff size={10} className="text-red-500" />}
-        {isVideoOff && <VideoOff size={10} className="text-red-500" />}
-      </div>
+      {isMinimized && (
+        <div className="absolute top-1 right-1 flex gap-1 pointer-events-none">
+          {isMuted && <MicOff size={10} className="text-red-500" />}
+          {isVideoOff && <VideoOff size={10} className="text-red-500" />}
+        </div>
+      )}
     </div>
   );
 });
 
-DraggableBubble.displayName = "DraggableBubble";
+DraggableVideoContainer.displayName = "DraggableVideoContainer";
 
 const CallModal = () => {
   const { authUser } = useAuthStore();
@@ -784,22 +822,7 @@ const CallModal = () => {
 
   if (!isInCall && !isIncomingCall && !isGroupIncomingCall) return null;
 
-  // Minimized View (Bubble)
-  if (isMinimized && isInCall) {
-    return (
-      <DraggableBubble
-        callType={callType}
-        remoteStream={remoteStream}
-        remoteUser={remoteUser}
-        formatDuration={formatDuration}
-        duration={duration}
-        isMuted={isMuted}
-        isVideoOff={isVideoOff}
-        setIsMinimized={setIsMinimized}
-        remoteVideoRef={remoteVideoRef}
-      />
-    );
-  }
+  // Minimized View (Bubble) logic is now handled by DraggableVideoContainer continuously.
 
   // Incoming Group Call UI
   if (isGroupIncomingCall) {
@@ -1197,12 +1220,12 @@ const CallModal = () => {
         />
       )}
 
-      {/* Video Streams Container */}
+      {/* Video Streams Container (Continuously Rendered) */}
       {callType === "video" && (
         <div className="absolute inset-0 bg-black">
           {/* Background View */}
           {callStatus !== "ongoing" || !remoteStream ? (
-            localStream && !isVideoOff ? (
+            localStream && !isVideoOff && !isMinimized ? (
               <video
                 ref={localVideoRef}
                 autoPlay
@@ -1211,72 +1234,77 @@ const CallModal = () => {
                 className={`w-full h-full object-cover transition-all duration-500 ${isMirrored ? "scale-x-[-1]" : ""}`}
               />
             ) : (
-              <div className="w-full h-full bg-[#0b141a] flex flex-col items-center justify-center gap-4">
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping"></div>
-                  <div className="w-32 h-32 rounded-full overflow-hidden border border-white/10 shadow-2xl">
-                    <img src={remoteUser?.profilePic || "/avatar.png"} className="w-full h-full object-cover" alt={remoteUser?.fullName} />
-                  </div>
-                </div>
-                {isVideoOff && <span className="text-sm text-white/50">Your camera is off</span>}
+              <div className={`w-full h-full flex flex-col items-center justify-center gap-4 ${isMinimized ? "bg-transparent" : "bg-[#0b141a]"}`}>
+                {!isMinimized && (
+                  <>
+                    <div className="relative">
+                      <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping"></div>
+                      <div className="w-32 h-32 rounded-full overflow-hidden border border-white/10 shadow-2xl">
+                        <img src={remoteUser?.profilePic || "/avatar.png"} className="w-full h-full object-cover" alt={remoteUser?.fullName} />
+                      </div>
+                    </div>
+                    {isVideoOff && <span className="text-sm text-white/50">Your camera is off</span>}
+                  </>
+                )}
               </div>
             )
           ) : (
-            /* Ongoing call: Remote stream */
-            <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
-              {/* Overlay info and toggle */}
-              <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50">
-                <button 
-                  onClick={() => setManualFullView(!manualFullView)}
-                  className="px-4 py-2 rounded-full bg-black/35 backdrop-blur-xl flex items-center gap-2 text-white border border-white/10 shadow-2xl active:scale-95 transition-all group text-xs font-semibold uppercase tracking-wider"
-                >
-                  {manualFullView ? (
-                    <><Minimize2 size={14} className="text-primary" /> <span>Fit to Screen</span></>
-                  ) : (
-                    <><Maximize2 size={14} className="text-white/70" /> <span>Zoom to Fill</span></>
-                  )}
-                </button>
-              </div>
-
-              {isRemoteSharingScreen && (
-                <div className="absolute top-36 left-0 right-0 z-30 flex justify-center pointer-events-none">
-                  <div className="bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                    <span className="text-xs font-medium text-white/90">
-                      {remoteUser?.fullName}'s screen
-                    </span>
-                  </div>
-                </div>
-              )}
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className={`w-full h-full transition-all duration-500 ${manualFullView ? "object-contain bg-black shadow-2xl" : "object-cover"}`}
+            /* Ongoing call: Remote stream wrapper */
+            <>
+              <DraggableVideoContainer
+                callType={callType}
+                remoteStream={remoteStream}
+                remoteUser={remoteUser}
+                formatDuration={formatDuration}
+                duration={duration}
+                isMuted={isMuted}
+                isVideoOff={isVideoOff}
+                setIsMinimized={setIsMinimized}
+                isMinimized={isMinimized}
+                remoteVideoRef={remoteVideoRef}
+                manualFullView={manualFullView}
               />
-            </div>
+              
+              {/* Overlay info and toggle (only shown when NOT minimized) */}
+              {!isMinimized && (
+                <>
+                  <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+                    <button 
+                      onClick={() => setManualFullView(!manualFullView)}
+                      className="px-4 py-2 rounded-full bg-black/35 backdrop-blur-xl flex items-center gap-2 text-white border border-white/10 shadow-2xl active:scale-95 transition-all group text-xs font-semibold uppercase tracking-wider"
+                    >
+                      {manualFullView ? (
+                        <><Minimize2 size={14} className="text-primary" /> <span>Fit to Screen</span></>
+                      ) : (
+                        <><Maximize2 size={14} className="text-white/70" /> <span>Zoom to Fill</span></>
+                      )}
+                    </button>
+                  </div>
+
+                  {isRemoteSharingScreen && (
+                    <div className="absolute top-36 left-0 right-0 z-30 flex justify-center pointer-events-none">
+                      <div className="bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                        <span className="text-xs font-medium text-white/90">
+                          {remoteUser?.fullName}'s screen
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
 
           {/* Local View (Floating PIP) */}
-          {callStatus === "ongoing" && remoteStream && (
+          {callStatus === "ongoing" && remoteStream && !isMinimized && (
             <DraggableSelfPreview localStream={localStream} isVideoOff={isVideoOff} isMirrored={isMirrored} />
-            /* <div className={`absolute z-30 transition-all duration-500 ease-in-out rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl top-24 right-6 ${
-              manualFullView ? "w-[85px]" : "w-[100px] md:w-[140px]"
-            } aspect-[3/4]`}>
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`w-full h-full object-cover ${isMirrored ? "scale-x-[-1]" : ""}`}
-              />
-            </div> */
           )}
         </div>
       )}
 
       {/* Audio Call UI background */}
-      {callType === "audio" && (
+      {callType === "audio" && !isMinimized && (
         <div className="absolute inset-0 bg-gradient-to-b from-[#0f1c24] to-[#080d11] flex flex-col items-center justify-center">
           <div className="relative mb-8">
             <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping-slow"></div>
@@ -1288,7 +1316,22 @@ const CallModal = () => {
         </div>
       )}
 
-      {/* Top Header Overlay */}
+      {/* When Minimized but it's an Audio Call, render the bubble here because audio doesn't use DraggableVideoContainer */}
+      {callType === "audio" && isMinimized && (
+        <div 
+          onClick={() => setIsMinimized(false)}
+          className="fixed top-24 right-6 w-24 h-32 z-[1000] bg-[#1c1f26] rounded-2xl overflow-hidden border-2 border-primary shadow-2xl cursor-pointer animate-in zoom-in fade-in flex flex-col items-center justify-center gap-1"
+        >
+          <img src={remoteUser?.profilePic || "/avatar.png"} className="w-12 h-12 rounded-full object-cover" alt="user" />
+          <span className="text-[10px] text-white/70">{formatDuration(duration)}</span>
+          <div className="absolute top-1 right-1 flex gap-1 pointer-events-none">
+            {isMuted && <MicOff size={10} className="text-red-500" />}
+          </div>
+        </div>
+      )}
+
+      {/* Rest of full-screen UI controls - Only render when NOT minimized */}
+      {!isMinimized && (
       <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between w-full px-6 pt-12 pb-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
         <div className="flex items-center gap-4 pointer-events-auto">
           <button 
