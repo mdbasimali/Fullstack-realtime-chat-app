@@ -14,11 +14,12 @@ import { AnimatePresence, motion } from "framer-motion";
 
 const PageWrapper = ({ children }) => (
   <motion.div
-    initial={{ opacity: 0, x: 10 }}
-    animate={{ opacity: 1, x: 0 }}
-    exit={{ opacity: 0, x: -10 }}
-    transition={{ duration: 0.1, ease: "easeOut" }}
-    className="h-full w-full flex flex-col"
+    initial={{ x: "100%", opacity: 0, scale: 0.96, zIndex: 50 }}
+    animate={{ x: 0, opacity: 1, scale: 1, zIndex: 100, boxShadow: "-10px 0 30px rgba(0,0,0,0.1)" }}
+    exit={{ x: "-25%", opacity: 0, scale: 0.94, zIndex: 10 }}
+    transition={{ duration: 0.56, ease: [0.25, 1, 0.5, 1] }}
+    style={{ willChange: "transform, opacity" }}
+    className="h-full w-full flex flex-col absolute inset-0 bg-base-100"
   >
     {children}
   </motion.div>
@@ -415,9 +416,9 @@ const App = () => {
     <div data-theme={theme} className="h-screen flex flex-col">
       {isAppLocked && <AppLockScreen />}
       
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
         <React.Suspense fallback={null}>
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<PageWrapper>{authUser ? <HomePage />:<Navigate to="/login" />}</PageWrapper>} />
               <Route path="/join-group" element={<PageWrapper>{authUser ? <HomePage />:<Navigate to="/login" />}</PageWrapper>} />

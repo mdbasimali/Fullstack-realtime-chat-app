@@ -67,14 +67,20 @@ const HomePage = () => {
       <div className="flex-1 flex overflow-hidden">
         
         {/* UNIFIED RESPONSIVE VIEWPORT */}
-        <div className="flex w-full h-full overflow-hidden" style={{ '--sidebar-width': `${sidebarWidth}px` }}>
+        <div className="flex w-full h-full overflow-hidden relative" style={{ '--sidebar-width': `${sidebarWidth}px` }}>
           
           {/* Sidebar Pane */}
-          {/* Mobile: hidden when a chat is open. Desktop: always visible */}
+          {/* Mobile: scales down and dims when a chat opens. Desktop: always visible */}
           <div 
-            className={`h-full flex-shrink-0 flex-col overflow-hidden relative w-full md:w-[var(--sidebar-width)] ${
-              (!selectedUser && !selectedGroup) ? 'flex' : 'hidden md:flex'
-            }`}
+            className={`h-full flex-shrink-0 flex-col overflow-hidden w-full md:w-[var(--sidebar-width)] ${
+              (!selectedUser && !selectedGroup) 
+                ? 'translate-x-0 scale-100 opacity-100 md:opacity-100' 
+                : '-translate-x-[25%] scale-95 opacity-0 md:opacity-100 md:translate-x-0 md:scale-100 pointer-events-none md:pointer-events-auto'
+            } flex`}
+            style={{ 
+              transition: `transform ${(!selectedUser && !selectedGroup) ? '600ms' : '330ms'} cubic-bezier(0.25, 1, 0.5, 1), opacity ${(!selectedUser && !selectedGroup) ? '600ms' : '330ms'} ease`,
+              willChange: 'transform, opacity'
+            }}
           >
             <Sidebar />
           </div>
@@ -89,10 +95,17 @@ const HomePage = () => {
           </div>
 
           {/* Chat Container Pane */}
-          {/* Mobile: hidden when NO chat is selected. Desktop: always visible */}
-          <div className={`h-full flex-col bg-base-100/50 overflow-hidden flex-1 ${
-            (!selectedUser && !selectedGroup) ? 'hidden md:flex' : 'flex'
-          }`}>
+          {/* Mobile: slides in over the sidebar. Desktop: always visible side-by-side */}
+          <div className={`h-full flex-col bg-base-100/50 overflow-hidden flex-1 absolute inset-0 z-20 md:relative md:inset-auto md:z-auto ${
+            (!selectedUser && !selectedGroup) 
+              ? 'translate-x-full md:translate-x-0 shadow-none' 
+              : 'translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.1)] md:shadow-none'
+          } flex`}
+            style={{ 
+              transition: `transform ${(!selectedUser && !selectedGroup) ? '600ms' : '330ms'} cubic-bezier(0.25, 1, 0.5, 1), box-shadow ${(!selectedUser && !selectedGroup) ? '600ms' : '330ms'} ease`,
+              willChange: 'transform, box-shadow'
+            }}
+          >
             {(!selectedUser && !selectedGroup) ? <NoChatSelected /> : <ChatContainer />}
           </div>
         </div>
