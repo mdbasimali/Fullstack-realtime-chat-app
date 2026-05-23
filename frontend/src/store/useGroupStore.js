@@ -8,6 +8,7 @@ export const useGroupStore = create((set, get) => ({
   groups: [],
   selectedGroup: null,
   messages: [],
+  messageCache: {}, // { groupId: [messages] }
   isGroupsLoading: false,
   isMessagesLoading: false,
   isCreatingGroup: false,
@@ -130,10 +131,21 @@ export const useGroupStore = create((set, get) => ({
   },
 
   fetchGroupMessages: async (groupId) => {
-    set({ isMessagesLoading: true });
+    const cachedMessages = get().messageCache[groupId] || [];
+    if (cachedMessages.length === 0) set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/groups/${groupId}/messages`);
-      set({ messages: res.data });
+      const currentMessages = get().messageCache[groupId] || get().messages;
+      const fetchedIds = new Set(res.data.map(m => m._id));
+      const socketOnlyMessages = currentMessages.filter(
+        m => !m.isOptimistic && !fetchedIds.has(m._id)
+      );
+      const finalMessages = [...res.data, ...socketOnlyMessages];
+      
+      set(state => ({
+        messageCache: { ...state.messageCache, [groupId]: finalMessages },
+        ...(state.selectedGroup?._id === groupId ? { messages: finalMessages } : {})
+      }));
     } catch (error) {
       console.error("Error fetching group messages:", error);
     } finally {
@@ -158,7 +170,11 @@ export const useGroupStore = create((set, get) => ({
       isOptimistic: true,
     };
 
-    set({ messages: [...messages, optimisticMessage] });
+    const newMessages = [...messages, optimisticMessage];
+    set(state => ({ 
+      messages: newMessages,
+      messageCache: { ...state.messageCache, [selectedGroup._id]: newMessages }
+    }));
 
     try {
       const res = await axiosInstance.post(`/groups/${selectedGroup._id}/send`, messageData);
@@ -171,10 +187,17 @@ export const useGroupStore = create((set, get) => ({
         ? currentMessages.filter(m => m._id !== optimisticMessage._id)
         : currentMessages.map(m => m._id === optimisticMessage._id ? res.data : m);
 
-      set({ messages: updated });
+      set(state => ({ 
+        messages: updated,
+        messageCache: { ...state.messageCache, [selectedGroup._id]: updated }
+      }));
     } catch (error) {
       // Revert if request fails
-      set({ messages: get().messages.filter(m => m._id !== optimisticMessage._id) });
+      const revertedMessages = get().messages.filter(m => m._id !== optimisticMessage._id);
+      set(state => ({ 
+        messages: revertedMessages,
+        messageCache: { ...state.messageCache, [selectedGroup._id]: revertedMessages }
+      }));
       toast.error("Failed to send message to the group.");
       console.error("Error sending group message:", error);
       throw error;
@@ -183,7 +206,14 @@ export const useGroupStore = create((set, get) => ({
 
   setSelectedGroup: (group) => {
     if (group) {
-      set({ selectedGroup: group, showGroupDetailsSidebar: false, selectedGroupDetails: null, messages: [], isMessagesLoading: true });
+      const cachedMessages = get().messageCache[group._id] || [];
+      set({ 
+        selectedGroup: group, 
+        showGroupDetailsSidebar: false, 
+        selectedGroupDetails: null, 
+        messages: cachedMessages, 
+        isMessagesLoading: cachedMessages.length === 0 
+      });
       // Clean DM selection state to prevent duplicate chat renders
       useChatstore.getState().setSelectedUser(null);
       get().fetchGroupMessages(group._id);
@@ -210,6 +240,10 @@ export const useGroupStore = create((set, get) => ({
 
     socket.on("newGroupMessage", (message) => {
       const { selectedGroup, messages } = get();
+      
+      const existingCache = get().messageCache[message.groupId] || [];
+      const cacheIsDuplicate = existingCache.some(m => m._id === message._id);
+
       if (selectedGroup && message.groupId === selectedGroup._id) {
         const senderIdStr = typeof message.senderId === "object" ? message.senderId._id : message.senderId;
 
@@ -228,8 +262,18 @@ export const useGroupStore = create((set, get) => ({
 
         // Prevent duplicate insertions
         if (!messages.some(m => m._id === message._id)) {
-          set({ messages: [...messages, message] });
+          const newMessages = [...messages, message];
+          set(state => ({ 
+            messages: newMessages,
+            messageCache: { ...state.messageCache, [message.groupId]: newMessages }
+          }));
         }
+      } else {
+         if (!cacheIsDuplicate) {
+            set(state => ({
+              messageCache: { ...state.messageCache, [message.groupId]: [...existingCache, message] }
+            }));
+         }
       }
     });
 

@@ -29,6 +29,9 @@ const playNotificationSound = () => {
 
 export const useChatstore = create((set,get) => ({
   messages: [],
+  messageCache: {}, // { userId: [messages] }
+  scrollCache: {}, // { chatId: scrollTop }
+  setScrollCache: (chatId, pos) => set((state) => ({ scrollCache: { ...state.scrollCache, [chatId]: pos } })),
   users: [],
   selectedUser: null,
   isUsersLoading: false,
@@ -170,16 +173,22 @@ export const useChatstore = create((set,get) => ({
   },
   
   getMessages: async (userId) => {
-    set({ isMessagesLoading: true });
+    const cachedMessages = get().messageCache[userId] || [];
+    if (cachedMessages.length === 0) set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
       // Merge: keep any socket-delivered messages that arrived during this API fetch
-      const currentMessages = get().messages;
+      const currentMessages = get().messageCache[userId] || get().messages;
       const fetchedIds = new Set(res.data.map(m => m._id));
       const socketOnlyMessages = currentMessages.filter(
         m => !m.isOptimistic && !fetchedIds.has(m._id)
       );
-      set({ messages: [...res.data, ...socketOnlyMessages] });
+      const finalMessages = [...res.data, ...socketOnlyMessages];
+      
+      set(state => ({ 
+        messageCache: { ...state.messageCache, [userId]: finalMessages },
+        ...(state.selectedUser?._id === userId ? { messages: finalMessages } : {})
+      }));
       get().getUsers(true); // Silent refresh - no loading spinner
     } catch (error) {
       console.error("GetMessages error:", error);
@@ -212,7 +221,18 @@ export const useChatstore = create((set,get) => ({
     // 2. Update local state immediately if we are in the correct chat window
     const isCurrentChat = selectedUser && selectedUser._id === targetUserId;
     if (isCurrentChat) {
-      set({ messages: [...messages, optimisticMessage] });
+      const newMessages = [...messages, optimisticMessage];
+      set(state => ({ 
+        messages: newMessages,
+        messageCache: { ...state.messageCache, [targetUserId]: newMessages }
+      }));
+    } else {
+      const existingCache = get().messageCache[targetUserId];
+      if (existingCache) {
+        set(state => ({
+          messageCache: { ...state.messageCache, [targetUserId]: [...existingCache, optimisticMessage] }
+        }));
+      }
     }
 
     try {
@@ -223,7 +243,18 @@ export const useChatstore = create((set,get) => ({
         const updatedMessages = get().messages.map(m => 
           m._id === optimisticMessage._id ? res.data : m
         );
-        set({ messages: updatedMessages });
+        set(state => ({ 
+          messages: updatedMessages,
+          messageCache: { ...state.messageCache, [targetUserId]: updatedMessages }
+        }));
+      } else {
+        const existingCache = get().messageCache[targetUserId];
+        if (existingCache) {
+          const updatedCache = existingCache.map(m => m._id === optimisticMessage._id ? res.data : m);
+          set(state => ({
+            messageCache: { ...state.messageCache, [targetUserId]: updatedCache }
+          }));
+        }
       }
       
       // 4. Register as active conversation if not already
@@ -276,20 +307,36 @@ export const useChatstore = create((set,get) => ({
         const currentMessages = get().messages;
         const alreadyExists = currentMessages.some(m => m._id === newMessage._id);
         if (!alreadyExists) {
-          set({ messages: [...currentMessages, newMessage] });
+          const newMessages = [...currentMessages, newMessage];
+          set(state => ({ 
+            messages: newMessages,
+            messageCache: { ...state.messageCache, [newMessage.senderId]: newMessages }
+          }));
         }
 
         // Emit messageSeen over socket since we are actively in this user's chat window
         socket.emit("messageSeen", { senderId: selectedUser._id });
-      } else if (newMessage.senderId !== authUser._id) {
-        // Play notification sound & show toast when receiving a message in background/another chat
-        playNotificationSound();
-        const sender = get().users.find(u => u._id === newMessage.senderId);
-        const senderName = sender ? sender.fullName : "New Contact";
-        toast(`New message from ${senderName}: "${newMessage.text || "📷 Photo"}"`, {
-          icon: "💬",
-          duration: 3500,
-        });
+      } else {
+        if (newMessage.senderId !== authUser._id) {
+          // Play notification sound & show toast when receiving a message in background/another chat
+          playNotificationSound();
+          const sender = get().users.find(u => u._id === newMessage.senderId);
+          const senderName = sender ? sender.fullName : "New Contact";
+          toast(`New message from ${senderName}: "${newMessage.text || "📷 Photo"}"`, {
+            icon: "💬",
+            duration: 3500,
+          });
+        }
+        // Add to cache if it exists, so when they open it, it's there
+        const existingCache = get().messageCache[newMessage.senderId];
+        if (existingCache) {
+          const alreadyExists = existingCache.some(m => m._id === newMessage._id);
+          if (!alreadyExists) {
+             set(state => ({
+               messageCache: { ...state.messageCache, [newMessage.senderId]: [...existingCache, newMessage] }
+             }));
+          }
+        }
       }
 
       // Automatically register the sender as an active conversation
@@ -406,7 +453,13 @@ export const useChatstore = create((set,get) => ({
 
   setSelectedUser: (selectedUser) => {
     if (selectedUser) {
-      set({ selectedUser, messages: [], isMessagesLoading: true, showContactDetailsSidebar: false });
+      const cachedMessages = get().messageCache[selectedUser._id] || [];
+      set({ 
+        selectedUser, 
+        messages: cachedMessages, 
+        isMessagesLoading: cachedMessages.length === 0, 
+        showContactDetailsSidebar: false 
+      });
       // De-select group chat to prevent split screen or message blending
       useGroupStore.getState().setSelectedGroup(null);
     } else {

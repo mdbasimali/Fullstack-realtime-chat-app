@@ -106,7 +106,25 @@ const HomePage = () => {
               willChange: 'transform, box-shadow'
             }}
           >
-            {(!selectedUser && !selectedGroup) ? <NoChatSelected /> : <ChatContainer />}
+            {/* Always mount BOTH components to prevent DOM mounting cost during animation */}
+            
+            {/* Default Background Pane (No Chat Selected) */}
+            <div 
+              className={`absolute inset-0 flex flex-col z-10 transition-opacity duration-300 ${
+                (!selectedUser && !selectedGroup) ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <NoChatSelected />
+            </div>
+            
+            {/* Active Chat Pane */}
+            <div 
+              className={`absolute inset-0 flex flex-col bg-base-100 z-20 transition-all duration-300 ${
+                (!selectedUser && !selectedGroup) ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              }`}
+            >
+               <ChatContainer />
+            </div>
           </div>
         </div>
 

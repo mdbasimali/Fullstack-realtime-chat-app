@@ -19,8 +19,16 @@ const MessageInput = () => {
   const audioChunksRef = useRef([]);
   const recordingIntervalRef = useRef(null);
 
-  const { sendMessage } = useChatstore();
+  const { sendMessage, selectedUser } = useChatstore();
   const { selectedGroup, sendGroupMessage } = useGroupStore();
+
+  const lastUserRef = useRef(selectedUser);
+  const lastGroupRef = useRef(selectedGroup);
+  if (selectedUser) lastUserRef.current = selectedUser;
+  if (selectedGroup) lastGroupRef.current = selectedGroup;
+
+  const safeUser = selectedUser || lastUserRef.current;
+  const safeGroup = selectedGroup || lastGroupRef.current;
 
   useEffect(() => {
     return () => {
@@ -115,7 +123,7 @@ const MessageInput = () => {
           const base64Audio = reader.result;
           try {
             setIsUploadingAudio(true);
-            const sendPromise = selectedGroup
+            const sendPromise = safeGroup
               ? sendGroupMessage({
                 text: `Voice note (${formatDuration(finalDuration)})`,
                 image: base64Audio,
@@ -198,7 +206,7 @@ const MessageInput = () => {
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      if (selectedGroup) {
+      if (safeGroup) {
         await sendGroupMessage(messageToSend);
       } else {
         await sendMessage(messageToSend);
@@ -211,6 +219,8 @@ const MessageInput = () => {
       console.error("Failed to send message:", error);
     }
   };
+
+  if (!safeUser && !safeGroup) return null;
 
   return (
     <div className="absolute bottom-0 left-0 right-0 z-20 w-full max-w-3xl mx-auto pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}>

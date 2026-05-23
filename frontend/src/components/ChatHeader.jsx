@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Video, Phone, MoreVertical, ArrowLeft, Trash2, PhoneOff, UserPlus, X, Loader2, Info } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatstore } from "../store/useChatStore";
@@ -23,6 +23,14 @@ const ChatHeader = () => {
   const { authUser, onlineUsers } = useAuthStore();
   const { initiateCall, activeGroupCalls, joinGroupCall } = useCallStore();
 
+  const lastUserRef = useRef(selectedUser);
+  const lastGroupRef = useRef(selectedGroup);
+  if (selectedUser) lastUserRef.current = selectedUser;
+  if (selectedGroup) lastGroupRef.current = selectedGroup;
+
+  const safeUser = selectedUser || lastUserRef.current;
+  const safeGroup = selectedGroup || lastGroupRef.current;
+
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [memberIdentifier, setMemberIdentifier] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,7 +48,7 @@ const ChatHeader = () => {
   };
 
   const handleBack = () => {
-    if (selectedGroup) {
+    if (safeGroup) {
       setSelectedGroup(null);
     } else {
       setSelectedUser(null);
@@ -52,7 +60,7 @@ const ChatHeader = () => {
     if (!memberIdentifier.trim()) return;
 
     setIsSubmitting(true);
-    const success = await addMemberToGroup(selectedGroup._id, memberIdentifier.trim());
+    const success = await addMemberToGroup(safeGroup._id, memberIdentifier.trim());
     setIsSubmitting(false);
 
     if (success) {
@@ -61,7 +69,9 @@ const ChatHeader = () => {
     }
   };
 
-  const activeAvatarName = selectedGroup ? selectedGroup.name : selectedUser?.fullName;
+  const activeAvatarName = safeGroup ? safeGroup.name : safeUser?.fullName;
+
+  if (!safeUser && !safeGroup) return null;
 
   return (
     <div className="py-1.5 px-3 safe-p-1.5-top border-b border-base-300 bg-base-100/95 backdrop-blur-md flex items-center justify-between shadow-sm">
@@ -78,7 +88,7 @@ const ChatHeader = () => {
         {/* Clickable Profile Block */}
         <div 
           onClick={() => {
-            if (selectedGroup) {
+            if (safeGroup) {
               setShowGroupDetailsSidebar(true);
             } else {
               setShowContactDetailsSidebar(true);
@@ -89,20 +99,20 @@ const ChatHeader = () => {
           {/* Avatar */}
           <div className="avatar shrink-0">
             <div className="size-8 rounded-full relative flex items-center justify-center bg-blue-100 dark:bg-blue-950/40 text-primary font-bold">
-              {selectedGroup ? (
-                selectedGroup.avatar ? (
+              {safeGroup ? (
+                safeGroup.avatar ? (
                   <img
-                    src={selectedGroup.avatar}
-                    alt={selectedGroup.name}
+                    src={safeGroup.avatar}
+                    alt={safeGroup.name}
                     className="rounded-full object-cover w-full h-full"
                   />
                 ) : (
-                  selectedGroup.name.slice(0, 2).toUpperCase()
+                  safeGroup.name.slice(0, 2).toUpperCase()
                 )
               ) : (
                 <img
-                  src={selectedUser.profilePic || "/avatar.png"}
-                  alt={selectedUser.fullName}
+                  src={safeUser.profilePic || "/avatar.png"}
+                  alt={safeUser.fullName}
                   className="rounded-full object-cover"
                 />
               )}
@@ -113,13 +123,13 @@ const ChatHeader = () => {
           <div className="text-left flex-1 min-w-0">
             <h3 className="font-semibold text-sm md:text-base leading-tight flex items-center gap-1.5 text-base-content">
               <span className="truncate">
-                {selectedGroup ? selectedGroup.name : (getNickname(authUser?._id, selectedUser._id) || selectedUser.fullName)}
+                {safeGroup ? safeGroup.name : (getNickname(authUser?._id, safeUser._id) || safeUser.fullName)}
               </span>
             </h3>
             <p className="text-[11px] text-base-content/60 font-semibold mt-0.5 truncate">
-              {selectedGroup ? (
-                `${selectedGroup.membersCount} members`
-              ) : onlineUsers.includes(selectedUser._id) ? (
+              {safeGroup ? (
+                `${safeGroup.membersCount} members`
+              ) : onlineUsers.includes(safeUser._id) ? (
                 <span className="text-emerald-500">Online</span>
               ) : (
                 "Offline"
@@ -131,17 +141,17 @@ const ChatHeader = () => {
 
       {/* Right Actions: Video Call, Phone Call, 3-Dot menu */}
       <div className="flex items-center gap-1.5">
-        {!selectedGroup && (
+        {!safeGroup && (
           <>
             <button 
-              onClick={() => initiateCall(selectedUser, "video")}
+              onClick={() => initiateCall(safeUser, "video")}
               className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
               title="Video Call"
             >
               <Video size={20} />
             </button>
             <button 
-              onClick={() => initiateCall(selectedUser, "audio")}
+              onClick={() => initiateCall(safeUser, "audio")}
               className="p-2.5 rounded-full hover:bg-base-200 text-base-content/85 transition-colors"
               title="Voice Call"
             >
@@ -150,11 +160,11 @@ const ChatHeader = () => {
           </>
         )}
 
-        {selectedGroup && (
+        {safeGroup && (
           <>
-            {activeGroupCalls[selectedGroup._id] && (
+            {activeGroupCalls[safeGroup._id] && (
               <button 
-                onClick={() => joinGroupCall(selectedGroup._id, "video")}
+                onClick={() => joinGroupCall(safeGroup._id, "video")}
                 className="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-lg shadow-emerald-600/25 animate-pulse transition-all duration-300 mr-1"
                 title="Join Active Group Call"
               >
@@ -199,7 +209,7 @@ const ChatHeader = () => {
             <MoreVertical size={20} />
           </label>
           <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 w-52 z-30 mt-1">
-            {selectedGroup ? (
+            {safeGroup ? (
               <>
                 <li className="sm:hidden">
                   <button 
@@ -222,9 +232,9 @@ const ChatHeader = () => {
                 <li>
                   <button 
                     onClick={async () => {
-                      const confirmLeave = window.confirm(`Are you sure you want to leave ${selectedGroup.name}?`);
+                      const confirmLeave = window.confirm(`Are you sure you want to leave ${safeGroup.name}?`);
                       if (confirmLeave) {
-                        await leaveGroup(selectedGroup._id);
+                        await leaveGroup(safeGroup._id);
                       }
                     }}
                     className="text-error hover:bg-error/10 active:bg-error/20 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
@@ -241,7 +251,7 @@ const ChatHeader = () => {
                     onClick={async () => {
                       const confirmDelete = window.confirm("Are you sure you want to permanently delete this conversation and all its messages?");
                       if (confirmDelete) {
-                        await useChatstore.getState().deleteConversation(selectedUser._id);
+                        await useChatstore.getState().deleteConversation(safeUser._id);
                       }
                     }}
                     className="text-error hover:bg-error/10 active:bg-error/20 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
@@ -255,7 +265,7 @@ const ChatHeader = () => {
                     onClick={async () => {
                       const confirmClear = window.confirm("Are you sure you want to clear all call logs from this chat?");
                       if (confirmClear) {
-                        await useChatstore.getState().clearCallLogs(selectedUser._id);
+                        await useChatstore.getState().clearCallLogs(safeUser._id);
                       }
                     }}
                     className="hover:bg-base-200 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"

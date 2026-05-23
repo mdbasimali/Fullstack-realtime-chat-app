@@ -66,18 +66,35 @@ const ChatContainer = () => {
     deleteGroupMessage,
   } = useGroupStore();
 
-  const messages = selectedGroup ? groupMessages : dmMessages;
+  // Retain previous state during exit transition to prevent white flashes
+  const lastValidUserRef = useRef(selectedUser);
+  const lastValidGroupRef = useRef(selectedGroup);
+  const lastValidMessagesRef = useRef((selectedGroup ? groupMessages : dmMessages) || []);
+
+  if (selectedUser || selectedGroup) {
+    lastValidUserRef.current = selectedUser;
+    lastValidGroupRef.current = selectedGroup;
+    lastValidMessagesRef.current = (selectedGroup ? groupMessages : dmMessages) || [];
+  }
+
+  const activeUser = selectedUser || lastValidUserRef.current;
+  const activeGroup = selectedGroup || lastValidGroupRef.current;
+  const messages = (selectedUser || selectedGroup) ? ((selectedGroup ? groupMessages : dmMessages) || []) : (lastValidMessagesRef.current || []);
   const isMessagesLoading = selectedGroup ? isGroupMessagesLoading : isDmMessagesLoading;
   
   const { initiateCall } = useCallStore();
   const { authUser, onlineUsers } = useAuthStore();
   const { chatColor, chatWallpaper } = useThemeStore();
   const messageEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   const isInitialLoadRef = useRef(true);
+  
+  const currentChatId = activeGroup ? activeGroup._id : activeUser?._id;
+  const prevChatIdRef = useRef(currentChatId);
 
   const groupCreatorUser = 
-    users?.find((u) => u._id === selectedGroup?.creatorId) || 
-    selectedGroupDetails?.members?.find((m) => m._id === selectedGroup?.creatorId);
+    users?.find((u) => u._id === activeGroup?.creatorId) || 
+    selectedGroupDetails?.members?.find((m) => m._id === activeGroup?.creatorId);
   const creatorName = groupCreatorUser?.fullName || "Someone";
 
   const [contextMenu, setContextMenu] = useState(null); // { message, x, y, isMobile }
@@ -203,7 +220,7 @@ const ChatContainer = () => {
     if (!message) return;
     if (window.confirm("Are you sure you want to delete this message?")) {
       try {
-        if (selectedGroup) {
+        if (activeGroup) {
           await deleteGroupMessage(message._id);
         } else {
           await deleteMessage(message._id);
@@ -220,32 +237,62 @@ const ChatContainer = () => {
   useEffect(() => {
     isInitialLoadRef.current = true;
     setIsEditingGroup(false);
-  }, [selectedUser?._id, selectedGroup?._id]);
+  }, [currentChatId]);
 
   useEffect(() => {
-    if (selectedUser) {
-      getMessages(selectedUser._id);
+    if (activeUser && selectedUser) {
+      getMessages(activeUser._id);
     }
-  }, [selectedUser?._id, getMessages]);
+  }, [activeUser?._id, selectedUser, getMessages]);
 
   useEffect(() => {
-    if (selectedGroup?._id && showGroupDetailsSidebar) {
-      fetchGroupDetails(selectedGroup._id);
+    if (activeGroup?._id && selectedGroup && showGroupDetailsSidebar) {
+      fetchGroupDetails(activeGroup._id);
     }
-  }, [selectedGroup?._id, showGroupDetailsSidebar, fetchGroupDetails]);
+  }, [activeGroup?._id, selectedGroup, showGroupDetailsSidebar, fetchGroupDetails]);
 
+  // Track and save scroll position
   useEffect(() => {
-    if (messageEndRef.current && messages) {
+    if (prevChatIdRef.current !== currentChatId) {
+      if (prevChatIdRef.current && scrollContainerRef.current) {
+        useChatstore.getState().setScrollCache(prevChatIdRef.current, scrollContainerRef.current.scrollTop);
+      }
+      prevChatIdRef.current = currentChatId;
+    }
+  }, [currentChatId]);
+
+  // Save on unmount
+  useEffect(() => {
+    return () => {
+      if (prevChatIdRef.current && scrollContainerRef.current) {
+        useChatstore.getState().setScrollCache(prevChatIdRef.current, scrollContainerRef.current.scrollTop);
+      }
+    };
+  }, []);
+
+  // Handle restoring scroll or scrolling to bottom
+  useEffect(() => {
+    if (messageEndRef.current && messages && scrollContainerRef.current) {
       if (isInitialLoadRef.current) {
-        // First load: jump instantly to bottom, no scroll animation
-        messageEndRef.current.scrollIntoView({ behavior: "instant" });
+        // First load
+        const cachedScroll = useChatstore.getState().scrollCache[currentChatId];
+        if (cachedScroll !== undefined) {
+           scrollContainerRef.current.scrollTop = cachedScroll;
+        } else {
+           messageEndRef.current.scrollIntoView({ behavior: "instant" });
+        }
         isInitialLoadRef.current = false;
       } else {
-        // New messages: smooth scroll
-        messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+        // New messages arrived
+        const container = scrollContainerRef.current;
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 250;
+        
+        if (isNearBottom) {
+          messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
       }
     }
-  }, [messages]);
+  }, [messages, currentChatId]);
 
   return (
     <div className="flex-1 flex overflow-hidden h-full relative bg-base-100">
@@ -264,28 +311,28 @@ const ChatContainer = () => {
         <ChatHeader />
 
         {/* Messages Stream View */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 md:pb-28 space-y-1">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 md:pb-28 space-y-1">
           
           {/* WhatsApp-Style User Profile Onboarding Card */}
-          {selectedUser && (
+          {activeUser && (
             <div className="flex flex-col items-center justify-center p-6 mb-6 mt-3 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-[24px] max-w-[250px] md:max-w-[285px] mx-auto text-center shadow-sm animate-fade-in">
-              {selectedUser.profilePic ? (
+              {activeUser.profilePic ? (
                 <img 
-                  src={selectedUser.profilePic} 
-                  alt={selectedUser.fullName} 
+                  src={activeUser.profilePic} 
+                  alt={activeUser.fullName} 
                   className="w-[64px] h-[64px] rounded-full object-cover mb-3" 
                 />
               ) : (
                 <div className="w-[64px] h-[64px] rounded-full bg-pink-100/80 dark:bg-pink-900/40 text-pink-500 flex items-center justify-center font-bold text-[22px] mb-3">
-                  {selectedUser.fullName.slice(0, 2).toLowerCase()}
+                  {activeUser.fullName.slice(0, 2).toLowerCase()}
                 </div>
               )}
               <h3 className="font-bold text-[15px] text-base-content leading-tight mb-1.5">
-                {selectedUser.fullName}
+                {activeUser.fullName}
               </h3>
-              {selectedUser.phoneNumber && (
+              {activeUser.phoneNumber && (
                 <p className="text-[11px] font-medium text-base-content/50 flex items-center justify-center gap-1.5 mb-1">
-                  <Phone size={12} /> {selectedUser.phoneNumber}
+                  <Phone size={12} /> {activeUser.phoneNumber}
                 </p>
               )}
               <p className="text-[11px] font-medium text-base-content/50 flex items-center justify-center gap-1.5">
@@ -295,26 +342,26 @@ const ChatContainer = () => {
           )}
 
           {/* WhatsApp-Style Group Profile Onboarding Card */}
-          {selectedGroup && (
+          {activeGroup && (
             <div className="flex flex-col items-center justify-center p-6 mb-6 mt-3 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-[24px] max-w-[250px] md:max-w-[285px] mx-auto text-center shadow-sm animate-fade-in">
-              {selectedGroup.avatar ? (
+              {activeGroup.avatar ? (
                 <img
-                  src={selectedGroup.avatar}
-                  alt={selectedGroup.name}
+                  src={activeGroup.avatar}
+                  alt={activeGroup.name}
                   className="w-[64px] h-[64px] rounded-full object-cover mb-3"
                 />
               ) : (
                 <div className="w-[64px] h-[64px] rounded-full bg-blue-100 dark:bg-blue-900/40 text-primary flex items-center justify-center font-bold text-[22px] mb-3">
-                  {selectedGroup.name.slice(0, 2).toUpperCase()}
+                  {activeGroup.name.slice(0, 2).toUpperCase()}
                 </div>
               )}
               
               <h3 className="font-bold text-[15px] text-base-content leading-tight mb-1">
-                {selectedGroup.creatorId === authUser?._id ? "You created this group" : `${creatorName} added you`}
+                {activeGroup.creatorId === authUser?._id ? "You created this group" : `${creatorName} added you`}
               </h3>
               
               <p className="text-[11px] font-medium text-base-content/50 mb-3 px-2 leading-tight">
-                {selectedGroup.membersCount} members · Group created by {selectedGroup.creatorId === authUser?._id ? "you" : creatorName}
+                {activeGroup.membersCount} members · Group created by {activeGroup.creatorId === authUser?._id ? "you" : creatorName}
               </p>
 
               <button className="text-[12px] font-semibold text-primary hover:underline mb-4">
@@ -377,7 +424,7 @@ const ChatContainer = () => {
                   ref={idx === messages.length - 1 ? messageEndRef : null}
                 >
                   {/* Left Avatar for other users in group */}
-                  {selectedGroup && !isMyMessage && (
+                  {activeGroup && !isMyMessage && (
                     <div className="w-8 h-8 shrink-0 flex items-center justify-center">
                       {!isSameSender ? (
                         <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-xs border border-base-300 shadow-xs">
@@ -394,7 +441,7 @@ const ChatContainer = () => {
                   <div className={`flex flex-col max-w-[75%] sm:max-w-[65%] ${isMyMessage ? "items-end" : "items-start"} space-y-1`}>
                     
                     {/* Sender Name above message bubble */}
-                    {selectedGroup && !isMyMessage && !isSameSender && (
+                    {activeGroup && !isMyMessage && !isSameSender && (
                       <span className={`text-[11px] font-bold px-1.5 ${getSenderColor(message.senderId)}`}>
                         {message.senderId?.fullName || "Group Member"}
                       </span>
@@ -460,7 +507,7 @@ const ChatContainer = () => {
                                <div className="flex gap-2 p-2">
                                   <div className="flex-1 min-w-0">
                                     <p className={`text-[11px] font-bold truncate ${isMyMessage ? "text-primary-content/80" : "text-primary"}`}>
-                                      {isMyMessage ? "You" : (selectedUser?.fullName || "Contact")} • Status
+                                      {isMyMessage ? "You" : (activeUser?.fullName || "Contact")} • Status
                                     </p>
                                     <p className="text-[10px] line-clamp-2 opacity-70 italic">
                                       {message.storyId.type === "text" ? message.storyId.content : (message.storyId.caption || "Photo/Video status")}
@@ -498,7 +545,7 @@ const ChatContainer = () => {
                           {/* Call Log render */}
                           {(message.messageType === "voice_call" || message.messageType === "video_call") && (
                             <div 
-                              onClick={() => initiateCall(selectedUser, message.messageType === "video_call" ? "video" : "audio")}
+                              onClick={() => initiateCall(activeUser, message.messageType === "video_call" ? "video" : "audio")}
                               className={`flex items-center gap-3 py-1 cursor-pointer hover:opacity-80 active:scale-95 transition-all p-2 rounded-xl ${isMyMessage ? "hover:bg-white/10" : "hover:bg-base-300/30"}`}
                             >
                               <div className={`p-2.5 rounded-full ${isMyMessage ? "bg-white/20" : "bg-base-300/50"}`}>
@@ -602,7 +649,7 @@ const ChatContainer = () => {
                   
                   {(contextMenu.message.senderId === authUser._id || 
                     contextMenu.message.senderId?._id === authUser._id || 
-                    (selectedGroup && selectedGroup.creatorId === authUser._id)) && (
+                    (activeGroup && activeGroup.creatorId === authUser._id)) && (
                     <button 
                       onClick={() => handleDeleteMessage(contextMenu.message)}
                       className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-error/10 text-error rounded-xl text-left text-base font-bold transition-all active:scale-[0.98]"
@@ -651,7 +698,7 @@ const ChatContainer = () => {
                 
                 {(contextMenu.message.senderId === authUser._id || 
                   contextMenu.message.senderId?._id === authUser._id || 
-                  (selectedGroup && selectedGroup.creatorId === authUser._id)) && (
+                  (activeGroup && activeGroup.creatorId === authUser._id)) && (
                   <button 
                     onClick={() => handleDeleteMessage(contextMenu.message)}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-bold text-error rounded-xl hover:bg-error/10 text-left transition-colors"
@@ -675,7 +722,7 @@ const ChatContainer = () => {
       )}
 
       {/* Group Details Sidebar or Edit Sidebar */}
-      {selectedGroup && showGroupDetailsSidebar && (
+      {activeGroup && showGroupDetailsSidebar && (
         isEditingGroup ? (
           <EditGroupSidebar onClose={() => setIsEditingGroup(false)} />
         ) : (
@@ -703,15 +750,15 @@ const ChatContainer = () => {
             {/* Header: Avatar, Name, Description */}
             <div className="flex flex-col items-center pt-2 pb-6 px-4">
               <div className="w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-950/40 text-primary font-bold text-3xl flex items-center justify-center mb-4 border border-base-300">
-                {selectedGroup.avatar ? (
-                  <img src={selectedGroup.avatar} alt={selectedGroup.name} className="w-full h-full rounded-full object-cover" />
+                {activeGroup.avatar ? (
+                  <img src={activeGroup.avatar} alt={activeGroup.name} className="w-full h-full rounded-full object-cover" />
                 ) : (
                   <Users className="w-10 h-10" />
                 )}
               </div>
-              <h2 className="text-2xl font-medium text-base-content mb-1">{selectedGroup.name}</h2>
+              <h2 className="text-2xl font-medium text-base-content mb-1">{activeGroup.name}</h2>
               <p className="text-[15px] text-base-content/60">
-                {selectedGroup.description || "Add group description..."}
+                {activeGroup.description || "Add group description..."}
               </p>
             </div>
 
@@ -770,7 +817,7 @@ const ChatContainer = () => {
             <div className="py-4">
               <div className="px-6 mb-2">
                 <span className="text-[14px] font-bold text-base-content/90">
-                  {selectedGroupDetails?.members?.length || selectedGroup.membersCount} member{selectedGroup.membersCount !== 1 ? 's' : ''}
+                  {selectedGroupDetails?.members?.length || activeGroup.membersCount} member{activeGroup.membersCount !== 1 ? 's' : ''}
                 </span>
               </div>
 
@@ -788,7 +835,7 @@ const ChatContainer = () => {
               ) : (
                 <div className="flex flex-col mt-1">
                   {selectedGroupDetails?.members?.map((member) => {
-                    const isCreator = selectedGroup.creatorId === member._id;
+                    const isCreator = activeGroup.creatorId === member._id;
                     const isMe = authUser?._id === member._id;
                     return (
                       <div key={member._id} className="flex items-center justify-between px-6 py-2.5 hover:bg-base-200/50 transition-colors cursor-pointer">
