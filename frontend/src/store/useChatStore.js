@@ -1,8 +1,22 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { get, set, del } from "idb-keyval";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
 import toast from "react-hot-toast";
 import { useGroupStore } from "./useGroupStore";
+
+const idbStorage = {
+  getItem: async (name) => {
+    return (await get(name)) || null;
+  },
+  setItem: async (name, value) => {
+    await set(name, value);
+  },
+  removeItem: async (name) => {
+    await del(name);
+  },
+};
 
 const playNotificationSound = () => {
   try {
@@ -27,7 +41,9 @@ const playNotificationSound = () => {
   }
 };
 
-export const useChatstore = create((set,get) => ({
+export const useChatstore = create(
+  persist(
+    (set, get) => ({
   messages: [],
   messageCache: {}, // { userId: [messages] }
   scrollCache: {}, // { chatId: scrollTop }
@@ -472,6 +488,11 @@ export const useChatstore = create((set,get) => ({
 
 
   setSelectedUser: (selectedUser) => {
+    // Trigger native haptic feedback on chat selection
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      try { navigator.vibrate([10]); } catch (e) {}
+    }
+
     if (selectedUser) {
       const cachedMessages = get().messageCache[selectedUser._id] || [];
       set({ 
@@ -510,4 +531,16 @@ export const useChatstore = create((set,get) => ({
       set({ isAllMediaLoading: false });
     }
   },
-}));
+    }),
+    {
+      name: "chat-storage",
+      storage: createJSONStorage(() => idbStorage),
+      partialize: (state) => ({
+        messageCache: state.messageCache,
+        activeConversations: state.activeConversations,
+        scrollCache: state.scrollCache,
+        activeTab: state.activeTab
+      }),
+    }
+  )
+);

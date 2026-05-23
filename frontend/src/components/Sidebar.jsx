@@ -20,6 +20,7 @@ import StoryViewer from "./StoryViewer";
 import CameraModal from "./CameraModal";
 import ProfileModal, { getNickname } from "./ProfileModal";
 import ContactListSkeleton from "./skeletons/ContactListSkeleton";
+import { triggerHapticFeedback } from "../lib/utils";
 
 const formatLastMessageTime = (dateString) => {
   if (!dateString) return "";

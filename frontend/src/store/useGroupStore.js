@@ -1,10 +1,26 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { get, set, del } from "idb-keyval";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
 import { useChatstore } from "./useChatStore";
 import toast from "react-hot-toast";
 
-export const useGroupStore = create((set, get) => ({
+const idbStorage = {
+  getItem: async (name) => {
+    return (await get(name)) || null;
+  },
+  setItem: async (name, value) => {
+    await set(name, value);
+  },
+  removeItem: async (name) => {
+    await del(name);
+  },
+};
+
+export const useGroupStore = create(
+  persist(
+    (set, get) => ({
   groups: [],
   selectedGroup: null,
   messages: [],
@@ -219,6 +235,11 @@ export const useGroupStore = create((set, get) => ({
   },
 
   setSelectedGroup: (group) => {
+    // Trigger native haptic feedback on group selection
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      try { navigator.vibrate([10]); } catch (e) {}
+    }
+
     if (group) {
       const cachedMessages = get().messageCache[group._id] || [];
       set({ 
@@ -425,4 +446,13 @@ export const useGroupStore = create((set, get) => ({
       set({ isUpdatingGroup: false });
     }
   }
-}));
+    }),
+    {
+      name: "group-storage",
+      storage: createJSONStorage(() => idbStorage),
+      partialize: (state) => ({
+        messageCache: state.messageCache,
+      }),
+    }
+  )
+);

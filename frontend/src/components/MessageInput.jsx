@@ -4,6 +4,7 @@ import { useGroupStore } from "../store/useGroupStore";
 import { Paperclip, Send, X, Smile, Mic, Trash2, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import EmojiPicker from "./EmojiPicker";
+import { triggerHapticFeedback } from "../lib/utils";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
@@ -45,6 +46,7 @@ const MessageInput = () => {
   };
 
   const startRecording = async () => {
+    triggerHapticFeedback([10, 30]);
     if (!navigator.mediaDevices || !window.MediaRecorder) {
       toast.error("Audio recording is not supported in this browser.");
       return;
@@ -195,6 +197,8 @@ const MessageInput = () => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
+    
+    triggerHapticFeedback([15]);
 
     try {
       const messageToSend = {
@@ -335,7 +339,11 @@ const MessageInput = () => {
                   type="button"
                   disabled={isUploadingAudio}
                   className={`btn-tactile flex-shrink-0 hover:text-primary transition-colors cursor-pointer text-base-content/50 ${isUploadingAudio ? "opacity-50 cursor-not-allowed" : ""}`}
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    triggerHapticFeedback([10]);
+                    fileInputRef.current?.click();
+                  }}
+
                 >
                   <Paperclip size={22} strokeWidth={1.5} />
                 </button>
