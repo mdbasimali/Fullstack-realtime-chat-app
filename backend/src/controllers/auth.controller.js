@@ -669,9 +669,9 @@ export const verifyPin = async (req, res) => {
   }
 };
 
-import { deletionQueue } from "../workers/deletion.worker.js";
+import { deletionQueue, connection as redisConnection } from "../workers/deletion.worker.js";
 import DeletionJob from "../models/deletionJob.model.js";
-import { getReceiverSocketId } from "../lib/socket.js";
+import { getReceiverSocketId, io } from "../lib/socket.js";
 
 export const deleteAccount = async (req, res) => {
   try {
@@ -700,8 +700,13 @@ export const deleteAccount = async (req, res) => {
       status: "queued"
     });
 
-    // Add to BullMQ
-    await deletionQueue.add("account-deletion", { userId }, { jobId });
+    // Add to BullMQ ONLY if Redis is connected, otherwise skip to prevent hanging
+    if (redisConnection.status === "ready") {
+      await deletionQueue.add("account-deletion", { userId }, { jobId });
+    } else {
+      console.warn("⚠️ Redis is not connected. Skipping background deletion job for user:", userId);
+      await DeletionJob.findOneAndUpdate({ jobId }, { status: "failed", $push: { errorLog: { message: "Redis unavailable" } } });
+    }
 
     // Mark as soft deleted immediately
     user.isDeleted = true;
