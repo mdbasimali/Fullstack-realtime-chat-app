@@ -57,6 +57,10 @@ const ParticipantVideoTile = React.memo(({
     if (videoEl.srcObject !== stream) {
       videoEl.srcObject = stream;
     }
+
+    if ('autoPictureInPicture' in videoEl) {
+      videoEl.autoPictureInPicture = true;
+    }
   }, [stream, isVideoOff, callType]);
 
   return (
@@ -478,6 +482,11 @@ const CallModal = () => {
         el.srcObject = remoteStream;
       }
       el.play().catch((err) => console.log("remoteVideoRef play error:", err));
+      
+      // Enable automatic Picture-in-Picture for mobile browsers (Chrome Android PWA)
+      if ('autoPictureInPicture' in el) {
+        el.autoPictureInPicture = true;
+      }
     }
   }, [remoteStream]);
 
@@ -491,7 +500,7 @@ const CallModal = () => {
               await remoteVideoElRef.current.requestPictureInPicture();
             }
           } catch (err) {
-            console.error("Failed to enter PiP:", err);
+            console.warn("Failed to enter PiP manually (needs user gesture or autoPiP not supported):", err);
           }
         }
       } else {
