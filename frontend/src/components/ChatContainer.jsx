@@ -420,7 +420,7 @@ const ChatContainer = () => {
                           className={`rounded-[20px] shadow-xs relative flex flex-col group transition-all cursor-pointer select-none active:opacity-95 overflow-hidden ${paddingClass} ${
                             isMyMessage 
                               ? "text-white rounded-tr-[4px]" 
-                              : "bg-base-200 text-base-content rounded-tl-[4px]"
+                              : "bg-base-100 text-base-content rounded-tl-[4px]"
                           }`}
                         >
                           {message.image && message.messageType !== "audio" && message.messageType !== "video" && (
