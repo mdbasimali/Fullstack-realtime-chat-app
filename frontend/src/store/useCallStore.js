@@ -853,17 +853,27 @@ export const useCallStore = create((set, get) => ({
       if (!socket) return;
       
       socket.emit("join-room", { roomId: groupId }, async (response) => {
-        if (response.error) {
-          console.error("Error joining room:", response.error);
-          return;
+        try {
+          console.log("SFU join-room response:", response);
+          if (response.error) {
+            console.error("Error joining room:", response.error);
+            return;
+          }
+
+          console.log("Initializing Mediasoup device...");
+          const device = new mediasoupClient.Device();
+          await device.load({ routerRtpCapabilities: response.rtpCapabilities });
+          set({ device });
+          console.log("Mediasoup device loaded!");
+
+          console.log("Creating Send Transport...");
+          await get().createSendTransport(groupId);
+          console.log("Creating Recv Transport...");
+          await get().createRecvTransport(groupId);
+          console.log("Successfully joined SFU room!");
+        } catch (sfuError) {
+          console.error("Critical SFU Error in join-room callback:", sfuError);
         }
-
-        const device = new mediasoupClient.Device();
-        await device.load({ routerRtpCapabilities: response.rtpCapabilities });
-        set({ device });
-
-        await get().createSendTransport(groupId);
-        await get().createRecvTransport(groupId);
       });
     } catch (error) {
       console.error("Error joining group call:", error);
