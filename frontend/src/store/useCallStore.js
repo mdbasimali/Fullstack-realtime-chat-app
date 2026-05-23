@@ -830,10 +830,11 @@ export const useCallStore = create((set, get) => ({
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: type === "video",
-        audio: true
-      });
+      const stream = await get().setupMediaStream(type);
+      if (!stream) {
+        console.error("Failed to acquire any media stream for group call.");
+        return;
+      }
 
       set({
         isGroupCall: true,
