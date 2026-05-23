@@ -723,14 +723,11 @@ export const deleteAccount = async (req, res) => {
     const userGroups = await Group.find({ members: userId });
     for (const group of userGroups) {
       group.members = group.members.filter(m => m.toString() !== userId.toString());
-      group.admins = group.admins.filter(a => a.toString() !== userId.toString());
 
-      if (group.creator.toString() === userId.toString()) {
-        if (group.admins.length > 0) {
-          group.creator = group.admins[0];
-        } else if (group.members.length > 0) {
-          group.creator = group.members[0];
-          group.admins.push(group.members[0]);
+      // If user was the creator, transfer ownership to next member
+      if (group.creatorId && group.creatorId.toString() === userId.toString()) {
+        if (group.members.length > 0) {
+          group.creatorId = group.members[0];
         }
       }
       await group.save();
