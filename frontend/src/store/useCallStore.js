@@ -235,46 +235,68 @@ export const useCallStore = create((set, get) => ({
         localStream.getTracks().forEach((track) => track.stop());
       }
 
-      let stream;
+      let hasVideo = false;
+      let hasAudio = false;
+
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: type === "video" ? { 
-            facingMode: facingMode || "user",
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        hasVideo = devices.some(device => device.kind === 'videoinput');
+        hasAudio = devices.some(device => device.kind === 'audioinput');
+      } catch (err) {
+        console.warn("Failed to enumerate devices:", err);
+        hasVideo = true; // Assume true and let getUserMedia fail if needed
+        hasAudio = true;
+      }
+
+      let stream;
+      
+      const requestMedia = async (reqVideo, reqAudio) => {
+        return await navigator.mediaDevices.getUserMedia({
+          video: reqVideo ? { 
             width: { ideal: 1280 },
             height: { ideal: 720 }
           } : false,
-          audio: {
+          audio: reqAudio ? {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
-          },
+          } : false,
         });
-        set({ isVideoOff: type !== "video" });
+      };
+
+      try {
+        if (!hasVideo && !hasAudio) {
+            throw new Error("No media devices found");
+        }
+        
+        stream = await requestMedia(type === "video" && hasVideo, hasAudio);
+        set({ isVideoOff: !(type === "video" && hasVideo), isMuted: !hasAudio });
       } catch (err) {
-        console.warn("setupMediaStream: video/audio constraints failed, trying fallback...", err);
-        if (type === "video") {
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({
-              video: false,
-              audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-              },
-            });
-            set({ isVideoOff: true });
-          } catch (audioErr) {
-            console.error("setupMediaStream: audio failed too, using dummy stream...", audioErr);
-            stream = createDummyStream();
-            set({ isVideoOff: true, isMuted: true });
-          }
-        } else {
-          try {
-            stream = createDummyStream();
-            set({ isVideoOff: true, isMuted: true });
-          } catch (dummyErr) {
-            console.error("Dummy stream setup failed:", dummyErr);
-          }
+        console.warn(`setupMediaStream: constraints failed (video: ${type === "video" && hasVideo}, audio: ${hasAudio}), trying fallbacks...`, err);
+        
+        // Try audio only
+        try {
+            if (hasAudio) {
+                stream = await requestMedia(false, true);
+                set({ isVideoOff: true, isMuted: false });
+            } else {
+                throw new Error("No audio devices to fallback to");
+            }
+        } catch (audioErr) {
+            console.warn("setupMediaStream: audio fallback failed, trying video only...", audioErr);
+            // Try video only
+            try {
+                if (type === "video" && hasVideo) {
+                    stream = await requestMedia(true, false);
+                    set({ isVideoOff: false, isMuted: true });
+                } else {
+                    throw new Error("No video devices to fallback to");
+                }
+            } catch (videoErr) {
+                console.error("setupMediaStream: all hardware media failed, using dummy stream...", videoErr);
+                stream = createDummyStream();
+                set({ isVideoOff: true, isMuted: true });
+            }
         }
       }
 
@@ -401,34 +423,11 @@ export const useCallStore = create((set, get) => ({
     if (!socket) return;
 
     try {
-      let stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: type === "video",
-          audio: true,
-        });
-      } catch (err) {
-        console.warn("initiateCall constraints failed, trying fallback...", err);
-        if (type === "video") {
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({
-              video: false,
-              audio: true,
-            });
-            set({ isVideoOff: true });
-          } catch (audioErr) {
-            console.error("initiateCall audio failed, using dummy stream...", audioErr);
-            stream = createDummyStream();
-            set({ isVideoOff: true, isMuted: true });
-          }
-        } else {
-          try {
-            stream = createDummyStream();
-            set({ isVideoOff: true, isMuted: true });
-          } catch (dummyErr) {
-            console.error("Dummy stream failed in initiateCall:", dummyErr);
-          }
-        }
+      const stream = await get().setupMediaStream(type);
+      if (!stream) {
+        console.error("Failed to acquire any media stream for call.");
+        get().resetCallState();
+        return;
       }
 
       const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
@@ -536,34 +535,11 @@ export const useCallStore = create((set, get) => ({
     if (!socket) return;
 
     try {
-      let stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: callType === "video",
-          audio: true,
-        });
-      } catch (err) {
-        console.warn("acceptCall constraints failed, trying fallback...", err);
-        if (callType === "video") {
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({
-              video: false,
-              audio: true,
-            });
-            set({ isVideoOff: true });
-          } catch (audioErr) {
-            console.error("acceptCall audio failed, using dummy stream...", audioErr);
-            stream = createDummyStream();
-            set({ isVideoOff: true, isMuted: true });
-          }
-        } else {
-          try {
-            stream = createDummyStream();
-            set({ isVideoOff: true, isMuted: true });
-          } catch (dummyErr) {
-            console.error("Dummy stream failed in acceptCall:", dummyErr);
-          }
-        }
+      const stream = await get().setupMediaStream(callType);
+      if (!stream) {
+        console.error("Failed to acquire any media stream for call.");
+        get().resetCallState();
+        return;
       }
 
       const pc = new RTCPeerConnection({ ...ICE_SERVERS, bundlePolicy: "max-bundle" });
@@ -900,62 +876,75 @@ export const useCallStore = create((set, get) => ({
     }
   },
 
-  createSendTransport: async (groupId) => {
-    const { device, localStream, callType } = get();
-    const socket = useAuthStore.getState().socket;
+  createSendTransport: (groupId) => {
+    return new Promise((resolve, reject) => {
+      const { device, localStream, callType } = get();
+      const socket = useAuthStore.getState().socket;
 
-    socket.emit("create-transport", { roomId: groupId, direction: "send" }, async (params) => {
-      if (params.error) return console.error(params.error);
+      socket.emit("create-transport", { roomId: groupId, direction: "send" }, async (params) => {
+        if (params.error) {
+          console.error(params.error);
+          return reject(params.error);
+        }
 
-      const sendTransport = device.createSendTransport(params);
-      
-      sendTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
-        socket.emit("connect-transport", { roomId: groupId, transportId: sendTransport.id, dtlsParameters }, (res) => {
-          if (res.error) errback(res.error);
-          else callback();
+        const sendTransport = device.createSendTransport(params);
+        
+        sendTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
+          socket.emit("connect-transport", { roomId: groupId, transportId: sendTransport.id, dtlsParameters }, (res) => {
+            if (res.error) errback(res.error);
+            else callback();
+          });
         });
-      });
 
-      sendTransport.on("produce", ({ kind, rtpParameters }, callback, errback) => {
-        socket.emit("produce-track", { roomId: groupId, transportId: sendTransport.id, kind, rtpParameters }, (res) => {
-          if (res.error) errback(res.error);
-          else callback({ id: res.id });
+        sendTransport.on("produce", ({ kind, rtpParameters }, callback, errback) => {
+          socket.emit("produce-track", { roomId: groupId, transportId: sendTransport.id, kind, rtpParameters }, (res) => {
+            if (res.error) errback(res.error);
+            else callback({ id: res.id });
+          });
         });
+
+        set({ sendTransport });
+
+        // Produce Audio
+        if (localStream.getAudioTracks().length > 0) {
+          const audioProducer = await sendTransport.produce({ track: localStream.getAudioTracks()[0] });
+          set((state) => ({ producers: { ...state.producers, [audioProducer.id]: audioProducer } }));
+        }
+        
+        // Produce Video
+        if (callType === "video" && localStream.getVideoTracks().length > 0) {
+          const videoProducer = await sendTransport.produce({ track: localStream.getVideoTracks()[0] });
+          set((state) => ({ producers: { ...state.producers, [videoProducer.id]: videoProducer } }));
+        }
+
+        resolve(sendTransport);
       });
-
-      set({ sendTransport });
-
-      // Produce Audio
-      if (localStream.getAudioTracks().length > 0) {
-        const audioProducer = await sendTransport.produce({ track: localStream.getAudioTracks()[0] });
-        set((state) => ({ producers: { ...state.producers, [audioProducer.id]: audioProducer } }));
-      }
-      
-      // Produce Video
-      if (callType === "video" && localStream.getVideoTracks().length > 0) {
-        const videoProducer = await sendTransport.produce({ track: localStream.getVideoTracks()[0] });
-        set((state) => ({ producers: { ...state.producers, [videoProducer.id]: videoProducer } }));
-      }
     });
   },
 
-  createRecvTransport: async (groupId) => {
-    const { device } = get();
-    const socket = useAuthStore.getState().socket;
+  createRecvTransport: (groupId) => {
+    return new Promise((resolve, reject) => {
+      const { device } = get();
+      const socket = useAuthStore.getState().socket;
 
-    socket.emit("create-transport", { roomId: groupId, direction: "recv" }, async (params) => {
-      if (params.error) return console.error(params.error);
+      socket.emit("create-transport", { roomId: groupId, direction: "recv" }, async (params) => {
+        if (params.error) {
+          console.error(params.error);
+          return reject(params.error);
+        }
 
-      const recvTransport = device.createRecvTransport(params);
-      
-      recvTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
-        socket.emit("connect-transport", { roomId: groupId, transportId: recvTransport.id, dtlsParameters }, (res) => {
-          if (res.error) errback(res.error);
-          else callback();
+        const recvTransport = device.createRecvTransport(params);
+        
+        recvTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
+          socket.emit("connect-transport", { roomId: groupId, transportId: recvTransport.id, dtlsParameters }, (res) => {
+            if (res.error) errback(res.error);
+            else callback();
+          });
         });
-      });
 
-      set({ recvTransport });
+        set({ recvTransport });
+        resolve(recvTransport);
+      });
     });
   },
 
@@ -1174,6 +1163,11 @@ export const useCallStore = create((set, get) => ({
       isGroupIncomingCall: false,
       groupCallInviteData: null,
       activeGroupCalls: {},
+      device: null,
+      sendTransport: null,
+      recvTransport: null,
+      producers: {},
+      consumers: {},
     });
   },
 

@@ -119,15 +119,26 @@ const App = () => {
         const currentPath = window.location.pathname;
         if (currentPath === "/") {
           const { selectedUser, activeTab } = useChatstore.getState();
+          const { selectedGroup } = useGroupStore.getState();
           
           if (selectedUser) {
             useChatstore.getState().setSelectedUser(null);
+          } else if (selectedGroup) {
+            useGroupStore.getState().setSelectedGroup(null);
           } else if (activeTab !== "chats") {
             useChatstore.getState().setActiveTab("chats");
           } else {
             // Only exit if NO active call
             if (!isInCall) {
-              CapApp.exitApp();
+              if (!window.exitAppPrompted) {
+                window.exitAppPrompted = true;
+                import("react-hot-toast").then(({ default: toast }) => {
+                  toast("Press back again to exit", { id: 'exit-toast', duration: 2000 });
+                });
+                setTimeout(() => window.exitAppPrompted = false, 2000);
+              } else {
+                CapApp.exitApp();
+              }
             }
           }
         } else if (currentPath === "/settings" || currentPath === "/profile") {
@@ -148,6 +159,70 @@ const App = () => {
     return () => {
       listenerPromise.then((listener) => listener.remove());
     };
+  }, [navigate]);
+
+  // Handle PWA / Mobile Web hardware back button navigation
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) return; // Native handled above
+
+    // Initialize history stack trick to trap the back button
+    if (!window.hasSetupPwaNavigation) {
+      window.hasSetupPwaNavigation = true;
+      const currentState = window.history.state || {};
+      window.history.replaceState({ ...currentState, appState: 'root' }, '');
+      window.history.pushState({ appState: 'forward' }, '');
+    }
+
+    const handlePopState = (e) => {
+      if (e.state && e.state.appState === 'root') {
+        const { isInCall, isMinimized } = useCallStore.getState();
+        const { selectedUser, activeTab } = useChatstore.getState();
+        const { selectedGroup } = useGroupStore.getState();
+
+        let handled = false;
+
+        if (isInCall && !isMinimized) {
+          useCallStore.getState().setIsMinimized(true);
+          handled = true;
+        } else if (selectedUser) {
+          useChatstore.getState().setSelectedUser(null);
+          handled = true;
+        } else if (selectedGroup) {
+          useGroupStore.getState().setSelectedGroup(null);
+          handled = true;
+        } else if (activeTab !== "chats") {
+          useChatstore.getState().setActiveTab("chats");
+          handled = true;
+        }
+
+        if (handled) {
+          window.history.pushState({ appState: 'forward' }, '');
+        } else {
+          if (window.location.pathname === '/') {
+            if (!window.exitAppPrompted) {
+              window.exitAppPrompted = true;
+              import("react-hot-toast").then(({ default: toast }) => {
+                toast("Press back again to exit", { id: 'exit-toast', duration: 2000 });
+              });
+              
+              window.history.pushState({ appState: 'forward' }, '');
+              
+              setTimeout(() => {
+                window.exitAppPrompted = false;
+              }, 2000);
+            } else {
+              window.history.back(); // Proceed to exit
+            }
+          } else {
+            window.history.pushState({ appState: 'forward' }, '');
+            navigate('/', { replace: true });
+          }
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [navigate]);
 
   useEffect(()=>{
