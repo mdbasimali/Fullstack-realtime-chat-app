@@ -77,7 +77,6 @@ const ParticipantVideoTile = React.memo(({
           ref={videoRef}
           autoPlay
           playsInline
-          muted={true}
           className={`w-full h-full object-cover transition-opacity duration-300 ${isLocal ? "scale-x-[-1]" : ""}`}
         />
       ) : (
@@ -581,7 +580,6 @@ const CallModal = () => {
             ref={remoteVideoRef}
             autoPlay
             playsInline
-            muted
             className="w-full h-full object-cover"
           />
         ) : (
@@ -777,8 +775,8 @@ const CallModal = () => {
 
     return (
       <div className="fixed inset-0 z-[999] flex flex-col bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
-        {/* Hidden audio elements for all group participants */}
-        {Object.entries(groupPeers).map(([socketId, peer]) => (
+        {/* Hidden audio elements for all group participants - ONLY for audio calls */}
+        {callType === "audio" && Object.entries(groupPeers).map(([socketId, peer]) => (
           peer.stream && (
             <ParticipantAudioTile key={socketId} stream={peer.stream} />
           )
@@ -985,14 +983,13 @@ const CallModal = () => {
   return (
     <div className="fixed inset-0 z-[999] flex flex-col bg-[#0b141a] text-white overflow-hidden animate-in fade-in duration-300 font-sans select-none">
       
-      {/* Audio element to play remote stream audio in all call types. 
-          Using 0-size instead of 'hidden' ensures mobile browsers don't treat it as background media. */}
-      {remoteStream && (
+      {/* Audio element to play remote stream audio in audio calls. */}
+      {remoteStream && callType === "audio" && (
         <audio 
           ref={remoteAudioRef} 
           autoPlay 
           playsInline 
-          style={{ width: 0, height: 0, position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+          style={{ width: 1, height: 1, position: 'absolute', opacity: 0.01, pointerEvents: 'none' }}
         />
       )}
 
@@ -1051,7 +1048,6 @@ const CallModal = () => {
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
-                muted
                 className={`w-full h-full transition-all duration-500 ${manualFullView ? "object-contain bg-black shadow-2xl" : "object-cover"}`}
               />
             </div>
