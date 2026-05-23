@@ -419,7 +419,7 @@ export const googleRedirect = async (req, res) => {
 
 
 import jwt from "jsonwebtoken";
-import { qrSessions, io } from "../lib/socket.js";
+import { qrSessions, io, getReceiverSocketId } from "../lib/socket.js";
 
 export const linkDevice = async (req, res) => {
   try {
@@ -672,7 +672,7 @@ export const verifyPin = async (req, res) => {
 import Group from "../models/group.model.js";
 import Story from "../models/story.model.js";
 import DeletedAccount from "../models/deletedAccount.model.js";
-import { getReceiverSocketId } from "../lib/socket.js";
+
 
 export const deleteAccount = async (req, res) => {
   try {
