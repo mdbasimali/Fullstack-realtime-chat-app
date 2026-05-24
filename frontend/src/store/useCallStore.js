@@ -617,7 +617,7 @@ export const useCallStore = create((set, get) => ({
   rejectCall: () => {
     logMissedIfRinging(get);
     stopAllSounds();
-    const { remoteUser, callType } = get();
+    const { remoteUser, callType, pendingOffer } = get();
     const socket = useAuthStore.getState().socket;
     if (socket && remoteUser) {
       socket.emit("reject-call", { to: remoteUser._id, type: callType, callId: pendingOffer?.callId || "" });

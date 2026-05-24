@@ -5,11 +5,11 @@ import { useEffect, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
-import { MessageCircle, Phone, Sparkles, Users } from "lucide-react";
+import BottomNavbar from "../components/BottomNavbar";
 
 const HomePage = () => {
-  const { selectedUser, setSelectedUser, activeTab, setActiveTab, users } = useChatstore();
-  const { selectedGroup, setSelectedGroup } = useGroupStore();
+  const { selectedUser, activeTab, users } = useChatstore();
+  const { selectedGroup } = useGroupStore();
   const { socket, authUser } = useAuthStore();
 
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -131,111 +131,7 @@ const HomePage = () => {
 
       </div>
 
-      {/* 2. Sticky Mobile Bottom Navigation Footer (Only on Mobile screens, hidden inside active chats) */}
-      {(!selectedUser && !selectedGroup) && (
-        <div className="block md:hidden fixed bottom-4 left-4 right-4 z-40">
-          <nav className="py-2 px-3 flex justify-around items-center w-full glass-dock rounded-[24px]">
-            
-            {/* Chats Tab Button */}
-            <button 
-              onClick={() => { 
-                setActiveTab("chats"); 
-                setSelectedUser(null);
-                setSelectedGroup(null);
-              }}
-              className={`dock-btn flex flex-col items-center gap-0.5 text-center group cursor-pointer ${activeTab === "chats" ? "dock-btn-active" : ""}`}
-            >
-              <div className={`icon-wrapper px-4 py-0.5 rounded-full transition-all relative ${
-                activeTab === "chats" 
-                  ? "active-glass-pill text-[#007aff]" 
-                  : "text-base-content/60 group-hover:text-base-content"
-              }`}>
-                <MessageCircle size={18} className={activeTab === "chats" ? "fill-[#007aff] text-[#007aff]" : "text-base-content/60"} />
-                {unreadChatsCount > 0 && (
-                  <span className="absolute top-0.5 right-2 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-[9px] font-extrabold shadow-sm border border-base-100 animate-pulse">
-                    {unreadChatsCount}
-                  </span>
-                )}
-              </div>
-              <span className={`text-[10px] font-bold tracking-wide transition-all ${
-                activeTab === "chats" ? "active-dock-text font-bold" : "text-base-content/60"
-              }`}>
-                Chats
-              </span>
-            </button>
-
-            {/* Groups Tab Button */}
-            <button 
-              onClick={() => { 
-                setActiveTab("groups"); 
-                setSelectedUser(null);
-                setSelectedGroup(null);
-              }}
-              className={`dock-btn flex flex-col items-center gap-0.5 text-center group cursor-pointer ${activeTab === "groups" ? "dock-btn-active" : ""}`}
-            >
-              <div className={`icon-wrapper px-4 py-0.5 rounded-full transition-all ${
-                activeTab === "groups" 
-                  ? "active-glass-pill text-[#007aff]" 
-                  : "text-base-content/60 group-hover:text-base-content"
-              }`}>
-                <Users size={18} className={activeTab === "groups" ? "fill-[#007aff] text-[#007aff]" : "text-base-content/60"} />
-              </div>
-              <span className={`text-[10px] font-bold tracking-wide transition-all ${
-                activeTab === "groups" ? "active-dock-text font-bold" : "text-base-content/60"
-              }`}>
-                Groups
-              </span>
-            </button>
-
-            {/* Calls Tab Button */}
-            <button 
-              onClick={() => { 
-                setActiveTab("calls"); 
-                setSelectedUser(null);
-                setSelectedGroup(null);
-              }}
-              className={`dock-btn flex flex-col items-center gap-0.5 text-center group cursor-pointer ${activeTab === "calls" ? "dock-btn-active" : ""}`}
-            >
-              <div className={`icon-wrapper px-4 py-0.5 rounded-full transition-all ${
-                activeTab === "calls" 
-                  ? "active-glass-pill text-[#007aff]" 
-                  : "text-base-content/60 group-hover:text-base-content"
-              }`}>
-                <Phone size={18} className={activeTab === "calls" ? "fill-[#007aff] text-[#007aff]" : "text-base-content/60"} />
-              </div>
-              <span className={`text-[10px] font-bold tracking-wide transition-all ${
-                activeTab === "calls" ? "active-dock-text font-bold" : "text-base-content/60"
-              }`}>
-                Calls
-              </span>
-            </button>
-
-            {/* Stories Tab Button */}
-            <button 
-              onClick={() => { 
-                setActiveTab("stories"); 
-                setSelectedUser(null);
-                setSelectedGroup(null);
-              }}
-              className={`dock-btn flex flex-col items-center gap-0.5 text-center group cursor-pointer ${activeTab === "stories" ? "dock-btn-active" : ""}`}
-            >
-              <div className={`icon-wrapper px-4 py-0.5 rounded-full transition-all ${
-                activeTab === "stories" 
-                  ? "active-glass-pill text-[#007aff]" 
-                  : "text-base-content/60 group-hover:text-base-content"
-              }`}>
-                <Sparkles size={18} className={activeTab === "stories" ? "fill-[#007aff] text-[#007aff]" : "text-base-content/60"} />
-              </div>
-              <span className={`text-[10px] font-bold tracking-wide transition-all ${
-                activeTab === "stories" ? "active-dock-text font-bold" : "text-base-content/60"
-              }`}>
-                Stories
-              </span>
-            </button>
-
-          </nav>
-        </div>
-      )}
+      <BottomNavbar />
 
     </div>
   );

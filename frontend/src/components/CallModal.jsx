@@ -46,7 +46,8 @@ const ParticipantVideoTile = React.memo(({
   isMuted, 
   isActiveSpeaker, 
   isLocal, 
-  callType 
+  callType,
+  isMinimized
 }) => {
   const videoRef = useRef(null);
 
@@ -1143,6 +1144,7 @@ const CallModal = () => {
                 isActiveSpeaker={activeSpeakerId === participant.id}
                 isLocal={false}
                 callType={callType}
+                isMinimized={isMinimized}
               />
             ))}
           </div>

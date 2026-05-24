@@ -63,6 +63,12 @@ export const useChatstore = create(
     set({ activeTab });
   },
 
+  isContactsModalOpen: false,
+  setIsContactsModalOpen: (val) => set({ isContactsModalOpen: val }),
+  
+  isStoryViewerOpen: false,
+  setIsStoryViewerOpen: (val) => set({ isStoryViewerOpen: val }),
+
   activeConversations: [],
   setActiveConversations: (activeConversations) => set({ activeConversations }),
   initializeActiveConversations: (userId) => {

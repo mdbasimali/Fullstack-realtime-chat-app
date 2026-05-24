@@ -64,6 +64,7 @@ const ChatContainer = () => {
     isFetchingGroupDetails,
     fetchGroupDetails,
     deleteGroupMessage,
+    leaveGroup,
   } = useGroupStore();
 
   // Retain previous state during exit transition to prevent white flashes

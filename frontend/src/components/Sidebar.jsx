@@ -64,7 +64,13 @@ const formatStoryTime = (createdAt) => {
 };
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, addContact, removeContact, blockContact, activeConversations, setActiveConversations, initializeActiveConversations, deleteConversation: deleteStoreConversation, syncContacts, sendMessage, globalUsers, isGlobalSearching, searchGlobalUsers, clearGlobalSearch } = useChatstore();
+  const { 
+    getUsers, users, selectedUser, setSelectedUser, isUsersLoading, activeTab, setActiveTab, 
+    addContact, removeContact, blockContact, activeConversations, setActiveConversations, 
+    initializeActiveConversations, deleteConversation: deleteStoreConversation, syncContacts, 
+    sendMessage, globalUsers, isGlobalSearching, searchGlobalUsers, clearGlobalSearch,
+    setIsContactsModalOpen, setIsStoryViewerOpen
+  } = useChatstore();
   const { authUser, onlineUsers } = useAuthStore();
   const { initiateCall } = useCallStore();
   const navigate = useNavigate();
@@ -78,11 +84,18 @@ const Sidebar = () => {
   });
 
   // Contact Sync local state
+  const [showContactsModal, setShowContactsModal] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [syncStep, setSyncStep] = useState("ask"); // "ask" | "syncing" | "matched" | "fallback"
 
+  // Sync contacts modal state to store
+  useEffect(() => {
+    setIsContactsModalOpen(showContactsModal);
+  }, [showContactsModal, setIsContactsModalOpen]);
+
   // Camera Modal state
   const [showCameraModal, setShowCameraModal] = useState(false);
+
   const [profileModalData, setProfileModalData] = useState(null);
   const [nicknamesVersion, setNicknamesVersion] = useState(0);
   const [matchedContacts, setMatchedContacts] = useState([]);
@@ -329,7 +342,6 @@ const Sidebar = () => {
   }, [activeTab, fetchGroups]);
 
   // Navigation states
-  const [showContactsModal, setShowContactsModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
@@ -398,6 +410,12 @@ const Sidebar = () => {
   const { stories, getStories, postStory, deleteStory, isStoriesLoading, isUploadingStory, subscribeToStories, unsubscribeFromStories } = useStoryStore();
 
   const [viewingStory, setViewingStory] = useState(null);
+  
+  // Sync story viewer state to store
+  useEffect(() => {
+    setIsStoryViewerOpen(!!viewingStory);
+  }, [viewingStory, setIsStoryViewerOpen]);
+
   const [storyText, setStoryText] = useState("");
   const [storyImage, setStoryImage] = useState(null);
   const [showStoryCreator, setShowStoryCreator] = useState(false);
