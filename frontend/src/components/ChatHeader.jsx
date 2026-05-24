@@ -330,8 +330,8 @@ const ChatHeader = () => {
                   <button 
                     onClick={(e) => {
                       e.preventDefault();
+                      dropdownRef.current?.focus();
                       setDropdownView("more");
-                      setTimeout(() => dropdownRef.current?.focus(), 0);
                     }}
                     className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors flex justify-between items-center w-full"
                   >
@@ -350,8 +350,8 @@ const ChatHeader = () => {
                   <button 
                     onClick={(e) => {
                       e.preventDefault();
+                      dropdownRef.current?.focus();
                       setDropdownView("main");
-                      setTimeout(() => dropdownRef.current?.focus(), 0);
                     }}
                     className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-bold text-[15px] transition-colors flex items-center gap-2 w-full text-base-content/70"
                   >
