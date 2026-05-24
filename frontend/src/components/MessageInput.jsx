@@ -159,15 +159,24 @@ const MessageInput = () => {
   const handleEmojiSelect = (emoji) => {
     const input = textInputRef.current;
     if (input) {
-      const start = input.selectionStart;
-      const end = input.selectionEnd;
+      // If the input is not focused, just append to the end
+      if (document.activeElement !== input) {
+        setText((prev) => prev + emoji);
+        return;
+      }
+
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
       const newText = text.substring(0, start) + emoji + text.substring(end);
       setText(newText);
 
       // Auto reposition selection cursor
       setTimeout(() => {
         input.selectionStart = input.selectionEnd = start + emoji.length;
-        input.focus();
+        // Focus only if on desktop to avoid native keyboard popping up
+        if (window.innerWidth >= 768) {
+          input.focus();
+        }
       }, 10);
     } else {
       setText((prev) => prev + emoji);
@@ -177,8 +186,14 @@ const MessageInput = () => {
   const handleEmojiDelete = () => {
     const input = textInputRef.current;
     if (input) {
-      const start = input.selectionStart;
-      const end = input.selectionEnd;
+      // If the input is not focused, just delete the last character
+      if (document.activeElement !== input) {
+        setText((prev) => prev.slice(0, -1));
+        return;
+      }
+
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
       
       if (start === end && start > 0) {
         // Delete one character before cursor
@@ -186,7 +201,7 @@ const MessageInput = () => {
         setText(newText);
         setTimeout(() => {
           input.selectionStart = input.selectionEnd = start - 1;
-          input.focus();
+          if (window.innerWidth >= 768) input.focus();
         }, 10);
       } else if (start !== end) {
         // Delete selection
@@ -194,7 +209,7 @@ const MessageInput = () => {
         setText(newText);
         setTimeout(() => {
           input.selectionStart = input.selectionEnd = start;
-          input.focus();
+          if (window.innerWidth >= 768) input.focus();
         }, 10);
       }
     } else {
