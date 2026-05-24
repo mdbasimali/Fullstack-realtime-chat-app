@@ -403,9 +403,8 @@ const ChatContainer = () => {
               (prevMessage.senderId?._id === message.senderId?._id)
             );
             
-            // Only animate new messages arriving AFTER the initial load
-            const isNewIncoming = !isInitialLoadRef.current && !renderedMessageIds.current.has(message._id);
-            const animationClass = isNewIncoming ? 'animate-message-pop' : '';
+            // No message animations
+            const animationClass = '';
 
             // Ensure optimistic messages feel smooth too
             const opacityClass = message.isOptimistic ? "opacity-70" : "opacity-100";
