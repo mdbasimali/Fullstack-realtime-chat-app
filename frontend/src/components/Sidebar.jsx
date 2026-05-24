@@ -1029,6 +1029,10 @@ const Sidebar = () => {
                                     <span className="italic flex items-center gap-1 text-primary/60">
                                       📷 Photo
                                     </span>
+                                  ) : user.lastMessage.isEncrypted && !user.lastMessage.isDecryptedLocally ? (
+                                    <span className="italic flex items-center gap-1 text-emerald-600 dark:text-emerald-500">
+                                      <Lock size={12} /> Encrypted message...
+                                    </span>
                                   ) : (
                                     user.lastMessage.text
                                   )}

@@ -145,6 +145,22 @@ export const useChatstore = create(
       const res = await axiosInstance.get("/messages/users");
       set({ users: res.data });
       
+      // Decrypt the last messages for the sidebar preview
+      const { _decryptMessages } = get();
+      const messagesToDecrypt = res.data.map(u => u.lastMessage).filter(m => m && m.isEncrypted && m.text);
+      if (messagesToDecrypt.length > 0) {
+        const decryptedMessages = await _decryptMessages(messagesToDecrypt);
+        const decryptedMap = {};
+        decryptedMessages.forEach(m => { decryptedMap[m._id] = m; });
+        const newUsers = res.data.map(u => {
+          if (u.lastMessage && decryptedMap[u.lastMessage._id]) {
+            return { ...u, lastMessage: decryptedMap[u.lastMessage._id] };
+          }
+          return u;
+        });
+        set({ users: newUsers });
+      }
+
       // Auto-populate activeConversations for users with lastMessage
       const authUser = useAuthStore.getState().authUser;
       if (authUser) {
