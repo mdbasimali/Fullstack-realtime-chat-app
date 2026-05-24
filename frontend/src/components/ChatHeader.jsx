@@ -214,183 +214,260 @@ const ChatHeader = () => {
             <MoreVertical size={20} />
           </label>
           <ul ref={dropdownRef} tabIndex={0} className="dropdown-content menu p-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-base-100 rounded-xl border border-base-200 w-56 z-50 mt-2 flex flex-col space-y-0.5 text-base-content/90">
-            {safeGroup ? (
-              <>
-                <li className="sm:hidden">
-                  <button 
-                    onClick={() => setShowAddMemberModal(true)}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors"
-                  >
-                    Add Member
-                  </button>
-                </li>
-                <li className="sm:hidden">
-                  <button 
-                    onClick={() => setShowGroupDetailsSidebar(!showGroupDetailsSidebar)}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors"
-                  >
-                    Group Details
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={async () => {
-                      const confirmLeave = window.confirm(`Are you sure you want to leave ${safeGroup.name}?`);
-                      if (confirmLeave) {
-                        await leaveGroup(safeGroup._id);
-                      }
-                    }}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors"
-                  >
-                    Leave Group
-                  </button>
-                </li>
-              </>
-            ) : dropdownView === "main" ? (
-              <>
-                <li>
-                  <button 
-                    onClick={() => {
-                      toast.success("Feature coming soon!");
-                      // Blur dropdown
-                      document.activeElement?.blur();
-                    }}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
-                  >
-                    New group
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => {
-                      setShowContactDetailsSidebar(true);
-                      document.activeElement?.blur();
-                    }}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
-                  >
-                    View contact
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => {
-                      toast.success("Feature coming soon!");
-                      document.activeElement?.blur();
-                    }}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
-                  >
-                    Search
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => {
-                      toast.success("Feature coming soon!");
-                      document.activeElement?.blur();
-                    }}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
-                  >
-                    Media, links, and docs
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => {
-                      toast.success("Feature coming soon!");
-                      document.activeElement?.blur();
-                    }}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
-                  >
-                    Mute notifications
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => {
-                      toast.success("Feature coming soon!");
-                      document.activeElement?.blur();
-                    }}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
-                  >
-                    Disappearing messages
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => {
-                      toast.success("Feature coming soon!");
-                      document.activeElement?.blur();
-                    }}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
-                  >
-                    Chat theme
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      dropdownRef.current?.focus();
-                      setDropdownView("more");
-                    }}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors flex justify-between items-center w-full"
-                  >
-                    More
-                    <span className="text-base-content/40 opacity-70">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </span>
-                  </button>
-                </li>
-              </>
+            {dropdownView === "main" ? (
+              safeGroup ? (
+                <>
+                  <li>
+                    <button 
+                      onClick={() => { setShowAddMemberModal(true); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Add members
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { setShowGroupDetailsSidebar(!showGroupDetailsSidebar); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Group info
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Group media
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Search
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Mute notifications
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Disappearing messages
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Chat theme
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        dropdownRef.current?.focus();
+                        setDropdownView("more");
+                      }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors flex justify-between items-center w-full"
+                    >
+                      More
+                      <span className="text-base-content/40 opacity-70">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </span>
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      New group
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { setShowContactDetailsSidebar(true); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      View contact
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Search
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Media, links, and docs
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Mute notifications
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Disappearing messages
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Wallpaper
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        dropdownRef.current?.focus();
+                        setDropdownView("more");
+                      }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors flex justify-between items-center w-full"
+                    >
+                      More
+                      <span className="text-base-content/40 opacity-70">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </span>
+                    </button>
+                  </li>
+                </>
+              )
             ) : (
-              <>
-                <li>
-                  <button 
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      dropdownRef.current?.focus();
-                      setDropdownView("main");
-                    }}
-                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-bold text-[15px] transition-colors flex items-center gap-2 w-full text-base-content/70"
-                  >
-                    <ArrowLeft size={16} /> Back
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
-                    Report
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
-                    Block
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
-                    Clear chat
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
-                    Export chat
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
-                    Add shortcut
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
-                    Add to list
-                  </button>
-                </li>
-              </>
+              safeGroup ? (
+                <>
+                  <li>
+                    <button 
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        dropdownRef.current?.focus();
+                        setDropdownView("main");
+                      }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-bold text-[15px] transition-colors flex items-center gap-2 w-full text-base-content/70"
+                    >
+                      <ArrowLeft size={16} /> Back
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Report
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={async () => {
+                        const confirmLeave = window.confirm(`Are you sure you want to exit ${safeGroup.name}?`);
+                        if (confirmLeave) {
+                          await leaveGroup(safeGroup._id);
+                        }
+                        document.activeElement?.blur();
+                      }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Exit group
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Clear chat
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Export chat
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Add shortcut
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <button 
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        dropdownRef.current?.focus();
+                        setDropdownView("main");
+                      }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-bold text-[15px] transition-colors flex items-center gap-2 w-full text-base-content/70"
+                    >
+                      <ArrowLeft size={16} /> Back
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Report
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Block
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Clear chat
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Export chat
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Add shortcut
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Add to list
+                    </button>
+                  </li>
+                </>
+              )
             )}
           </ul>
         </div>
