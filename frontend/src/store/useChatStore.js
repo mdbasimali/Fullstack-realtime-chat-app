@@ -663,13 +663,23 @@ export const useChatstore = create(
       const otherUserId = senderIdStr === authUser._id ? receiverIdStr : senderIdStr;
       const { users, globalUsers } = get();
       const otherUser = users.find(u => u._id === otherUserId) || globalUsers.find(u => u._id === otherUserId);
-      if (!otherUser || !otherUser.publicKey) return message.image;
+      if (!otherUser || !otherUser.publicKey) {
+        console.error("decryptMediaUrl: otherUser or publicKey missing for", otherUserId);
+        return message.image;
+      }
 
       const sharedKey = await deriveSharedKey(privateKeyJwk, otherUser.publicKey);
-      if (!sharedKey) return message.image;
+      if (!sharedKey) {
+        console.error("decryptMediaUrl: deriveSharedKey failed");
+        return message.image;
+      }
 
       // Fetch the binary ciphertext from Cloudinary
       const response = await fetch(message.image);
+      if (!response.ok) {
+        console.error("decryptMediaUrl: fetch failed with status", response.status);
+        return null;
+      }
       const arrayBuffer = await response.arrayBuffer();
 
       // Convert to base64 for decryptAES
@@ -686,9 +696,10 @@ export const useChatstore = create(
       if (decryptedDataUri && decryptedDataUri.startsWith("data:")) {
         return decryptedDataUri;
       }
+      console.error("decryptMediaUrl: decryptedDataUri invalid or null");
       return null;
     } catch (error) {
-      console.error("Failed to decrypt media:", error);
+      console.error("Failed to decrypt media (catch block):", error);
       return null;
     }
   },
