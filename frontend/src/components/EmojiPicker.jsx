@@ -74,7 +74,7 @@ const EmojiPicker = ({ onSelect, onClose }) => {
   return (
     <div
       ref={pickerRef}
-      className="absolute bottom-16 left-4 z-50 w-72 md:w-80 h-96 rounded-3xl bg-base-100/90 dark:bg-base-950/85 backdrop-blur-xl border border-base-300/60 shadow-2xl flex flex-col overflow-hidden"
+      className="w-full h-full rounded-2xl bg-base-100 dark:bg-base-900 flex flex-col overflow-hidden"
     >
       {/* Search Header */}
       <div className="p-3 pb-2 border-b border-base-300/40">

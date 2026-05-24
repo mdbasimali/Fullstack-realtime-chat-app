@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useChatstore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
-import { Paperclip, Send, X, Smile, Mic, Trash2, Check } from "lucide-react";
+import { Paperclip, Send, X, Smile, Mic, Trash2, Check, Keyboard } from "lucide-react";
 import toast from "react-hot-toast";
 import EmojiPicker from "./EmojiPicker";
 import { triggerHapticFeedback } from "../lib/utils";
@@ -227,18 +227,8 @@ const MessageInput = () => {
   if (!safeUser && !safeGroup) return null;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-20 w-full max-w-3xl mx-auto pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}>
-      {/* Gradient Blur Background Element */}
-      <div className="absolute inset-0 z-0 pointer-events-none" style={{
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        background: 'linear-gradient(to bottom, transparent 0%, rgba(128, 128, 128, 0.1) 100%)',
-        maskImage: 'linear-gradient(to bottom, transparent 0%, black 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 100%)'
-      }}></div>
-
-      {/* Content Container */}
-      <div className="relative z-10 w-full px-3 pt-1 pb-3 md:px-6 md:pt-2 md:pb-4">
+    <div className="w-full z-20 bg-base-100/95 dark:bg-base-900/95 backdrop-blur-xl border-t border-base-200/50 dark:border-base-800/50 shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="w-full max-w-3xl mx-auto px-3 py-2 md:px-6 md:py-3">
         {imagePreview && (
           <div className="mb-3 flex items-center gap-2 pointer-events-auto">
             <div className="relative">
@@ -297,22 +287,23 @@ const MessageInput = () => {
             </div>
           ) : (
             /* Standard Input Bar */
-            <div className="flex-1 min-w-0 flex items-center gap-3 px-4 py-2 md:py-2.5 bg-base-100 dark:bg-base-900 border border-base-200/50 dark:border-base-800/50 shadow-sm rounded-full relative">
-              {showEmojiPicker && (
-                <EmojiPicker
-                  onSelect={handleEmojiSelect}
-                  onClose={() => setShowEmojiPicker(false)}
-                />
-              )}
+            <div className="flex-1 min-w-0 flex items-center gap-3 px-4 py-2 md:py-2.5 bg-base-200/50 dark:bg-base-800/50 border border-base-300/50 dark:border-base-700/50 shadow-sm rounded-full relative">
 
-              {/* Emoji Button */}
+              {/* Emoji/Keyboard Button */}
               <button
                 type="button"
-                className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer ${showEmojiPicker ? "text-primary" : "text-base-content/50"
-                  }`}
+                className={`flex-shrink-0 hover:text-primary transition-colors cursor-pointer p-1 rounded-full ${
+                  showEmojiPicker 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-base-content/50"
+                }`}
                 onClick={() => setShowEmojiPicker((prev) => !prev)}
               >
-                <Smile size={24} strokeWidth={1.5} />
+                {showEmojiPicker ? (
+                  <Keyboard size={24} strokeWidth={1.5} />
+                ) : (
+                  <Smile size={24} strokeWidth={1.5} />
+                )}
               </button>
 
               {/* Text Input */}
@@ -383,6 +374,15 @@ const MessageInput = () => {
             )}
           </button>
         </form>
+
+        {showEmojiPicker && (
+          <div className="w-full h-[300px] mt-3 animate-fade-in">
+            <EmojiPicker
+              onSelect={handleEmojiSelect}
+              onClose={() => setShowEmojiPicker(false)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
