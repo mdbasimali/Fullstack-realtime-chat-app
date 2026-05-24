@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
+import ChatAnimation from "../components/ChatAnimation";
 import BottomNavbar from "../components/BottomNavbar";
 
 const HomePage = () => {
@@ -119,13 +120,9 @@ const HomePage = () => {
             </div>
             
             {/* Active Chat Pane */}
-            <div 
-              className={`absolute inset-0 flex flex-col bg-base-100 z-20 transition-all duration-300 ${
-                (!selectedUser && !selectedGroup) ? 'opacity-0 pointer-events-none' : 'opacity-100'
-              }`}
-            >
+            <ChatAnimation routeKey={selectedUser?._id || selectedGroup?._id || null}>
                <ChatContainer />
-            </div>
+            </ChatAnimation>
           </div>
         </div>
 
