@@ -370,9 +370,6 @@ const App = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("call") === "true") {
-      // The socket connection will automatically trigger the 'call:incoming' 
-      // event via the backend's new pendingCalls re-sync logic.
-      
       // Clean up URL
       window.history.replaceState({}, document.title, "/");
     }
@@ -391,9 +388,7 @@ const App = () => {
 
     const code = params.get("code");
     if (code && authUser) {
-      // Clean up URL
       window.history.replaceState({}, document.title, "/");
-      
       const performJoin = async () => {
         const success = await useGroupStore.getState().joinGroupByInviteCode(code);
         if (success) {
@@ -402,7 +397,27 @@ const App = () => {
       };
       performJoin();
     }
-  }, [location, authUser]);
+
+    // Handle incoming chat notifications
+    const chatId = params.get("chatId");
+    if (chatId && authUser) {
+      window.history.replaceState({}, document.title, "/");
+      useChatstore.getState().setActiveTab("chats");
+      // Find the user in our global lists or just set the ID and let the store fetch
+      useChatstore.getState().setSelectedUserId(chatId);
+    }
+
+    // Handle incoming group notifications
+    const groupId = params.get("groupId");
+    if (groupId && authUser) {
+      window.history.replaceState({}, document.title, "/");
+      useChatstore.getState().setActiveTab("groups");
+      // Try to find the group in loaded groups, or just set a minimal object
+      const groups = useGroupStore.getState().groups;
+      const foundGroup = groups.find(g => g._id === groupId);
+      useGroupStore.getState().setSelectedGroup(foundGroup || { _id: groupId });
+    }
+  }, [location, authUser, navigate]);
 
   console.log({authUser});
 
