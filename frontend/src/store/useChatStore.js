@@ -192,7 +192,7 @@ export const useChatstore = create(
     } catch (error) {
       console.error("GetUsers error:", error);
     } finally {
-      if (!isActuallySilent) set({ isUsersLoading: false });
+      set({ isUsersLoading: false });
     }
   },
   
