@@ -1,40 +1,40 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search } from "lucide-react";
+import { Search, Smile, Heart, Cat, Apple, Dribbble, Lightbulb, Delete } from "lucide-react";
 
 const emojiCategories = [
   {
     name: "Smileys",
-    icon: "😊",
+    icon: <Smile size={20} strokeWidth={1.5} />,
     emojis: ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫","🤥","😶","😐","😑","😬","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕"]
   },
   {
-    name: "People & Hearts",
-    icon: "❤️",
+    name: "People",
+    icon: <Heart size={20} strokeWidth={1.5} />,
     emojis: ["👍","👎","👋","🤚","🖐️","✋","🖖","👌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾","🧠","❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","💖","💗","💓","💞","💕","💟","❣️","💋"]
   },
   {
-    name: "Animals & Nature",
-    icon: "🐱",
+    name: "Nature",
+    icon: <Cat size={20} strokeWidth={1.5} />,
     emojis: ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐽","🐸","🐵","🙈","🙉","🙊","🐒","🐔","🐧","🐦","🐤","🐣","🐥","🦆","🦢","🦉","🦚","🦜","🐢","🐍","🦎","🐙","🦑","🦞","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🐊","🐅","🐆","🦓","🦍","🦧","🐘","🦛","🦏","🐪","🐫","🦒","🦘","🐃","🐂","🐄","🐎","🐖","🐏","🐑","🐐","🦌","🐕","🐩","🐈","🐓","🦃","🦤","🐇","🦨","🦡","🦥","🦦","🦫"]
   },
   {
-    name: "Food & Drink",
-    icon: "🍎",
+    name: "Food",
+    icon: <Apple size={20} strokeWidth={1.5} />,
     emojis: ["🍏","🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥬","🥒","🌶️","🫑","🌽","🥕","🫓","🧅","🧄","🥔","🍠","🥐","🍞","🥖","🥨","🥯","🥞","🧇","🧀","🍖","🍗","🥩","🥓","🍔","🍟","🍕","🌭","🥪","🌮","🌯","🫔","🍳","🥘","🍲","🥣","🥗","🍿","🧈","🧂","🥫","🍱","🍘","🍙","🍚","🍛","🍜","🍝","🍠","🍢","🍣","🍤","🍥","🦪","🍡","🥟","🥠","🥡","🍦","🍧","🍨","🍩","🍪","🎂","🍰","🧁","🥧","🍫","🍬","🍭","🍮","🍯","🍼","🥛","☕","🍵","🧉","🍶","🍾","🍷","🍸","🍹","🍺","🍻","🥂","🥃"]
   },
   {
     name: "Activities",
-    icon: "⚽",
+    icon: <Dribbble size={20} strokeWidth={1.5} />,
     emojis: ["⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🎰","🎮","🕹️","🧸","♠️","♥️","♦️","♣️","🏓","🏸","🏆","🥇","🥈","🥉","🏅","🎖️","🎗️","🎫","🎟️","🎪","🤹","🎭","🎨","🎬","🎤","🎧","🎼","🎹","🥁","🎷","🎺","🎸","Violin"]
   },
   {
-    name: "Objects & Symbols",
-    icon: "💡",
+    name: "Objects",
+    icon: <Lightbulb size={20} strokeWidth={1.5} />,
     emojis: ["💡","🕯️","🔦","🏮","🪔","🧱","🪙","💵","💴","💶","💷","💳","💎","🔧","🔨","🛠️","⛏️","🔩","⚙️","⛓️","🛡️","⚔️","🔑","🗝️","🚪","🪞","🪟","🛏️","🛋️","🪑","Shower","🚿","🛁","🪒","🧴","🧹","🧺","🧻","🧼","🧽","🧯","🛒","🚬","⚰️","🪦","🔮","🧿","📿","💈","🔑","🗝️","🔔","🔕"]
   }
 ];
 
-const EmojiPicker = ({ onSelect, onClose, isMobile }) => {
+const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState(emojiCategories[0].name);
   const pickerRef = useRef(null);
@@ -77,37 +77,23 @@ const EmojiPicker = ({ onSelect, onClose, isMobile }) => {
     <div
       ref={pickerRef}
       className={isMobile 
-        ? "w-full h-[40vh] bg-base-100 dark:bg-base-900 border-t border-base-300/60 flex flex-col overflow-hidden" 
-        : "absolute bottom-16 left-4 z-50 w-72 md:w-80 h-96 rounded-3xl bg-base-100/90 dark:bg-base-950/85 backdrop-blur-xl border border-base-300/60 shadow-2xl flex flex-col overflow-hidden"
+        ? "w-full h-[45vh] md:h-[50vh] bg-[#eff3f6] dark:bg-base-900 border-t border-base-300/60 flex flex-col overflow-hidden shadow-inner" 
+        : "absolute bottom-16 left-4 z-50 w-[340px] h-[400px] rounded-3xl bg-[#eff3f6]/95 dark:bg-base-950/95 backdrop-blur-xl border border-base-300/60 shadow-2xl flex flex-col overflow-hidden"
       }
     >
-      {/* Search Header */}
-      <div className="p-3 pb-2 border-b border-base-300/40">
-        <div className="relative flex items-center bg-base-200/50 dark:bg-base-900/40 rounded-full px-3 py-1.5 border border-base-300/20">
-          <Search size={16} className="text-base-content/40 mr-2" />
-          <input
-            type="text"
-            placeholder="Search emojis..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-transparent border-none outline-none text-xs md:text-sm text-base-content placeholder-base-content/40"
-          />
-        </div>
-      </div>
-
-      {/* Category Tabs */}
+      {/* Category Tabs (Top) */}
       {!search.trim() && (
-        <div className="flex justify-around items-center bg-base-200/30 py-1.5 px-1 border-b border-base-300/30">
+        <div className="flex justify-start gap-4 items-center px-4 pt-3 pb-1">
           {emojiCategories.map((category) => (
             <button
               key={category.name}
               type="button"
               title={category.name}
               onClick={() => setActiveCategory(category.name)}
-              className={`p-1.5 rounded-lg text-lg transition-all hover:scale-110 duration-200 active:scale-95 ${
+              className={`p-1 transition-all hover:scale-110 duration-200 active:scale-95 ${
                 activeCategory === category.name
-                  ? "bg-primary/10 text-primary scale-110 shadow-xs"
-                  : "opacity-60 hover:opacity-100"
+                  ? "text-primary opacity-100"
+                  : "text-base-content/40 hover:text-base-content/60 opacity-70 hover:opacity-100"
               }`}
             >
               {category.icon}
@@ -116,25 +102,58 @@ const EmojiPicker = ({ onSelect, onClose, isMobile }) => {
         </div>
       )}
 
+      {/* Search Bar (Below Tabs) */}
+      <div className="px-3 py-2">
+        <div className="relative flex items-center bg-base-200/50 dark:bg-base-900/60 rounded-full px-3 py-1.5 border border-base-300/30">
+          <Search size={16} className="text-base-content/40 mr-2" />
+          <input
+            type="text"
+            placeholder="Search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-transparent border-none outline-none text-[15px] text-base-content placeholder-base-content/40"
+          />
+        </div>
+      </div>
+
       {/* Emoji Grid */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-2 pt-1">
         {search.trim() && (
-          <p className="text-[10px] text-base-content/50 mb-2 font-semibold">
-            Common emojis
+          <p className="text-[11px] text-base-content/50 mb-2 font-semibold uppercase tracking-wider pl-1">
+            Search Results
           </p>
         )}
-        <div className="grid grid-cols-7 gap-2.5 justify-items-center">
+        <div className="grid grid-cols-7 sm:grid-cols-8 gap-x-1 gap-y-2 justify-items-center">
           {allFiltered.map((emoji, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => handleEmojiClick(emoji)}
-              className="text-2xl hover:scale-125 hover:brightness-110 transition-transform active:scale-90 duration-150 p-1 rounded-xl"
+              className="text-[28px] leading-none hover:scale-125 hover:brightness-110 transition-transform active:scale-90 duration-150 p-1.5 rounded-xl flex items-center justify-center"
             >
               {emoji}
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Bottom Tab Bar (Telegram style) */}
+      <div className="flex items-center justify-between px-3 py-2 border-t border-base-300/40 bg-base-100/60 dark:bg-base-900/60 backdrop-blur-md">
+        <span className="text-[12px] text-base-content/50 font-medium truncate w-16 invisible sm:visible">Emoji</span>
+        
+        <div className="flex bg-base-200/60 dark:bg-base-800/60 rounded-full p-1 border border-base-300/30">
+          <button className="px-4 py-1.5 rounded-full bg-base-100 dark:bg-base-700 shadow-sm text-[13px] font-bold text-base-content">Emoji</button>
+          <button className="px-4 py-1.5 rounded-full text-base-content/50 hover:text-base-content text-[13px] font-semibold transition-colors">GIFs</button>
+          <button className="px-4 py-1.5 rounded-full text-base-content/50 hover:text-base-content text-[13px] font-semibold transition-colors">Stickers</button>
+        </div>
+
+        <button 
+          onClick={onDelete}
+          className="p-2 text-base-content/50 hover:text-base-content/80 rounded-full hover:bg-base-200 transition-colors cursor-pointer"
+          title="Backspace"
+        >
+          <Delete size={22} strokeWidth={1.5} />
+        </button>
       </div>
     </div>
   );

@@ -174,6 +174,34 @@ const MessageInput = () => {
     }
   };
 
+  const handleEmojiDelete = () => {
+    const input = textInputRef.current;
+    if (input) {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      
+      if (start === end && start > 0) {
+        // Delete one character before cursor
+        const newText = text.substring(0, start - 1) + text.substring(end);
+        setText(newText);
+        setTimeout(() => {
+          input.selectionStart = input.selectionEnd = start - 1;
+          input.focus();
+        }, 10);
+      } else if (start !== end) {
+        // Delete selection
+        const newText = text.substring(0, start) + text.substring(end);
+        setText(newText);
+        setTimeout(() => {
+          input.selectionStart = input.selectionEnd = start;
+          input.focus();
+        }, 10);
+      }
+    } else {
+      setText((prev) => prev.slice(0, -1));
+    }
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -303,6 +331,7 @@ const MessageInput = () => {
                   <EmojiPicker
                     onSelect={handleEmojiSelect}
                     onClose={() => setShowEmojiPicker(false)}
+                    onDelete={handleEmojiDelete}
                   />
                 </div>
               )}
@@ -393,6 +422,7 @@ const MessageInput = () => {
           <EmojiPicker
             onSelect={handleEmojiSelect}
             onClose={() => setShowEmojiPicker(false)}
+            onDelete={handleEmojiDelete}
             isMobile={true}
           />
         </div>
