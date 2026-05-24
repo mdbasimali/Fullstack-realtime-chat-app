@@ -331,33 +331,15 @@ const ChatContainer = () => {
         {/* Messages Stream View */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 md:pb-28 space-y-1">
           
-          {/* WhatsApp-Style User Profile Onboarding Card */}
-          {activeUser && (
-            <div className="flex flex-col items-center justify-center p-6 mb-6 mt-3 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-[24px] max-w-[250px] md:max-w-[285px] mx-auto text-center shadow-sm animate-fade-in">
-              {activeUser.profilePic ? (
-                <img 
-                  src={activeUser.profilePic} 
-                  alt={activeUser.fullName} 
-                  className="w-[64px] h-[64px] rounded-full object-cover mb-3" 
-                />
-              ) : (
-                <div className="w-[64px] h-[64px] rounded-full bg-pink-100/80 dark:bg-pink-900/40 text-pink-500 flex items-center justify-center font-bold text-[22px] mb-3">
-                  {activeUser.fullName.slice(0, 2).toLowerCase()}
-                </div>
-              )}
-              <h3 className="font-bold text-[15px] text-base-content leading-tight mb-1.5">
-                {activeUser.fullName}
-              </h3>
-              {activeUser.phoneNumber && (
-                <p className="text-[11px] font-medium text-base-content/50 flex items-center justify-center gap-1.5 mb-1">
-                  <Phone size={12} /> {activeUser.phoneNumber}
-                </p>
-              )}
-              <p className="text-[11px] font-medium text-base-content/50 flex items-center justify-center gap-1.5">
-                <Users size={12} /> No groups in common
+          {/* Encryption Banner */}
+          <div className="flex flex-col items-center justify-center mb-6 mt-2 animate-fade-in">
+            <div className="max-w-[320px] mx-auto px-4 py-2.5 bg-[#fef5c3] dark:bg-[#182229] rounded-[10px] shadow-[0_1px_1.5px_rgba(11,20,26,0.05)] text-center">
+              <p className="text-[11.5px] text-[#54656f] dark:text-[#ffd279]/90 leading-[1.35]">
+                <Lock size={10} className="inline-block mr-1 -mt-0.5 fill-current" />
+                Messages and calls are end-to-end encrypted. Only people in this chat can read, listen to, or share them. <span className="font-semibold cursor-pointer hover:underline">Learn more</span>
               </p>
             </div>
-          )}
+          </div>
 
           {/* WhatsApp-Style Group Profile Onboarding Card */}
           {activeGroup && (
