@@ -74,7 +74,7 @@ const ChatHeader = () => {
   if (!safeUser && !safeGroup) return null;
 
   return (
-    <div className="py-1.5 px-3 safe-p-1.5-top border-b border-base-300 bg-base-100/95 backdrop-blur-md flex items-center justify-between shadow-sm">
+    <div className="py-1.5 px-3 safe-p-1.5-top border-b border-base-300 bg-base-100/95 backdrop-blur-md flex items-center justify-between shadow-sm relative z-50">
       <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
         {/* Back button */}
         <button
@@ -208,24 +208,22 @@ const ChatHeader = () => {
           <label tabIndex={0} className="btn btn-ghost btn-circle p-0 size-10 hover:bg-base-200 text-base-content/85 cursor-pointer flex items-center justify-center">
             <MoreVertical size={20} />
           </label>
-          <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 w-52 z-30 mt-1">
+          <ul tabIndex={0} className="dropdown-content menu p-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-base-100 rounded-xl border border-base-200 w-56 z-50 mt-2 flex flex-col space-y-0.5 text-base-content/90">
             {safeGroup ? (
               <>
                 <li className="sm:hidden">
                   <button 
                     onClick={() => setShowAddMemberModal(true)}
-                    className="hover:bg-base-200 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors"
                   >
-                    <UserPlus size={16} className="text-base-content/60" />
                     Add Member
                   </button>
                 </li>
                 <li className="sm:hidden">
                   <button 
                     onClick={() => setShowGroupDetailsSidebar(!showGroupDetailsSidebar)}
-                    className="hover:bg-base-200 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors"
                   >
-                    <Info size={16} className="text-base-content/60" />
                     Group Details
                   </button>
                 </li>
@@ -237,9 +235,8 @@ const ChatHeader = () => {
                         await leaveGroup(safeGroup._id);
                       }
                     }}
-                    className="text-error hover:bg-error/10 active:bg-error/20 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors"
                   >
-                    <Trash2 size={16} />
                     Leave Group
                   </button>
                 </li>
@@ -248,30 +245,96 @@ const ChatHeader = () => {
               <>
                 <li>
                   <button 
-                    onClick={async () => {
-                      const confirmDelete = window.confirm("Are you sure you want to permanently delete this conversation and all its messages?");
-                      if (confirmDelete) {
-                        await useChatstore.getState().deleteConversation(safeUser._id);
-                      }
+                    onClick={() => {
+                      toast.success("Feature coming soon!");
+                      // Blur dropdown
+                      document.activeElement?.blur();
                     }}
-                    className="text-error hover:bg-error/10 active:bg-error/20 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
                   >
-                    <Trash2 size={16} />
-                    Delete Chat
+                    New group
                   </button>
                 </li>
                 <li>
                   <button 
-                    onClick={async () => {
-                      const confirmClear = window.confirm("Are you sure you want to clear all call logs from this chat?");
-                      if (confirmClear) {
-                        await useChatstore.getState().clearCallLogs(safeUser._id);
-                      }
+                    onClick={() => {
+                      setShowContactDetailsSidebar(true);
+                      document.activeElement?.blur();
                     }}
-                    className="hover:bg-base-200 flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold"
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
                   >
-                    <PhoneOff size={16} className="text-base-content/60" />
-                    Clear Call Logs
+                    View contact
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => {
+                      toast.success("Feature coming soon!");
+                      document.activeElement?.blur();
+                    }}
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                  >
+                    Search
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => {
+                      toast.success("Feature coming soon!");
+                      document.activeElement?.blur();
+                    }}
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                  >
+                    Media, links, and docs
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => {
+                      toast.success("Feature coming soon!");
+                      document.activeElement?.blur();
+                    }}
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                  >
+                    Mute notifications
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => {
+                      toast.success("Feature coming soon!");
+                      document.activeElement?.blur();
+                    }}
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                  >
+                    Disappearing messages
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => {
+                      toast.success("Feature coming soon!");
+                      document.activeElement?.blur();
+                    }}
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                  >
+                    Chat theme
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => {
+                      toast.success("Feature coming soon!");
+                      document.activeElement?.blur();
+                    }}
+                    className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors flex justify-between items-center w-full"
+                  >
+                    More
+                    <span className="text-base-content/40 opacity-70">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </span>
                   </button>
                 </li>
               </>
