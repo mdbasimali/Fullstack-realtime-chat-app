@@ -44,6 +44,47 @@ const getSenderColor = (senderId) => {
   return colors[index];
 };
 
+const EncryptedImage = ({ message, onClick, className }) => {
+  const [imgSrc, setImgSrc] = useState(message.isEncrypted && message.image && message.image.startsWith("http") ? null : message.image);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAndDecrypt = async () => {
+      try {
+        if (!message || !message.image) return;
+        if (message.isEncrypted && message.image.startsWith("http")) {
+          const decrypted = await useChatstore.getState().decryptMediaUrl(message);
+          if (isMounted) setImgSrc(decrypted || message.image);
+        } else {
+          if (isMounted) setImgSrc(message.image);
+        }
+      } catch (error) {
+        console.error("Failed to load image", error);
+        if (isMounted) setImgSrc(message.image);
+      }
+    };
+    fetchAndDecrypt();
+    return () => { isMounted = false; };
+  }, [message]);
+
+  if (!imgSrc) {
+    return (
+      <div className={`${className} bg-base-300 animate-pulse flex items-center justify-center`} style={{ minWidth: "150px", minHeight: "150px" }}>
+        <Loader2 className="w-8 h-8 animate-spin text-base-content/50" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imgSrc}
+      alt="Attachment"
+      onClick={onClick}
+      className={className}
+    />
+  );
+};
+
 const ChatContainer = () => {
   const {
     messages: dmMessages,
@@ -488,9 +529,8 @@ const ChatContainer = () => {
                           }`}
                         >
                           {message.image && message.messageType !== "audio" && message.messageType !== "video" && (
-                            <img
-                              src={message.image}
-                              alt="Attachment"
+                            <EncryptedImage
+                              message={message}
                               onClick={(e) => { e.stopPropagation(); setViewingMedia(message); }}
                               className={`max-w-[260px] md:max-w-[320px] max-h-[350px] object-cover pointer-events-auto select-none cursor-pointer ${isMediaOnly ? "rounded-[18px]" : "rounded-2xl mb-1"} ${isMediaOnly ? "" : "w-full"}`}
                             />

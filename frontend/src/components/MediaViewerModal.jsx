@@ -12,6 +12,29 @@ const MediaViewerModal = ({ message, onClose, onDownload }) => {
     };
   }, []);
 
+  const [mediaSrc, setMediaSrc] = React.useState(message?.isEncrypted && message?.image && message?.image.startsWith("http") ? null : message?.image);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAndDecrypt = async () => {
+      try {
+        if (!message || !message.image) return;
+        if (message.isEncrypted && message.image.startsWith("http")) {
+          const { useChatstore } = await import("../store/useChatStore");
+          const decrypted = await useChatstore.getState().decryptMediaUrl(message);
+          if (isMounted) setMediaSrc(decrypted || message.image);
+        } else {
+          if (isMounted) setMediaSrc(message.image);
+        }
+      } catch (error) {
+        console.error("Failed to load media in modal", error);
+        if (isMounted) setMediaSrc(message.image);
+      }
+    };
+    fetchAndDecrypt();
+    return () => { isMounted = false; };
+  }, [message]);
+
   if (!message) return null;
 
   const isVideo = message.messageType === 'video';
@@ -49,19 +72,23 @@ const MediaViewerModal = ({ message, onClose, onDownload }) => {
         >
           {isVideo ? (
             <video
-              src={message.image}
+              src={mediaSrc || message.image}
               controls
               autoPlay
               className="max-w-full max-h-full object-contain"
               onClick={(e) => e.stopPropagation()}
             />
-          ) : (
+          ) : mediaSrc ? (
             <img
-              src={message.image}
+              src={mediaSrc}
               alt="Media full view"
               className="max-w-full max-h-full object-contain cursor-default select-none"
               onClick={(e) => e.stopPropagation()}
             />
+          ) : (
+            <div className="flex items-center justify-center animate-pulse">
+              <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+            </div>
           )}
         </div>
 
@@ -71,7 +98,7 @@ const MediaViewerModal = ({ message, onClose, onDownload }) => {
             <Share2 size={24} />
           </button>
           
-          <button onClick={() => onDownload(message.image, message.messageType)} className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center">
+          <button onClick={() => onDownload(mediaSrc || message.image, message.messageType)} className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center">
             <Download size={24} />
           </button>
 
