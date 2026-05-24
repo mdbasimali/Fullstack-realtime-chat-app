@@ -367,7 +367,9 @@ export const useGroupStore = create(
   addMemberToGroup: async (groupId, identifier) => {
     try {
       const payload = {};
-      if (identifier.includes("@")) {
+      if (identifier.length === 24 && /^[0-9a-fA-F]{24}$/.test(identifier)) {
+        payload.userId = identifier;
+      } else if (identifier.includes("@")) {
         payload.email = identifier.trim();
       } else {
         payload.username = identifier.trim();

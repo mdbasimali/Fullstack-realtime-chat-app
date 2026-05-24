@@ -6,6 +6,7 @@ import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import ContactDetailsSidebar from "./ContactDetailsSidebar";
 import EditGroupSidebar from "./EditGroupSidebar";
+import AddMembersSidebar from "./AddMembersSidebar";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { useCallStore } from "../store/useCallStore";
@@ -107,8 +108,9 @@ const ChatContainer = () => {
   const creatorName = groupCreatorUser?.fullName || "Someone";
 
   const [contextMenu, setContextMenu] = useState(null); // { message, x, y, isMobile }
-  const [viewingMedia, setViewingMedia] = useState(null);
   const [isEditingGroup, setIsEditingGroup] = useState(false);
+  const [showAddMembersSidebar, setShowAddMembersSidebar] = useState(false);
+  const [viewingMedia, setViewingMedia] = useState(null);
   const touchTimeoutRef = useRef(null);
   const touchStartPosRef = useRef({ x: 0, y: 0 });
   const hasTriggeredLongPressRef = useRef(false);
@@ -746,7 +748,9 @@ const ChatContainer = () => {
 
       {/* Group Details Sidebar or Edit Sidebar */}
       {activeGroup && showGroupDetailsSidebar && (
-        isEditingGroup ? (
+        showAddMembersSidebar ? (
+          <AddMembersSidebar onClose={() => setShowAddMembersSidebar(false)} />
+        ) : isEditingGroup ? (
           <EditGroupSidebar onClose={() => setIsEditingGroup(false)} />
         ) : (
           <div className="absolute inset-y-0 right-0 w-full md:max-w-[400px] md:static md:w-[400px] border-l border-base-300 bg-base-100 z-40 flex flex-col h-full overflow-hidden animate-fade-in shrink-0 shadow-2xl">
@@ -844,7 +848,10 @@ const ChatContainer = () => {
                 </span>
               </div>
 
-              <div className="flex items-center gap-5 px-6 py-3 hover:bg-base-200/50 transition-colors cursor-pointer">
+              <div 
+                className="flex items-center gap-5 px-6 py-3 hover:bg-base-200/50 transition-colors cursor-pointer"
+                onClick={() => setShowAddMembersSidebar(true)}
+              >
                 <div className="w-10 h-10 rounded-full bg-base-200 flex items-center justify-center text-base-content/70">
                   <Plus className="w-5 h-5" strokeWidth={2} />
                 </div>
