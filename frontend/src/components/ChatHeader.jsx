@@ -374,18 +374,28 @@ const ChatHeader = () => {
               safeGroup ? (
                 <>
                   <li>
-                    <button 
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        dropdownRef.current?.focus();
-                        setDropdownView("main");
-                      }}
-                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-bold text-[15px] transition-colors flex items-center gap-2 w-full text-base-content/70"
-                    >
-                      <ArrowLeft size={16} /> Back
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Clear chat
                     </button>
                   </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Export chat
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Add shortcut
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                      Add to list
+                    </button>
+                  </li>
+                  
+                  <div className="divider my-0"></div>
+
                   <li>
                     <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
                       Report
@@ -403,21 +413,6 @@ const ChatHeader = () => {
                       className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
                     >
                       Exit group
-                    </button>
-                  </li>
-                  <li>
-                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
-                      Clear chat
-                    </button>
-                  </li>
-                  <li>
-                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
-                      Export chat
-                    </button>
-                  </li>
-                  <li>
-                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
-                      Add shortcut
                     </button>
                   </li>
                 </>
