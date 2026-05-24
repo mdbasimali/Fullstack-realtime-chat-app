@@ -601,7 +601,9 @@ export const useChatstore = create(
       const decryptedMessages = await Promise.all(messagesToDecrypt.map(async (msg) => {
         if (!msg.isEncrypted || !msg.iv) return msg;
         
-        const otherUserId = msg.senderId === authUser._id ? msg.receiverId : msg.senderId;
+        const senderIdStr = typeof msg.senderId === "object" ? msg.senderId._id : msg.senderId;
+        const receiverIdStr = typeof msg.receiverId === "object" ? msg.receiverId._id : msg.receiverId;
+        const otherUserId = senderIdStr === authUser._id ? receiverIdStr : senderIdStr;
         const otherUser = users.find(u => u._id === otherUserId) || globalUsers.find(u => u._id === otherUserId);
         if (!otherUser || !otherUser.publicKey) return msg;
 
@@ -633,7 +635,9 @@ export const useChatstore = create(
       const privateKeyJwk = await getMyPrivateKey(authUser._id);
       if (!privateKeyJwk) return message.image;
 
-      const otherUserId = message.senderId === authUser._id ? message.receiverId : message.senderId;
+      const senderIdStr = typeof message.senderId === "object" ? message.senderId._id : message.senderId;
+      const receiverIdStr = typeof message.receiverId === "object" ? message.receiverId._id : message.receiverId;
+      const otherUserId = senderIdStr === authUser._id ? receiverIdStr : senderIdStr;
       const { users, globalUsers } = get();
       const otherUser = users.find(u => u._id === otherUserId) || globalUsers.find(u => u._id === otherUserId);
       if (!otherUser || !otherUser.publicKey) return message.image;
