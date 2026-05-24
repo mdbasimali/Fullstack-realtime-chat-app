@@ -336,7 +336,9 @@ const ChatContainer = () => {
             <div className="flex justify-center mb-6 mt-4 animate-fade-in px-2">
               <div className="bg-[#FFF5C4] dark:bg-[#1C2C34] text-[#54656F] dark:text-[#FFD279] text-[11.5px] font-medium leading-[16px] text-center py-2 px-3.5 rounded-[12px] shadow-sm max-w-[360px]">
                 <Lock size={10} className="inline-block mr-1.5 mb-[2px]" strokeWidth={2.5} />
-                Messages and calls are end-to-end encrypted. Only people in this chat can read, listen to, or share them. <span className="hover:underline cursor-pointer text-[#1e88e5] dark:text-primary">Learn more</span>
+                Messages and calls are end-to-end encrypted.<br />
+                Only people in this chat can read, listen to, or share<br />
+                them. <span className="hover:underline cursor-pointer text-[#1e88e5] dark:text-primary">Learn more</span>
               </div>
             </div>
           )}
