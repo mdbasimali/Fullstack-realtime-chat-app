@@ -1,6 +1,6 @@
 import https from "https";
 import cloudinary from "../lib/cloudinary.js";
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { getReceiverSocketId, io, sendPushNotification } from "../lib/socket.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 import Group from "../models/group.model.js";
@@ -265,6 +265,19 @@ export const sendMessage = async(req,res)=>{
         io.to(receiverSocketId).emit("newMessage",populatedMessage)
     }
     
+    // Web Push Notification
+    const sender = await User.findById(senderId).select("fullName profilePic");
+    sendPushNotification(receiverId, {
+      title: sender?.fullName || "New Message",
+      body: text || (image ? "Sent an image" : "New message"),
+      data: {
+        type: "new_message",
+        from: senderId,
+        senderPic: sender?.profilePic,
+        chatId: senderId
+      }
+    });
+
 
     res.status(201).json(populatedMessage)
    }catch(error){

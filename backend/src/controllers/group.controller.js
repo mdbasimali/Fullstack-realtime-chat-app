@@ -1,5 +1,5 @@
 import cloudinary from "../lib/cloudinary.js";
-import { io, getReceiverSocketId } from "../lib/socket.js";
+import { io, getReceiverSocketId, sendPushNotification } from "../lib/socket.js";
 import Group from "../models/group.model.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
@@ -317,6 +317,23 @@ export const sendGroupMessage = async (req, res) => {
 
     // Broadcast message to all active room subscribers
     io.to(`group_${groupId}`).emit("newGroupMessage", populatedMessage);
+
+    // Web Push Notification for offline/background users
+    const sender = await User.findById(senderId).select("fullName profilePic");
+    group.members.forEach((memberId) => {
+      if (memberId.toString() !== senderId.toString()) {
+        sendPushNotification(memberId, {
+          title: `${sender?.fullName} in ${group.name}`,
+          body: text || (image ? "Sent an image" : "New message"),
+          data: {
+            type: "new_group_message",
+            from: senderId,
+            senderPic: sender?.profilePic || group.avatar,
+            groupId: groupId
+          }
+        });
+      }
+    });
 
     res.status(201).json(populatedMessage);
   } catch (error) {
