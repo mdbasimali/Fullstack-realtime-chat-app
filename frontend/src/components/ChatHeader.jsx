@@ -202,7 +202,7 @@ const ChatHeader = () => {
                 <>
                   <li>
                     <button 
-                      onClick={() => { setShowGroupDetailsSidebar(true); setShowAddMembersSidebar(true); document.activeElement?.blur(); }}
+                      onClick={() => { setShowAddMembersSidebar(true); document.activeElement?.blur(); }}
                       className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
                     >
                       Add members

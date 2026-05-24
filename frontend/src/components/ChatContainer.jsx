@@ -730,12 +730,13 @@ const ChatContainer = () => {
       )}
 
       {/* Group Details Sidebar or Edit Sidebar */}
-      {activeGroup && showGroupDetailsSidebar && (
+      {activeGroup && (
         showAddMembersSidebar ? (
           <AddMembersSidebar onClose={() => setShowAddMembersSidebar(false)} />
-        ) : isEditingGroup ? (
-          <EditGroupSidebar onClose={() => setIsEditingGroup(false)} />
-        ) : (
+        ) : showGroupDetailsSidebar ? (
+          isEditingGroup ? (
+            <EditGroupSidebar onClose={() => setIsEditingGroup(false)} />
+          ) : (
           <div className="absolute inset-y-0 right-0 w-full md:max-w-[400px] md:static md:w-[400px] border-l border-base-300 bg-base-100 z-[60] flex flex-col h-full overflow-hidden animate-fade-in shrink-0 shadow-2xl">
             
             {/* Top Bar */}
@@ -926,7 +927,7 @@ const ChatContainer = () => {
             </div>
 
           </div>
-        )
+        ) : null
       )}
 
       {/* User Contact Details Sidebar Slider */}
