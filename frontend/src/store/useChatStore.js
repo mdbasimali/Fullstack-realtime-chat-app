@@ -675,7 +675,9 @@ export const useChatstore = create(
         activeConversations: state.activeConversations,
         scrollCache: state.scrollCache,
         activeTab: state.activeTab,
-        currentUserId: state.currentUserId
+        currentUserId: state.currentUserId,
+        users: state.users,
+        globalUsers: state.globalUsers
       }),
     }
   )

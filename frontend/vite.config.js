@@ -7,16 +7,42 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: true,
+        type: 'module',
+      },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'ChatZone',
+        name: 'ChatZone - Secure Messaging',
         short_name: 'ChatZone',
-        description: 'Real-time Chat App',
+        description: 'Real-time Encrypted Chat App',
         theme_color: '#000000',
         background_color: '#000000',
         display: 'standalone',
-        orientation: 'portrait',
+        display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
+        orientation: 'portrait-primary',
+        start_url: '/',
+        categories: ['communication', 'social', 'utilities'],
+        shortcuts: [
+          {
+            name: 'New Chat',
+            short_name: 'Chat',
+            description: 'Start a new conversation',
+            url: '/',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Settings',
+            short_name: 'Settings',
+            description: 'Open app settings',
+            url: '/settings',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
+          }
+        ],
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -36,24 +62,9 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,woff}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'cloudinary-images',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 Days
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          }
-        ]
+        maximumFileSizeToCacheInBytes: 5000000,
       }
     })
   ],
