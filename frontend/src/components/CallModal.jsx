@@ -179,21 +179,11 @@ const DraggableSelfPreview = React.memo(({
   isMinimized
 }) => {
   const containerRef = useRef(null);
-  const videoRef = useRef(null);
 
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const startOffset = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    if (videoRef.current && localStream) {
-      if (videoRef.current.srcObject !== localStream) {
-        videoRef.current.srcObject = localStream;
-      }
-      videoRef.current.play().catch((err) => console.log("Draggable video play error:", err));
-    }
-  }, [localStream]);
 
   // Adjust/clamp position on window resize to ensure preview doesn't float offscreen
   useEffect(() => {
@@ -351,7 +341,11 @@ const DraggableSelfPreview = React.memo(({
       }`}
     >
       <video
-        ref={videoRef}
+        ref={(el) => {
+          if (el && localStream && el.srcObject !== localStream) {
+            el.srcObject = localStream;
+          }
+        }}
         autoPlay
         playsInline
         muted
