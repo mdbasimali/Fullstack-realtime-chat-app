@@ -138,7 +138,7 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
       </div>
 
       {/* Bottom Tab Bar (Telegram style) */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-base-300/40 bg-base-100/60 dark:bg-base-900/60 backdrop-blur-md">
+      <div className="flex items-center justify-between px-3 py-2 bg-transparent">
         <span className="text-[12px] text-base-content/50 font-medium truncate w-16 invisible sm:visible">Emoji</span>
         
         <div className="flex bg-base-200/60 dark:bg-base-800/60 rounded-full p-1 border border-base-300/30">
