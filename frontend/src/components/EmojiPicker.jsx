@@ -77,7 +77,7 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
     <div
       ref={pickerRef}
       className={isMobile 
-        ? "w-full h-[45vh] md:h-[50vh] bg-[#eff3f6] dark:bg-base-900 border-t border-base-300/60 flex flex-col overflow-hidden shadow-inner" 
+        ? "w-full h-[45vh] md:h-[50vh] bg-[#eff3f6] dark:bg-base-900 border-t border-base-300/60 flex flex-col overflow-hidden shadow-inner rounded-t-3xl" 
         : "absolute bottom-16 left-4 z-50 w-[340px] h-[400px] rounded-3xl bg-[#eff3f6]/95 dark:bg-base-950/95 backdrop-blur-xl border border-base-300/60 shadow-2xl flex flex-col overflow-hidden"
       }
     >
@@ -104,7 +104,7 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
 
       {/* Search Bar (Below Tabs) */}
       <div className="px-3 py-2">
-        <div className="relative flex items-center bg-base-200/50 dark:bg-base-900/60 rounded-full px-3 py-1.5 border border-base-300/30">
+        <div className="relative flex items-center bg-base-200/60 dark:bg-base-900/60 rounded-[14px] px-3 py-1.5 border border-base-300/40 shadow-sm">
           <Search size={16} className="text-base-content/40 mr-2" />
           <input
             type="text"

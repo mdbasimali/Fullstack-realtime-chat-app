@@ -418,7 +418,7 @@ const MessageInput = () => {
 
       {/* Mobile Emoji Picker (Full width, pushes input up) */}
       {showEmojiPicker && (
-        <div className="md:hidden relative z-10 w-full pointer-events-auto animate-slide-up bg-base-100 dark:bg-base-900 border-t border-base-300/60 shadow-inner">
+        <div className="md:hidden relative z-10 w-full pointer-events-auto animate-slide-up bg-base-100 dark:bg-base-900 border-t border-base-300/60 shadow-inner rounded-t-3xl overflow-hidden">
           <EmojiPicker
             onSelect={handleEmojiSelect}
             onClose={() => setShowEmojiPicker(false)}
