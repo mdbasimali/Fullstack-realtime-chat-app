@@ -765,6 +765,7 @@ const Sidebar = () => {
               {activeTab === "calls" && "Calls"}
               {activeTab === "friends" && "Friends"}
               {activeTab === "stories" && "Stories"}
+              {activeTab === "groups" && "Groups"}
             </h1>
           </div>
 
