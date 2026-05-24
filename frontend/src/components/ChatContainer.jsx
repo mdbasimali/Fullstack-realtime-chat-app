@@ -753,7 +753,7 @@ const ChatContainer = () => {
         ) : isEditingGroup ? (
           <EditGroupSidebar onClose={() => setIsEditingGroup(false)} />
         ) : (
-          <div className="absolute inset-y-0 right-0 w-full md:max-w-[400px] md:static md:w-[400px] border-l border-base-300 bg-base-100 z-40 flex flex-col h-full overflow-hidden animate-fade-in shrink-0 shadow-2xl">
+          <div className="absolute inset-y-0 right-0 w-full md:max-w-[400px] md:static md:w-[400px] border-l border-base-300 bg-base-100 z-[60] flex flex-col h-full overflow-hidden animate-fade-in shrink-0 shadow-2xl">
             
             {/* Top Bar */}
             <div className="p-4 flex justify-between items-center bg-base-100">
