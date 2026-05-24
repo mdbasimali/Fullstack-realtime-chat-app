@@ -886,7 +886,7 @@ const Sidebar = () => {
                       {users.filter(u => onlineUsers.includes(u._id) && u._id !== authUser?._id).map((user) => (
                         <div 
                           key={user._id} 
-                          onClick={() => setSelectedUser(user)}
+                          onClick={() => { setSelectedUser(user); setSelectedGroup(null); }}
                           className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0 group"
                         >
                           <div className="relative">
@@ -943,6 +943,7 @@ const Sidebar = () => {
                         // Prevent click action from firing if active menu is currently open
                         if (activeMenuUserId) return;
                         setSelectedUser(user);
+                        setSelectedGroup(null);
                       }}
                       onContextMenu={(e) => handleContextMenu(e, user._id)}
                       onTouchStart={(e) => startLongPress(e, user._id)}
@@ -1071,6 +1072,7 @@ const Sidebar = () => {
                           key={user._id}
                           onClick={() => {
                             setSelectedUser(user);
+                            setSelectedGroup(null);
                             setSearchQuery("");
                             if (!activeConversations.includes(user._id)) {
                               const updated = [...activeConversations, user._id];
@@ -1288,6 +1290,7 @@ const Sidebar = () => {
                             onClick={() => {
                               if (activeMenuGroupId) return;
                               setSelectedGroup(group);
+                              setSelectedUser(null);
                             }}
                             onContextMenu={(e) => handleGroupContextMenu(e, group._id)}
                             onTouchStart={(e) => startGroupLongPress(e, group._id)}
@@ -1763,6 +1766,7 @@ const Sidebar = () => {
                           key={user._id}
                           onClick={() => {
                             setSelectedUser(user);
+                            setSelectedGroup(null);
                             setShowContactsModal(false);
                             setSearchQuery("");
                             setActiveTab("chats");
@@ -1831,6 +1835,7 @@ const Sidebar = () => {
                                   key={user._id}
                                   onClick={() => {
                                     setSelectedUser(user);
+                                    setSelectedGroup(null);
                                     setShowContactsModal(false);
                                     setSearchQuery("");
                                     setActiveTab("chats");
