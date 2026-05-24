@@ -5,7 +5,7 @@ import { useChatstore } from "../store/useChatStore";
 import toast from "react-hot-toast";
 
 const AddMembersSidebar = ({ onClose }) => {
-  const { activeGroup, selectedGroupDetails, addMembersToGroup } = useGroupStore();
+  const { selectedGroup, selectedGroupDetails, addMembersToGroup } = useGroupStore();
   const { users } = useChatstore();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,7 +14,7 @@ const AddMembersSidebar = ({ onClose }) => {
 
   // Filter out users who are already in the group
   const existingMemberIds = new Set(
-    selectedGroupDetails?.members?.map((m) => m._id) || activeGroup?.members || []
+    selectedGroupDetails?.members?.map((m) => m._id) || selectedGroup?.members || []
   );
 
   const availableUsers = useMemo(() => {
@@ -62,7 +62,7 @@ const AddMembersSidebar = ({ onClose }) => {
     setIsSubmitting(true);
     
     // Add all selected members at once
-    const success = await addMembersToGroup(activeGroup._id, selectedUsers);
+    const success = await addMembersToGroup(selectedGroup._id, selectedUsers);
 
     setIsSubmitting(false);
     if (success) {
