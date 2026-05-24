@@ -139,8 +139,8 @@ export const useChatstore = create(
   clearGlobalSearch: () => set({ globalUsers: [] }),
 
   getUsers: async (silent = false) => {
-    const isActuallySilent = silent || get().users.length > 0;
-    if (!isActuallySilent) set({ isUsersLoading: true });
+    const hasCache = get().users.length > 0;
+    if (!hasCache && !silent) set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/messages/users");
       set({ users: res.data });
