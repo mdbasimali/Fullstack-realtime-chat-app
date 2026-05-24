@@ -506,7 +506,7 @@ const ChatContainer = () => {
                             />
                           )}
                           {message.messageType === "audio" && message.image && (
-                            <VoicePlayer url={message.image} isMyMessage={isMyMessage} />
+                            <VoicePlayer message={message} url={message.image} isMyMessage={isMyMessage} />
                           )}
 
                           {/* Story Reply Render */}

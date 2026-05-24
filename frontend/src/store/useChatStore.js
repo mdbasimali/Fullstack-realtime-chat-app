@@ -622,6 +622,50 @@ export const useChatstore = create(
     }
   },
 
+  decryptMediaUrl: async (message) => {
+    if (!message || !message.image || !message.isEncrypted || !message.image.startsWith("http")) return message.image;
+
+    try {
+      const authUser = useAuthStore.getState().authUser;
+      if (!authUser) return message.image;
+
+      const { getMyPrivateKey, deriveSharedKey, decryptAES } = await import("../lib/crypto");
+      const privateKeyJwk = await getMyPrivateKey(authUser._id);
+      if (!privateKeyJwk) return message.image;
+
+      const otherUserId = message.senderId === authUser._id ? message.receiverId : message.senderId;
+      const { users, globalUsers } = get();
+      const otherUser = users.find(u => u._id === otherUserId) || globalUsers.find(u => u._id === otherUserId);
+      if (!otherUser || !otherUser.publicKey) return message.image;
+
+      const sharedKey = await deriveSharedKey(privateKeyJwk, otherUser.publicKey);
+      if (!sharedKey) return message.image;
+
+      // Fetch the binary ciphertext from Cloudinary
+      const response = await fetch(message.image);
+      const arrayBuffer = await response.arrayBuffer();
+
+      // Convert to base64 for decryptAES
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      // Chunking to prevent Maximum Call Stack Size Exceeded for large files
+      const chunkSize = 8192;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+      }
+      const cipherTextB64 = window.btoa(binary);
+
+      const decryptedDataUri = await decryptAES(cipherTextB64, message.iv, sharedKey);
+      if (decryptedDataUri.startsWith("data:")) {
+        return decryptedDataUri;
+      }
+      return message.image;
+    } catch (error) {
+      console.error("Failed to decrypt media:", error);
+      return message.image;
+    }
+  },
+
   setSelectedUser: (selectedUser) => {
     // Trigger native haptic feedback on chat selection
     if (typeof navigator !== "undefined" && navigator.vibrate) {

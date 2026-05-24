@@ -2,11 +2,26 @@ import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause } from "lucide-react";
 import toast from "react-hot-toast";
 
-const VoicePlayer = ({ url, isMyMessage }) => {
+import { useChatstore } from "../store/useChatStore";
+
+const VoicePlayer = ({ url, isMyMessage, message }) => {
+  const [audioUrl, setAudioUrl] = useState(url);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (message && message.isEncrypted && url.startsWith("http")) {
+      useChatstore.getState().decryptMediaUrl(message).then(decryptedUrl => {
+        if (isMounted) setAudioUrl(decryptedUrl);
+      });
+    } else {
+      setAudioUrl(url);
+    }
+    return () => { isMounted = false; };
+  }, [url, message]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -46,7 +61,7 @@ const VoicePlayer = ({ url, isMyMessage }) => {
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("error", onError);
     };
-  }, [url]);
+  }, [audioUrl]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -85,7 +100,7 @@ const VoicePlayer = ({ url, isMyMessage }) => {
     <div className={`flex items-center gap-3 py-1 px-1 rounded-2xl w-48 md:w-56 ${
       isMyMessage ? "text-primary-content" : "text-base-content"
     }`}>
-      <audio ref={audioRef} src={url} preload="metadata" />
+      <audio ref={audioRef} src={audioUrl} preload="metadata" />
       
       {/* Play/Pause Button */}
       <button
