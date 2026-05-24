@@ -37,6 +37,8 @@ const emojiCategories = [
 const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState(emojiCategories[0].name);
+  const [showBottomBar, setShowBottomBar] = useState(true);
+  const lastScrollTop = useRef(0);
   const pickerRef = useRef(null);
 
   useEffect(() => {
@@ -55,6 +57,18 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
 
   const handleEmojiClick = (emoji) => {
     onSelect(emoji);
+  };
+
+  const handleScroll = (e) => {
+    const currentScrollTop = e.target.scrollTop;
+    if (currentScrollTop > lastScrollTop.current + 10) {
+      // Scrolling down
+      if (showBottomBar) setShowBottomBar(false);
+    } else if (currentScrollTop < lastScrollTop.current - 10) {
+      // Scrolling up
+      if (!showBottomBar) setShowBottomBar(true);
+    }
+    lastScrollTop.current = currentScrollTop;
   };
 
   const getFilteredEmojis = () => {
@@ -117,7 +131,10 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
       </div>
 
       {/* Emoji Grid */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-16 pt-1">
+      <div 
+        className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-16 pt-1"
+        onScroll={handleScroll}
+      >
         {search.trim() && (
           <p className="text-[11px] text-base-content/50 mb-2 font-semibold uppercase tracking-wider pl-1">
             Search Results
@@ -138,8 +155,8 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
       </div>
 
       {/* Bottom Tab Bar (Telegram style - Floating) */}
-      <div className="absolute bottom-2 left-0 right-0 px-3 flex items-center justify-center pointer-events-none z-10">
-        <div className="flex bg-base-200/80 dark:bg-base-800/80 backdrop-blur-md rounded-full p-1 shadow-sm border border-base-300/30 pointer-events-auto">
+      <div className={`absolute bottom-2 left-0 right-0 px-3 flex items-center justify-center pointer-events-none z-10 transition-all duration-300 ${showBottomBar ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8 pointer-events-none"}`}>
+        <div className={`flex bg-base-200/80 dark:bg-base-800/80 backdrop-blur-md rounded-full p-1 shadow-sm border border-base-300/30 ${showBottomBar ? "pointer-events-auto" : "pointer-events-none"}`}>
           <button className="px-4 py-1.5 rounded-full bg-base-100 dark:bg-base-700 shadow-sm text-[13px] font-bold text-base-content">Emoji</button>
           <button className="px-4 py-1.5 rounded-full text-base-content/50 hover:text-base-content text-[13px] font-semibold transition-colors">GIFs</button>
           <button className="px-4 py-1.5 rounded-full text-base-content/50 hover:text-base-content text-[13px] font-semibold transition-colors">Stickers</button>
@@ -147,7 +164,7 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
 
         <button 
           onClick={onDelete}
-          className="absolute right-4 p-2.5 text-base-content/60 hover:text-base-content bg-base-100/60 dark:bg-base-800/60 hover:bg-base-200/80 backdrop-blur-md rounded-full transition-colors cursor-pointer pointer-events-auto shadow-sm border border-base-300/30"
+          className={`absolute right-4 p-2.5 text-base-content/60 hover:text-base-content bg-base-100/60 dark:bg-base-800/60 hover:bg-base-200/80 backdrop-blur-md rounded-full transition-colors cursor-pointer shadow-sm border border-base-300/30 ${showBottomBar ? "pointer-events-auto" : "pointer-events-none"}`}
           title="Backspace"
         >
           <Delete size={22} strokeWidth={1.5} />
