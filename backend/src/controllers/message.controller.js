@@ -227,7 +227,7 @@ export const getMessages = async(req,res) =>{
 
 export const sendMessage = async(req,res)=>{
    try{
-    const {text,image,messageType,storyId}=req.body;
+    const {text,image,messageType,storyId, isEncrypted, iv}=req.body;
     const {id: receiverId}=req.params;
     const senderId=req.user._id;
 
@@ -245,7 +245,7 @@ export const sendMessage = async(req,res)=>{
         const base64Data = image.slice(base64Index + 8);
         const buffer = Buffer.from(base64Data, 'base64');
         const uploadOptions = {
-            resource_type: messageType === "audio" || messageType === "video" ? "video" : "image",
+            resource_type: isEncrypted ? "raw" : (messageType === "audio" || messageType === "video" ? "video" : "image"),
         };
         const uploadResponse = await new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
@@ -266,6 +266,8 @@ export const sendMessage = async(req,res)=>{
         image: imageUrl,
         messageType: messageType || (image ? "image" : "text"),
         storyId: storyId || undefined,
+        isEncrypted: isEncrypted || false,
+        iv: iv || undefined,
     });
     await newMessage.save();
 

@@ -40,6 +40,7 @@ export const useAuthStore = create((set,get) => ({
       useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       get().setupPushNotifications();
+      get().initializeE2EE(res.data);
     } catch (error) {
       set({ authUser: null });
       useChatstore.getState().clearChatStore();
@@ -57,6 +58,7 @@ export const useAuthStore = create((set,get) => ({
       set({ authUser: res.data });
       useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
+      get().initializeE2EE(res.data);
       return { success: true, user: res.data };
     } catch (error) {
       console.error("Signup error:", error);
@@ -74,6 +76,7 @@ export const useAuthStore = create((set,get) => ({
       set({ authUser: res.data });
       useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
+      get().initializeE2EE(res.data);
       return { success: true, user: res.data };
     } catch (error) {
       console.error("Login error:", error);
@@ -92,6 +95,7 @@ export const useAuthStore = create((set,get) => ({
       useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       get().setupPushNotifications();
+      get().initializeE2EE(res.data);
       return { success: true, user: res.data };
     } catch (error) {
       console.error("Google Auth error:", error);
@@ -110,6 +114,7 @@ export const useAuthStore = create((set,get) => ({
       useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       get().setupPushNotifications();
+      get().initializeE2EE(res.data);
       return { success: true, user: res.data };
     } catch (error) {
       console.error("Firebase Login error:", error);
@@ -128,6 +133,27 @@ export const useAuthStore = create((set,get) => ({
       useChatstore.getState().clearChatStore();
     } catch (error) {
       console.error("Logout error:", error);
+    }
+  },
+
+  initializeE2EE: async (user) => {
+    try {
+      const { generateECDHKeyPair, getMyPrivateKey, saveMyPrivateKey } = await import("../lib/crypto");
+      let privateKeyJwk = await getMyPrivateKey(user._id);
+      
+      // If no private key locally, or no public key on server, generate new pair
+      if (!privateKeyJwk || !user.publicKey) {
+        console.log("Generating new E2EE keys...");
+        const keys = await generateECDHKeyPair();
+        await saveMyPrivateKey(user._id, keys.privateKeyJwk);
+        
+        // Upload public key to server
+        await axiosInstance.put("/auth/keys", { publicKey: keys.publicKeyJwk });
+        
+        set((state) => ({ authUser: { ...state.authUser, publicKey: keys.publicKeyJwk } }));
+      }
+    } catch (error) {
+      console.error("E2EE Initialization failed:", error);
     }
   },
 

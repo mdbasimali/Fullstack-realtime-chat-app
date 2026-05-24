@@ -233,15 +233,16 @@ export const useChatstore = create(
     
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
+      const decryptedData = await get()._decryptMessages(res.data);
       
       set((state) => {
         // Merge: keep any socket-delivered messages that arrived during this API fetch
         const currentMessages = state.messageCache[userId] || state.messages;
-        const fetchedIds = new Set(res.data.map(m => m._id));
+        const fetchedIds = new Set(decryptedData.map(m => m._id));
         const socketOnlyMessages = currentMessages.filter(
           m => !m.isOptimistic && !fetchedIds.has(m._id)
         );
-        const finalMessages = [...res.data, ...socketOnlyMessages];
+        const finalMessages = [...decryptedData, ...socketOnlyMessages];
 
         // Prevent unnecessary array reference change if messages are identical (by length and last message ID)
         const isIdentical = currentMessages.length === finalMessages.length && 
@@ -277,6 +278,43 @@ export const useChatstore = create(
     const targetUserId = messageData.receiverId || selectedUser?._id;
     if (!authUser || !targetUserId) return;
 
+    let payload = { ...messageData };
+    let isEncrypted = false;
+    let iv = null;
+
+    try {
+      const { getMyPrivateKey, deriveSharedKey, encryptAES } = await import("../lib/crypto");
+      const privateKeyJwk = await getMyPrivateKey(authUser._id);
+      const otherUser = get().users.find(u => u._id === targetUserId) || get().globalUsers.find(u => u._id === targetUserId);
+
+      if (privateKeyJwk && otherUser && otherUser.publicKey) {
+        const sharedKey = await deriveSharedKey(privateKeyJwk, otherUser.publicKey);
+        if (sharedKey) {
+          if (payload.text) {
+            const encryptedText = await encryptAES(payload.text, sharedKey);
+            payload.text = encryptedText.ciphertextB64;
+            iv = encryptedText.ivB64;
+            isEncrypted = true;
+          }
+          if (payload.image) {
+            // Encrypt the entire data URI
+            const encryptedImage = await encryptAES(payload.image, sharedKey);
+            // Prefix with generic octet-stream so the backend can accept it as base64
+            payload.image = `data:application/octet-stream;base64,${encryptedImage.ciphertextB64}`;
+            if (!iv) iv = encryptedImage.ivB64;
+            isEncrypted = true;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Encryption failed before sending:", err);
+    }
+
+    if (isEncrypted) {
+      payload.isEncrypted = true;
+      payload.iv = iv;
+    }
+
     // 1. Create an Optimistic Message for Instant UI Feedback
     const optimisticMessage = {
       _id: Date.now().toString(), // temporary ID
@@ -308,12 +346,13 @@ export const useChatstore = create(
     }
 
     try {
-      const res = await axiosInstance.post(`/messages/send/${targetUserId}`, messageData);
+      const res = await axiosInstance.post(`/messages/send/${targetUserId}`, payload);
+      const [decryptedRes] = await get()._decryptMessages([res.data]);
       
       // 3. Replace the optimistic message if it was added
       if (isCurrentChat) {
         const updatedMessages = get().messages.map(m => 
-          m._id === optimisticMessage._id ? res.data : m
+          m._id === optimisticMessage._id ? decryptedRes : m
         );
         set(state => ({ 
           messages: updatedMessages,
@@ -322,7 +361,7 @@ export const useChatstore = create(
       } else {
         const existingCache = get().messageCache[targetUserId];
         if (existingCache) {
-          const updatedCache = existingCache.map(m => m._id === optimisticMessage._id ? res.data : m);
+          const updatedCache = existingCache.map(m => m._id === optimisticMessage._id ? decryptedRes : m);
           set(state => ({
             messageCache: { ...state.messageCache, [targetUserId]: updatedCache }
           }));
@@ -343,7 +382,7 @@ export const useChatstore = create(
       if (userExists) {
         set({
           users: users.map(u => 
-            u._id === targetUserId ? { ...u, lastMessage: res.data } : u
+            u._id === targetUserId ? { ...u, lastMessage: decryptedRes } : u
           )
         });
       } else {
@@ -368,7 +407,10 @@ export const useChatstore = create(
     socket.off("messagesRead");
     socket.off("messageDeleted");
 
-    socket.on("newMessage", (newMessage) => {
+    socket.on("newMessage", async (rawMessage) => {
+      // Decrypt incoming message
+      const [newMessage] = await get()._decryptMessages([rawMessage]);
+
       // Always read the FRESHEST state at the moment the event fires
       const { selectedUser, getUsers } = get();
       const authUser = useAuthStore.getState().authUser;
@@ -529,6 +571,40 @@ export const useChatstore = create(
     }
   },
 
+  _decryptMessages: async (messagesToDecrypt) => {
+    const authUser = useAuthStore.getState().authUser;
+    if (!authUser || !messagesToDecrypt || messagesToDecrypt.length === 0) return messagesToDecrypt;
+    
+    try {
+      const { getMyPrivateKey, deriveSharedKey, decryptAES } = await import("../lib/crypto");
+      const privateKeyJwk = await getMyPrivateKey(authUser._id);
+      if (!privateKeyJwk) return messagesToDecrypt;
+
+      const { users, globalUsers } = get();
+      
+      const decryptedMessages = await Promise.all(messagesToDecrypt.map(async (msg) => {
+        if (!msg.isEncrypted || !msg.iv) return msg;
+        
+        const otherUserId = msg.senderId === authUser._id ? msg.receiverId : msg.senderId;
+        const otherUser = users.find(u => u._id === otherUserId) || globalUsers.find(u => u._id === otherUserId);
+        if (!otherUser || !otherUser.publicKey) return msg;
+
+        const sharedKey = await deriveSharedKey(privateKeyJwk, otherUser.publicKey);
+        if (!sharedKey) return msg;
+
+        let decryptedText = msg.text;
+        if (msg.text) {
+           decryptedText = await decryptAES(msg.text, msg.iv, sharedKey);
+        }
+
+        return { ...msg, text: decryptedText, isDecryptedLocally: true };
+      }));
+      return decryptedMessages;
+    } catch (err) {
+      console.error("Error decrypting messages:", err);
+      return messagesToDecrypt;
+    }
+  },
 
   setSelectedUser: (selectedUser) => {
     // Trigger native haptic feedback on chat selection

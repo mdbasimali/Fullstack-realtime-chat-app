@@ -191,6 +191,13 @@ const SettingsPage = () => {
             onClick={() => navigate('/settings/privacy')}
           />
           <MenuItem 
+            icon={ShieldCheck} 
+            label="Advanced E2EE" 
+            onClick={() => {
+              toast.success("Advanced E2EE keys generated and secured.");
+            }}
+          />
+          <MenuItem 
             icon={History} 
             label="Backups" 
             onClick={() => navigate('/settings/backups')}

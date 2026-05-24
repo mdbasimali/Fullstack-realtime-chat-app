@@ -47,6 +47,13 @@ const messageSchema = new mongoose.Schema(
         },
         callDuration: {
             type: Number, // duration in seconds
+        },
+        isEncrypted: {
+            type: Boolean,
+            default: false,
+        },
+        iv: {
+            type: String,
         }
     },
     {timestamps:true}

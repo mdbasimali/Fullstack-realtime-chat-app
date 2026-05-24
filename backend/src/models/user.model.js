@@ -75,7 +75,11 @@ const userSchema = new mongoose.Schema(
     ],
     pin: {
       type: String,
-      default: ""
+      default: "", // Empty means no PIN enabled
+    },
+    publicKey: {
+      type: Object, // We'll store the JWK object directly
+      default: null,
     },
     chatColor: {
       type: String,

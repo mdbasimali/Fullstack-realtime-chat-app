@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { Video, Phone, MoreVertical, ArrowLeft, Trash2, PhoneOff, UserPlus, X, Loader2, Info } from "lucide-react";
+import { Video, Phone, MoreVertical, ArrowLeft, Trash2, PhoneOff, UserPlus, X, Loader2, Info, Lock } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatstore } from "../store/useChatStore";
 import { useCallStore } from "../store/useCallStore";
 import { useGroupStore } from "../store/useGroupStore";
 import { getNickname } from "./ProfileModal";
 import toast from "react-hot-toast";
+import SafetyNumberModal from "./SafetyNumberModal";
 
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser, setShowContactDetailsSidebar, deleteConversation } = useChatstore();
@@ -38,6 +39,7 @@ const ChatHeader = () => {
   const [nicknamesVersion, setNicknamesVersion] = useState(0);
   const [dropdownView, setDropdownView] = useState("main");
   const [showClearModal, setShowClearModal] = useState(false);
+  const [showSafetyNumberModal, setShowSafetyNumberModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -117,6 +119,9 @@ const ChatHeader = () => {
               <span className="truncate">
                 {safeGroup ? safeGroup.name : (getNickname(authUser?._id, safeUser._id) || safeUser.fullName)}
               </span>
+              {!safeGroup && safeUser?.publicKey && (
+                <Lock size={12} className="text-emerald-500 shrink-0" title="End-to-End Encrypted" />
+              )}
             </h3>
             <p className="text-[11px] text-base-content/60 font-semibold mt-0.5 truncate">
               {safeGroup ? (
@@ -295,6 +300,14 @@ const ChatHeader = () => {
                       className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
                     >
                       View contact
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={() => { setShowSafetyNumberModal(true); document.activeElement?.blur(); }}
+                      className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
+                    >
+                      Verify Safety Number
                     </button>
                   </li>
                   <li>
@@ -501,6 +514,12 @@ const ChatHeader = () => {
         </div>
       </div>
     )}
+
+    {/* Safety Number Modal */}
+    <SafetyNumberModal 
+      isOpen={showSafetyNumberModal}
+      onClose={() => setShowSafetyNumberModal(false)}
+    />
     </>
   );
 };

@@ -3,6 +3,7 @@ import { useChatstore } from "../store/useChatStore";
 import { useGroupStore } from "../store/useGroupStore";
 import { Paperclip, Send, X, Smile, Mic, Trash2, Check } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuthStore } from "../store/useAuthStore";
 import EmojiPicker from "./EmojiPicker";
 import { triggerHapticFeedback } from "../lib/utils";
 
@@ -22,6 +23,7 @@ const MessageInput = () => {
 
   const { sendMessage, selectedUser } = useChatstore();
   const { selectedGroup, sendGroupMessage } = useGroupStore();
+  const authUser = useAuthStore((state) => state.authUser);
 
   const lastUserRef = useRef(selectedUser);
   const lastGroupRef = useRef(selectedGroup);
@@ -30,6 +32,8 @@ const MessageInput = () => {
 
   const safeUser = selectedUser || lastUserRef.current;
   const safeGroup = selectedGroup || lastGroupRef.current;
+
+  const isE2EE = !safeGroup && safeUser?.publicKey && authUser?.publicKey;
 
   useEffect(() => {
     return () => {
@@ -372,7 +376,7 @@ const MessageInput = () => {
                 spellCheck="true"
                 data-lpignore="true"
                 className="flex-1 min-w-0 bg-transparent text-[15px] md:text-[16px] border-none outline-none focus:outline-none placeholder-base-content/40 text-base-content px-1"
-                placeholder="Message"
+                placeholder={isE2EE ? "Encrypted message..." : "Message"}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 ref={textInputRef}

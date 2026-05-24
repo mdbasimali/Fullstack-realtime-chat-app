@@ -764,3 +764,21 @@ export const deleteAccount = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const uploadPublicKey = async (req, res) => {
+  try {
+    const { publicKey } = req.body;
+    const userId = req.user._id;
+
+    if (!publicKey) {
+      return res.status(400).json({ message: "Public key is required" });
+    }
+
+    await User.findByIdAndUpdate(userId, { publicKey });
+
+    res.status(200).json({ message: "Public key uploaded successfully" });
+  } catch (error) {
+    console.error("Error in uploadPublicKey:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
