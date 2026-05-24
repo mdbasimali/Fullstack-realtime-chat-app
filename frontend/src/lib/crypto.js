@@ -123,17 +123,116 @@ export const decryptAESBuffer = async (ciphertextBuffer, ivB64, key) => {
   }
 };
 
+// --- Secure PIN Storage & Key Wrapping ---
+let inMemoryPrivateKey = null;
+
+export const setInMemoryPrivateKey = (jwk) => {
+  inMemoryPrivateKey = jwk;
+};
+
+export const clearInMemoryPrivateKey = () => {
+  inMemoryPrivateKey = null;
+};
+
+export const deriveWrappingKey = async (pin, salt) => {
+  const enc = new TextEncoder();
+  const keyMaterial = await window.crypto.subtle.importKey(
+    "raw",
+    enc.encode(pin),
+    { name: "PBKDF2" },
+    false,
+    ["deriveBits", "deriveKey"]
+  );
+
+  return await window.crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+};
+
+export const wrapPrivateKey = async (jwk, pin) => {
+  const salt = window.crypto.getRandomValues(new Uint8Array(16));
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+  const wrappingKey = await deriveWrappingKey(pin, salt);
+  const enc = new TextEncoder();
+  const data = enc.encode(JSON.stringify(jwk));
+
+  const ciphertextBuffer = await window.crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: iv },
+    wrappingKey,
+    data
+  );
+
+  return {
+    encryptedKeyB64: bufferToBase64(ciphertextBuffer),
+    saltB64: bufferToBase64(salt),
+    ivB64: bufferToBase64(iv),
+    isWrapped: true
+  };
+};
+
+export const unwrapPrivateKey = async (wrappedData, pin) => {
+  if (!wrappedData.isWrapped) return wrappedData; // Fallback for legacy plaintext keys
+  
+  const salt = base64ToBuffer(wrappedData.saltB64);
+  const iv = new Uint8Array(base64ToBuffer(wrappedData.ivB64));
+  const ciphertextBuffer = base64ToBuffer(wrappedData.encryptedKeyB64);
+
+  const wrappingKey = await deriveWrappingKey(pin, salt);
+
+  try {
+    const decryptedBuffer = await window.crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: iv },
+      wrappingKey,
+      ciphertextBuffer
+    );
+    const dec = new TextDecoder();
+    return JSON.parse(dec.decode(decryptedBuffer));
+  } catch (err) {
+    throw new Error("Invalid PIN");
+  }
+};
+
 // IndexedDB wrappers for Private Key
-export const saveMyPrivateKey = async (userId, jwk) => {
-  await set(`private_key_${userId}`, jwk);
+export const saveMyPrivateKey = async (userId, jwkOrWrapped) => {
+  await set(`private_key_${userId}`, jwkOrWrapped);
 };
 
 export const getMyPrivateKey = async (userId) => {
+  // Always prefer the unlocked in-memory key if available
+  if (inMemoryPrivateKey) return inMemoryPrivateKey;
+  
+  // If not in memory, check IndexedDB
+  const storedKey = await get(`private_key_${userId}`);
+  if (!storedKey) return null;
+  
+  // If it is stored but WRAPPED, we cannot return it as a JWK!
+  // We return null so the app knows we don't have an unlocked key.
+  if (storedKey.isWrapped) {
+    return null;
+  }
+  
+  // If it's a legacy plaintext key, return it
+  return storedKey;
+};
+
+export const getStoredPrivateKeyRaw = async (userId) => {
+  // Used by the unlock process to get the raw wrapped bundle
   return await get(`private_key_${userId}`);
 };
 
 export const deleteMyPrivateKey = async (userId) => {
   await del(`private_key_${userId}`);
+  clearInMemoryPrivateKey();
 };
 
 // --- Advanced E2EE Features ---

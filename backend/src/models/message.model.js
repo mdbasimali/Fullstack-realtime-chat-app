@@ -2,15 +2,15 @@ import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
     {
-        senderId:{
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"User",
-            required:true,
+        senderId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
         },
-        receiverId:{
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"User",
-            required: function() { return !this.groupId; }
+        receiverId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: function () { return !this.groupId; }
         },
         groupId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -23,15 +23,15 @@ const messageSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
         }],
-        text:{
-            type:String,
+        text: {
+            type: String,
         },
-        image:{
-            type:String,
+        image: {
+            type: String,
         },
-        isRead:{
-            type:Boolean,
-            default:false,
+        isRead: {
+            type: Boolean,
+            default: false,
         },
         messageType: {
             type: String,
@@ -56,7 +56,7 @@ const messageSchema = new mongoose.Schema(
             type: String,
         }
     },
-    {timestamps:true}
+    { timestamps: true }
 );
 
 messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });

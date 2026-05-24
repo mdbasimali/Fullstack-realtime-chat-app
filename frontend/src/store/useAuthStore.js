@@ -131,21 +131,31 @@ export const useAuthStore = create((set,get) => ({
       set({ authUser: null });
       get().disconnectSocket();
       useChatstore.getState().clearChatStore();
+      const { clearInMemoryPrivateKey } = await import("../lib/crypto");
+      clearInMemoryPrivateKey();
     } catch (error) {
       console.error("Logout error:", error);
     }
   },
 
-  initializeE2EE: async (user, forceReset = false) => {
+  initializeE2EE: async (user, forceReset = false, newPin = null) => {
     try {
-      const { generateECDHKeyPair, getMyPrivateKey, saveMyPrivateKey } = await import("../lib/crypto");
+      const { generateECDHKeyPair, getMyPrivateKey, saveMyPrivateKey, wrapPrivateKey } = await import("../lib/crypto");
       let privateKeyJwk = await getMyPrivateKey(user._id);
       
       // Only generate new pair if explicitly forcing a reset, or if the server has no public key for this user (first signup)
       if (forceReset || !user.publicKey) {
         console.log("Generating new E2EE keys...");
         const keys = await generateECDHKeyPair();
-        await saveMyPrivateKey(user._id, keys.privateKeyJwk);
+        
+        if (newPin || user.pin) {
+          // If a PIN is provided or exists, wrap the new key immediately
+          const wrapped = await wrapPrivateKey(keys.privateKeyJwk, newPin || "legacy");
+          await saveMyPrivateKey(user._id, wrapped);
+        } else {
+          // Fallback to legacy
+          await saveMyPrivateKey(user._id, keys.privateKeyJwk);
+        }
         
         // Upload public key to server
         await axiosInstance.put("/auth/keys", { publicKey: keys.publicKeyJwk });
@@ -184,6 +194,24 @@ export const useAuthStore = create((set,get) => ({
       set((state) => ({ 
         authUser: state.authUser ? { ...state.authUser, pin: "enabled" } : null 
       }));
+      
+      const authUser = get().authUser;
+      if (authUser) {
+        const { getStoredPrivateKeyRaw, wrapPrivateKey, saveMyPrivateKey, setInMemoryPrivateKey } = await import("../lib/crypto");
+        const storedKey = await getStoredPrivateKeyRaw(authUser._id);
+        
+        // If we have a legacy plaintext key, wrap it immediately with the new PIN!
+        if (storedKey && !storedKey.isWrapped) {
+          const wrapped = await wrapPrivateKey(storedKey, pin);
+          await saveMyPrivateKey(authUser._id, wrapped);
+          setInMemoryPrivateKey(storedKey); // keep it unlocked in memory
+          toast.success("Local messages secured with PIN.");
+        } else if (!storedKey) {
+          // If no key exists, initialize it with the PIN
+          await get().initializeE2EE(authUser, true, pin);
+        }
+      }
+
       return { success: true, message: res.data.message };
     } catch (error) {
       console.error("Error creating PIN:", error);
@@ -214,12 +242,37 @@ export const useAuthStore = create((set,get) => ({
   verifyPin: async (pin) => {
     set({ isVerifyingPin: true });
     try {
+      const authUser = get().authUser;
+      if (!authUser) throw new Error("Not authenticated");
+
+      const { getStoredPrivateKeyRaw, unwrapPrivateKey, setInMemoryPrivateKey } = await import("../lib/crypto");
+      const storedBundle = await getStoredPrivateKeyRaw(authUser._id);
+
+      if (storedBundle && storedBundle.isWrapped) {
+        try {
+          const decryptedJwk = await unwrapPrivateKey(storedBundle, pin);
+          setInMemoryPrivateKey(decryptedJwk);
+        } catch (cryptoErr) {
+          throw new Error("Incorrect local decryption PIN");
+        }
+      }
+
+      // We still verify with the server for auth completeness
       const res = await axiosInstance.post("/auth/verify-pin", { pin });
       set({ isAppLocked: false });
+      
+      // Trigger re-decryption of messages now that memory key is available
+      const chatStore = useChatstore.getState();
+      chatStore.clearMessageCache();
+      chatStore.getUsers();
+      if (chatStore.selectedUser) {
+        chatStore.getMessages(chatStore.selectedUser._id);
+      }
+      
       return { success: true, message: res.data.message };
     } catch (error) {
       console.error("Error verifying PIN:", error);
-      return { success: false, error: error?.response?.data?.message || "Incorrect PIN" };
+      return { success: false, error: error?.response?.data?.message || error.message || "Incorrect PIN" };
     } finally {
       set({ isVerifyingPin: false });
     }
@@ -248,7 +301,7 @@ export const useAuthStore = create((set,get) => ({
     const LOCK_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
 
     // Listen for Web Visibility API (triggers on minimize/tab switch)
-    document.addEventListener("visibilitychange", () => {
+    document.addEventListener("visibilitychange", async () => {
       const authUser = get().authUser;
       if (document.visibilityState === "hidden") {
         // Record the time when app goes to background
@@ -259,6 +312,8 @@ export const useAuthStore = create((set,get) => ({
         if (lastTime && (Date.now() - lastTime >= LOCK_TIMEOUT_MS)) {
           if (authUser && authUser.pin) {
             set({ isAppLocked: true });
+            const { clearInMemoryPrivateKey } = await import("../lib/crypto");
+            clearInMemoryPrivateKey();
           }
         }
         set({ _lastBackgroundTime: null });
@@ -267,7 +322,7 @@ export const useAuthStore = create((set,get) => ({
 
     // Listen for Capacitor App State
     try {
-      App.addListener("appStateChange", ({ isActive }) => {
+      App.addListener("appStateChange", async ({ isActive }) => {
         const authUser = get().authUser;
         if (!isActive) {
           set({ _lastBackgroundTime: Date.now() });
@@ -276,6 +331,8 @@ export const useAuthStore = create((set,get) => ({
           if (lastTime && (Date.now() - lastTime >= LOCK_TIMEOUT_MS)) {
             if (authUser && authUser.pin) {
               set({ isAppLocked: true });
+              const { clearInMemoryPrivateKey } = await import("../lib/crypto");
+              clearInMemoryPrivateKey();
             }
           }
           set({ _lastBackgroundTime: null });

@@ -46,6 +46,7 @@ export const useChatstore = create(
     (set, get) => ({
   messages: [],
   messageCache: {}, // { userId: [messages] }
+  clearMessageCache: () => set({ messageCache: {} }),
   scrollCache: {}, // { chatId: scrollTop }
   setScrollCache: (chatId, pos) => set((state) => ({ scrollCache: { ...state.scrollCache, [chatId]: pos } })),
   users: [],
