@@ -100,7 +100,7 @@ export const decryptAES = async (ciphertextB64, ivB64, key) => {
 
     return new TextDecoder().decode(decryptedBuffer);
   } catch (err) {
-    console.error("Decryption failed:", err);
+    // Silently return fallback text if decryption fails (e.g., due to rotated keys or corrupted data)
     return "[Message could not be decrypted]";
   }
 };

@@ -102,8 +102,6 @@ const App = () => {
     localStorage.setItem("token", redirectToken);
   }
 
-  console.log({onlineUsers});
-
   // Handle native Android hardware back button & system navigation gesture swipes
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -418,8 +416,6 @@ const App = () => {
       useGroupStore.getState().setSelectedGroup(foundGroup || { _id: groupId });
     }
   }, [location, authUser, navigate]);
-
-  console.log({authUser});
 
   if(isCheckingAuth && !authUser)return(
     <div className="flex items-center justify-center h-screen">
