@@ -5,7 +5,7 @@ import { useChatstore } from "../store/useChatStore";
 import toast from "react-hot-toast";
 
 const AddMembersSidebar = ({ onClose }) => {
-  const { activeGroup, selectedGroupDetails, addMemberToGroup } = useGroupStore();
+  const { activeGroup, selectedGroupDetails, addMembersToGroup } = useGroupStore();
   const { users } = useChatstore();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,19 +60,12 @@ const AddMembersSidebar = ({ onClose }) => {
     if (selectedUsers.length === 0) return;
     
     setIsSubmitting(true);
-    let successCount = 0;
     
-    // Add each selected member sequentially
-    for (const userId of selectedUsers) {
-      const success = await addMemberToGroup(activeGroup._id, userId);
-      if (success) successCount++;
-    }
+    // Add all selected members at once
+    const success = await addMembersToGroup(activeGroup._id, selectedUsers);
 
     setIsSubmitting(false);
-    if (successCount > 0) {
-      if (successCount < selectedUsers.length) {
-        toast.success(`Added ${successCount} of ${selectedUsers.length} members.`);
-      }
+    if (success) {
       onClose();
     }
   };

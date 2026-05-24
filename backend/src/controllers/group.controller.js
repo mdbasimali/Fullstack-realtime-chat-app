@@ -330,7 +330,7 @@ export const sendGroupMessage = async (req, res) => {
  */
 export const addMember = async (req, res) => {
   const { groupId } = req.params;
-  const { userId, email, username } = req.body;
+  const { userId, userIds, email, username } = req.body;
   const currentUserId = req.user._id;
 
   try {
@@ -340,49 +340,62 @@ export const addMember = async (req, res) => {
     }
 
     // Verify requesting user is a member
-    if (!group.members.includes(currentUserId)) {
+    if (!group.members.some(id => id.toString() === currentUserId.toString())) {
       return res.status(403).json({ message: "Only group members can add new users." });
     }
 
-    let targetUserId = userId;
+    let targetUserIds = [];
 
-    // If userId not provided, lookup by email or username
-    if (!targetUserId) {
+    if (userIds && Array.isArray(userIds) && userIds.length > 0) {
+      targetUserIds = userIds;
+    } else if (userId) {
+      targetUserIds = [userId];
+    } else {
       let query = {};
       if (email) query.email = email.trim().toLowerCase();
       else if (username) query.username = username.trim();
       else {
-        return res.status(400).json({ message: "User ID, email, or username is required." });
+        return res.status(400).json({ message: "User ID(s), email, or username is required." });
       }
 
       const foundUser = await User.findOne(query);
       if (!foundUser) {
         return res.status(404).json({ message: "User not found." });
       }
-      targetUserId = foundUser._id;
+      targetUserIds = [foundUser._id.toString()];
     }
 
-    // Check limit and duplicate membership atomically
+    // Filter out users who are already in the group
+    const newMembers = targetUserIds.filter(
+      id => !group.members.some(memberId => memberId.toString() === id.toString())
+    );
+
+    if (newMembers.length === 0) {
+      return res.status(400).json({ message: "All specified users are already members." });
+    }
+
+    if (group.members.length + newMembers.length > group.maxMembers) {
+      return res.status(400).json({ message: `Cannot add members. Exceeds max limit of ${group.maxMembers}.` });
+    }
+
     const updatedGroup = await Group.findOneAndUpdate(
-      {
-        _id: groupId,
-        members: { $ne: targetUserId },
-        $expr: { $lt: [{ $size: "$members" }, "$maxMembers"] }
-      },
-      { $addToSet: { members: targetUserId } },
+      { _id: groupId },
+      { $addToSet: { members: { $each: newMembers } } },
       { new: true }
     );
 
     if (updatedGroup) {
-      // Notify via socket
-      io.to(`group_${groupId}`).emit("groupMemberJoined", {
-        groupId,
-        userId: targetUserId,
-        membersCount: updatedGroup.members.length
+      // Notify via socket for each new member
+      newMembers.forEach(id => {
+        io.to(`group_${groupId}`).emit("groupMemberJoined", {
+          groupId,
+          userId: id,
+          membersCount: updatedGroup.members.length
+        });
       });
 
       return res.status(200).json({
-        message: "User added successfully.",
+        message: newMembers.length > 1 ? `Successfully added ${newMembers.length} members.` : "User added successfully.",
         group: {
           _id: updatedGroup._id,
           name: updatedGroup.name,
@@ -394,15 +407,7 @@ export const addMember = async (req, res) => {
       });
     }
 
-    if (group.members.includes(targetUserId)) {
-      return res.status(400).json({ message: "User is already a member of this group." });
-    }
-
-    if (group.members.length >= group.maxMembers) {
-      return res.status(400).json({ message: "Group is full (max 100 members)." });
-    }
-
-    res.status(400).json({ message: "Failed to add member to the group." });
+    res.status(400).json({ message: "Failed to add member(s) to the group." });
   } catch (error) {
     console.error("Error in addMember:", error);
     res.status(500).json({ message: "Server error adding group member." });

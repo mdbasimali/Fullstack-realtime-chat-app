@@ -364,16 +364,9 @@ export const useGroupStore = create(
     socket.off("groupUpdated");
   },
 
-  addMemberToGroup: async (groupId, identifier) => {
+  addMembersToGroup: async (groupId, userIds) => {
     try {
-      const payload = {};
-      if (identifier.length === 24 && /^[0-9a-fA-F]{24}$/.test(identifier)) {
-        payload.userId = identifier;
-      } else if (identifier.includes("@")) {
-        payload.email = identifier.trim();
-      } else {
-        payload.username = identifier.trim();
-      }
+      const payload = { userIds };
 
       const res = await axiosInstance.post(`/groups/${groupId}/add-member`, payload);
       const updatedGroup = res.data.group;
@@ -388,10 +381,13 @@ export const useGroupStore = create(
         set({ selectedGroup: { ...selected, membersCount: updatedGroup.membersCount } });
       }
 
-      toast.success(res.data.message || "Member added successfully! 🎉");
+      // Re-fetch details to update the sidebar members list correctly
+      await get().fetchGroupDetails(groupId);
+
+      toast.success(res.data.message || "Members added successfully! 🎉");
       return true;
     } catch (error) {
-      const errorMsg = error.response?.data?.message || "Failed to add member.";
+      const errorMsg = error.response?.data?.message || "Failed to add members.";
       toast.error(errorMsg);
       return false;
     }
