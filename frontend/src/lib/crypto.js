@@ -105,6 +105,24 @@ export const decryptAES = async (ciphertextB64, ivB64, key) => {
   }
 };
 
+// Decrypt an ArrayBuffer directly using derived AES-GCM key
+export const decryptAESBuffer = async (ciphertextBuffer, ivB64, key) => {
+  try {
+    const iv = new Uint8Array(base64ToBuffer(ivB64));
+
+    const decryptedBuffer = await window.crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: iv },
+      key,
+      ciphertextBuffer
+    );
+
+    return new TextDecoder().decode(decryptedBuffer);
+  } catch (err) {
+    console.error("decryptAESBuffer failed:", err);
+    return null;
+  }
+};
+
 // IndexedDB wrappers for Private Key
 export const saveMyPrivateKey = async (userId, jwk) => {
   await set(`private_key_${userId}`, jwk);
