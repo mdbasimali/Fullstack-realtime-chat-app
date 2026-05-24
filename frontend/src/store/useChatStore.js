@@ -601,8 +601,18 @@ export const useChatstore = create(
       const decryptedMessages = await Promise.all(messagesToDecrypt.map(async (msg) => {
         if (!msg.isEncrypted || !msg.iv) return msg;
         
-        const senderIdStr = typeof msg.senderId === "object" ? msg.senderId._id : msg.senderId;
-        const receiverIdStr = typeof msg.receiverId === "object" ? msg.receiverId._id : msg.receiverId;
+        const extractId = (id) => {
+          if (!id) return null;
+          if (typeof id === "string") return id;
+          if (typeof id === "object") {
+            if (id._id) return typeof id._id === "string" ? id._id : id._id.toString();
+            return id.toString();
+          }
+          return String(id);
+        };
+
+        const senderIdStr = extractId(msg.senderId);
+        const receiverIdStr = extractId(msg.receiverId);
         const otherUserId = senderIdStr === authUser._id ? receiverIdStr : senderIdStr;
         const otherUser = users.find(u => u._id === otherUserId) || globalUsers.find(u => u._id === otherUserId);
         if (!otherUser || !otherUser.publicKey) return msg;
@@ -635,8 +645,18 @@ export const useChatstore = create(
       const privateKeyJwk = await getMyPrivateKey(authUser._id);
       if (!privateKeyJwk) return message.image;
 
-      const senderIdStr = typeof message.senderId === "object" ? message.senderId._id : message.senderId;
-      const receiverIdStr = typeof message.receiverId === "object" ? message.receiverId._id : message.receiverId;
+      const extractId = (id) => {
+        if (!id) return null;
+        if (typeof id === "string") return id;
+        if (typeof id === "object") {
+          if (id._id) return typeof id._id === "string" ? id._id : id._id.toString();
+          return id.toString();
+        }
+        return String(id);
+      };
+
+      const senderIdStr = extractId(message.senderId);
+      const receiverIdStr = extractId(message.receiverId);
       const otherUserId = senderIdStr === authUser._id ? receiverIdStr : senderIdStr;
       const { users, globalUsers } = get();
       const otherUser = users.find(u => u._id === otherUserId) || globalUsers.find(u => u._id === otherUserId);
