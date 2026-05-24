@@ -71,17 +71,12 @@ const HomePage = () => {
           
           {/* Sidebar Pane */}
           {/* Mobile: scales down and dims when a chat opens. Desktop: always visible */}
-          <div 
+          <div
             className={`h-full flex-shrink-0 flex-col overflow-hidden w-full md:w-[var(--sidebar-width)] ${
               (!selectedUser && !selectedGroup) 
                 ? 'translate-x-0 scale-100 opacity-100 md:opacity-100 brightness-100' 
                 : '-translate-x-[15%] scale-[0.97] opacity-0 md:opacity-100 md:translate-x-0 md:scale-100 pointer-events-none md:pointer-events-auto brightness-75 md:brightness-100'
             } flex`}
-            style={{ 
-              transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, filter 0.35s ease',
-              willChange: 'transform, opacity, filter',
-              transformOrigin: 'left center'
-            }}
           >
             <Sidebar />
           </div>
@@ -102,10 +97,6 @@ const HomePage = () => {
               ? 'translate-x-full md:translate-x-0 shadow-none' 
               : 'translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.1)] md:shadow-none'
           } flex`}
-            style={{ 
-              transition: `transform ${(!selectedUser && !selectedGroup) ? '0.4s' : '0.35s'} cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s ease`,
-              willChange: 'transform, box-shadow'
-            }}
           >
             {/* Always mount BOTH components to prevent DOM mounting cost during animation */}
             
