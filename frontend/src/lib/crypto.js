@@ -49,7 +49,7 @@ export const deriveSharedKey = async (privateKeyJwk, publicKeyJwk) => {
 };
 
 // ArrayBuffer to Base64
-const bufferToBase64 = (buffer) => {
+export const bufferToBase64 = (buffer) => {
   const bytes = new Uint8Array(buffer);
   let binary = "";
   for (let i = 0; i < bytes.byteLength; i++) {
@@ -59,7 +59,7 @@ const bufferToBase64 = (buffer) => {
 };
 
 // Base64 to ArrayBuffer
-const base64ToBuffer = (base64) => {
+export const base64ToBuffer = (base64) => {
   const binary_string = window.atob(base64);
   const len = binary_string.length;
   const bytes = new Uint8Array(len);

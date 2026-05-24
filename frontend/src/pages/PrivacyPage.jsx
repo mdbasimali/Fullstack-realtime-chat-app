@@ -1,6 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Fingerprint } from "lucide-react";
+import { useAuthStore } from "../store/useAuthStore";
+import BiometricEnrollModal from "../components/BiometricEnrollModal";
+import { isBiometricsAvailable, deleteNativeBiometrics, deleteWebAuthnData } from "../lib/biometrics";
+import toast from "react-hot-toast";
 
 const PrivacyPage = () => {
   const [readReceipts, setReadReceipts] = useState(true);
@@ -8,6 +12,34 @@ const PrivacyPage = () => {
   const [screenSecurity, setScreenSecurity] = useState(false);
   const [incognitoKeyboard, setIncognitoKeyboard] = useState(false);
   const [paymentLock, setPaymentLock] = useState(false);
+  
+  const { authUser, isBiometricsEnabled, setBiometricsEnabled } = useAuthStore();
+  const [biometricsSupported, setBiometricsSupported] = useState(false);
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+
+  useEffect(() => {
+    const checkBiometrics = async () => {
+      const available = await isBiometricsAvailable();
+      setBiometricsSupported(available);
+    };
+    checkBiometrics();
+  }, []);
+
+  const handleBiometricToggle = async (e) => {
+    const isChecked = e.target.checked;
+    if (isChecked) {
+      if (!authUser.pin) {
+        toast.error("You must create a PIN first before enabling Biometrics.");
+        return;
+      }
+      setIsEnrollModalOpen(true);
+    } else {
+      await deleteNativeBiometrics();
+      await deleteWebAuthnData(authUser._id);
+      setBiometricsEnabled(false);
+      toast.success("Biometrics disabled.");
+    }
+  };
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] w-full flex flex-col bg-base-100 select-none overflow-hidden font-sans">
@@ -113,6 +145,26 @@ const PrivacyPage = () => {
             <span className="text-[14px] text-base-content/60 mt-0.5">Off</span>
           </button>
 
+          {biometricsSupported && (
+            <label className="w-full px-6 py-4 flex items-center justify-between hover:bg-base-200 transition-colors cursor-pointer text-left gap-4">
+              <div className="flex flex-col">
+                <span className="text-[16px] text-base-content font-medium flex items-center gap-2">
+                  <Fingerprint size={18} />
+                  Biometric unlock
+                </span>
+                <span className="text-[14px] text-base-content/60 mt-0.5 leading-relaxed">
+                  Use fingerprint or face recognition to unlock your chats
+                </span>
+              </div>
+              <input 
+                type="checkbox" 
+                className="toggle toggle-md shrink-0 toggle-primary"
+                checked={isBiometricsEnabled}
+                onChange={handleBiometricToggle}
+              />
+            </label>
+          )}
+
           <label className="w-full px-6 py-4 flex items-center justify-between hover:bg-base-200 transition-colors cursor-pointer text-left gap-4">
             <div className="flex flex-col">
               <span className="text-[16px] text-base-content font-medium">Screen security</span>
@@ -185,6 +237,15 @@ const PrivacyPage = () => {
         </div>
 
       </div>
+
+      <BiometricEnrollModal 
+        isOpen={isEnrollModalOpen} 
+        onClose={() => setIsEnrollModalOpen(false)}
+        onSuccess={() => {
+          setIsEnrollModalOpen(false);
+          setBiometricsEnabled(true);
+        }}
+      />
     </div>
   );
 };

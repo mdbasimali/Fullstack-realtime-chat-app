@@ -27,6 +27,7 @@ export const useAuthStore = create((set,get) => ({
   isFetchingDevices: false,
   isAppLocked: false,
   isVerifyingPin: false,
+  isBiometricsEnabled: localStorage.getItem("biometrics_enabled") === "true",
   _hasInitializedLockListener: false,
   _lastBackgroundTime: null,
 

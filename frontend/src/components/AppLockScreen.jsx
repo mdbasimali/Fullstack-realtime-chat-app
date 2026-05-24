@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNavigate } from "react-router-dom";
-import { Lock, Loader2, CheckCircle2, ChevronRight, AlertCircle } from "lucide-react";
+import { Lock, Loader2, CheckCircle2, ChevronRight, AlertCircle, Fingerprint } from "lucide-react";
 import toast from "react-hot-toast";
+import { unlockWithBiometrics } from "../lib/biometrics";
 
 const AppLockScreen = () => {
-  const { verifyPin, isVerifyingPin } = useAuthStore();
+  const { authUser, verifyPin, isVerifyingPin, isBiometricsEnabled } = useAuthStore();
   const navigate = useNavigate();
   const [pin, setPin] = useState(["", "", "", ""]);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -17,7 +18,19 @@ const AppLockScreen = () => {
     if (inputRefs[0].current) {
       inputRefs[0].current.focus();
     }
+    
+    // Auto trigger biometric unlock if enabled
+    if (isBiometricsEnabled && authUser?._id) {
+      handleBiometricUnlock();
+    }
   }, []);
+
+  const handleBiometricUnlock = async () => {
+    const pinStr = await unlockWithBiometrics(authUser._id);
+    if (pinStr) {
+      handleVerify(pinStr);
+    }
+  };
 
   const handleChange = async (index, value) => {
     // Only allow numbers
@@ -233,6 +246,19 @@ const AppLockScreen = () => {
                     )}
                   </span>
                 </button>
+                
+                {isBiometricsEnabled && (
+                  <button
+                    type="button"
+                    onClick={handleBiometricUnlock}
+                    disabled={isVerifyingPin}
+                    className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 disabled:opacity-50 hover:bg-white/5"
+                    style={{ color: "#9ca3af" }}
+                  >
+                    <Fingerprint size={18} />
+                    Unlock with Biometrics
+                  </button>
+                )}
               </div>
             </form>
           )}
