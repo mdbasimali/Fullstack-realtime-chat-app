@@ -330,7 +330,7 @@ const ChatContainer = () => {
         <ChatHeader />
 
         {/* Messages Stream View */}
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-4 md:pb-6 space-y-1">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 md:pb-28 space-y-1">
           
           {/* Encryption Banner */}
           <div className="flex flex-col items-center justify-center mb-6 mt-2 animate-fade-in">
