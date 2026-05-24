@@ -287,7 +287,7 @@ export const useChatstore = create(
   },
 
   sendMessage: async (messageData) => {
-    const { selectedUser, messages, getUsers, activeConversations } = get();
+    const { selectedUser, messages, getUsers, activeConversations, users, globalUsers } = get();
     const authUser = useAuthStore.getState().authUser;
     
     // Support explicit receiverId (e.g., from story reply) or fallback to selectedUser
@@ -301,10 +301,28 @@ export const useChatstore = create(
     try {
       const { getMyPrivateKey, deriveSharedKey, encryptAES } = await import("../lib/crypto");
       const privateKeyJwk = await getMyPrivateKey(authUser._id);
-      const otherUser = get().users.find(u => u._id === targetUserId) || get().globalUsers.find(u => u._id === targetUserId);
 
-      if (privateKeyJwk && otherUser && otherUser.publicKey) {
-        const sharedKey = await deriveSharedKey(privateKeyJwk, otherUser.publicKey);
+      const otherUser = users.find(u => u._id === targetUserId) || globalUsers.find(u => u._id === targetUserId);
+      let currentOtherUserPubKey = otherUser?.publicKey;
+
+      // Always fetch the absolute latest public key before encrypting to prevent locking messages with stale keys
+      if (privateKeyJwk && otherUser) {
+        try {
+          const keyRes = await axiosInstance.get(`/auth/public-key/${targetUserId}`);
+          if (keyRes.data?.publicKey) {
+            currentOtherUserPubKey = keyRes.data.publicKey;
+            // Optimistically update local state so we don't need to fetch it again if it hasn't changed, but fetching is fast anyway
+            set(state => ({
+              users: state.users.map(u => u._id === targetUserId ? { ...u, publicKey: keyRes.data.publicKey } : u)
+            }));
+          }
+        } catch (err) {
+          console.warn("Could not fetch latest public key, falling back to cached key");
+        }
+      }
+
+      if (privateKeyJwk && otherUser && currentOtherUserPubKey) {
+        const sharedKey = await deriveSharedKey(privateKeyJwk, currentOtherUserPubKey);
         if (sharedKey) {
           // Generate a single shared IV for this message
           const sharedIv = window.crypto.getRandomValues(new Uint8Array(12));

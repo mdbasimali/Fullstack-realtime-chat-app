@@ -775,10 +775,25 @@ export const uploadPublicKey = async (req, res) => {
     }
 
     await User.findByIdAndUpdate(userId, { publicKey });
+    
+    // Notify all online users that this user's key has updated
+    io.emit("userPublicKeyUpdated", { userId, publicKey });
 
     res.status(200).json({ message: "Public key uploaded successfully" });
   } catch (error) {
     console.error("Error in uploadPublicKey:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getPublicKey = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("publicKey");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json({ publicKey: user.publicKey });
+  } catch (error) {
+    console.error("Error in getPublicKey:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

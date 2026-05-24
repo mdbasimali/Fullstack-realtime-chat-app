@@ -1,5 +1,5 @@
 import express from "express";
-import { checkAuth, login, logout, signup, updateProfile, googleAuth, getGoogleClientId, googleRedirect, linkDevice, getLinkedDevices, revokeLinkedDevice, firebaseLogin, checkUsername, createPin, changePin, verifyPin, deleteAccount, uploadPublicKey } from "../controllers/auth.controller.js";
+import { checkAuth, login, logout, signup, updateProfile, googleAuth, getGoogleClientId, googleRedirect, linkDevice, getLinkedDevices, revokeLinkedDevice, firebaseLogin, checkUsername, createPin, changePin, verifyPin, deleteAccount, uploadPublicKey, getPublicKey } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router =express.Router()
@@ -25,5 +25,6 @@ router.delete("/linked-devices/:sessionId", protectRoute, revokeLinkedDevice);
 
 router.post("/delete-account", protectRoute, deleteAccount);
 router.put("/keys", protectRoute, uploadPublicKey);
+router.get("/public-key/:userId", protectRoute, getPublicKey);
 
 export default router
