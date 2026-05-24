@@ -30,6 +30,8 @@ export const useGroupStore = create(
   isCreatingGroup: false,
   showGroupDetailsSidebar: false,
   setShowGroupDetailsSidebar: (show) => set({ showGroupDetailsSidebar: show }),
+  showAddMembersSidebar: false,
+  setShowAddMembersSidebar: (show) => set({ showAddMembersSidebar: show }),
   selectedGroupDetails: null,
   isFetchingGroupDetails: false,
   showGroupCallModal: false,

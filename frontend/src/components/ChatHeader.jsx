@@ -12,9 +12,9 @@ const ChatHeader = () => {
     selectedGroup, 
     setSelectedGroup, 
     leaveGroup, 
-    addMemberToGroup,
     showGroupDetailsSidebar,
     setShowGroupDetailsSidebar,
+    setShowAddMembersSidebar,
     selectedGroupDetails,
     isFetchingGroupDetails,
     setShowGroupCallModal,
@@ -34,9 +34,6 @@ const ChatHeader = () => {
   const safeUser = selectedUser || lastUserRef.current;
   const safeGroup = selectedGroup || lastGroupRef.current;
 
-  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
-  const [memberIdentifier, setMemberIdentifier] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [nicknamesVersion, setNicknamesVersion] = useState(0);
   const [dropdownView, setDropdownView] = useState("main");
   const dropdownRef = useRef(null);
@@ -57,20 +54,6 @@ const ChatHeader = () => {
       setSelectedGroup(null);
     } else {
       setSelectedUser(null);
-    }
-  };
-
-  const handleAddMemberSubmit = async (e) => {
-    e.preventDefault();
-    if (!memberIdentifier.trim()) return;
-
-    setIsSubmitting(true);
-    const success = await addMemberToGroup(safeGroup._id, memberIdentifier.trim());
-    setIsSubmitting(false);
-
-    if (success) {
-      setMemberIdentifier("");
-      setShowAddMemberModal(false);
     }
   };
 
@@ -219,7 +202,7 @@ const ChatHeader = () => {
                 <>
                   <li>
                     <button 
-                      onClick={() => { setShowAddMemberModal(true); document.activeElement?.blur(); }}
+                      onClick={() => { setShowGroupDetailsSidebar(true); setShowAddMembersSidebar(true); document.activeElement?.blur(); }}
                       className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start"
                     >
                       Add members
@@ -467,66 +450,6 @@ const ChatHeader = () => {
           </ul>
         </div>
       </div>
-
-      {/* Add Member Modal */}
-      {showAddMemberModal && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-base-100 border border-base-300 w-full max-w-sm rounded-[28px] overflow-hidden shadow-2xl animate-scale-up">
-            <header className="px-6 py-5 border-b border-base-200 flex justify-between items-center bg-base-150">
-              <div className="text-left">
-                <h3 className="text-base font-extrabold text-base-content tracking-tight">Add Group Member</h3>
-                <p className="text-xs text-base-content/50 mt-0.5">Add by email or username</p>
-              </div>
-              <button 
-                onClick={() => { setShowAddMemberModal(false); setMemberIdentifier(""); }}
-                className="p-1.5 rounded-full hover:bg-base-200 text-base-content/60 hover:text-base-content transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </header>
-
-            <form onSubmit={handleAddMemberSubmit} className="p-6 space-y-4">
-              <div className="space-y-1.5 text-left">
-                <label className="text-xs font-bold text-base-content/70 tracking-wide uppercase px-1">Colleague Identifier</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. john@example.com or john_doe" 
-                  value={memberIdentifier}
-                  onChange={(e) => setMemberIdentifier(e.target.value)}
-                  required
-                  disabled={isSubmitting}
-                  className="w-full px-4 py-3 rounded-2xl bg-base-200 border border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => { setShowAddMemberModal(false); setMemberIdentifier(""); }}
-                  disabled={isSubmitting}
-                  className="px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-base-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !memberIdentifier.trim()}
-                  className="px-6 py-2.5 rounded-full text-sm font-semibold btn-primary flex items-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Adding...</span>
-                    </>
-                  ) : (
-                    <span>Add Member</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

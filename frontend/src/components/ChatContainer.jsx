@@ -66,6 +66,8 @@ const ChatContainer = () => {
     fetchGroupDetails,
     deleteGroupMessage,
     leaveGroup,
+    showAddMembersSidebar,
+    setShowAddMembersSidebar,
   } = useGroupStore();
 
   // Retain previous state during exit transition to prevent white flashes
@@ -109,7 +111,6 @@ const ChatContainer = () => {
 
   const [contextMenu, setContextMenu] = useState(null); // { message, x, y, isMobile }
   const [isEditingGroup, setIsEditingGroup] = useState(false);
-  const [showAddMembersSidebar, setShowAddMembersSidebar] = useState(false);
   const [viewingMedia, setViewingMedia] = useState(null);
   const touchTimeoutRef = useRef(null);
   const touchStartPosRef = useRef({ x: 0, y: 0 });
