@@ -331,78 +331,12 @@ const ChatContainer = () => {
         {/* Messages Stream View */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 md:pb-28 space-y-1">
           
-          {/* WhatsApp-Style User Profile Onboarding Card */}
-          {activeUser && (
-            <div className="flex flex-col items-center justify-center p-6 mb-6 mt-3 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-[24px] max-w-[250px] md:max-w-[285px] mx-auto text-center shadow-sm animate-fade-in">
-              {activeUser.profilePic ? (
-                <img 
-                  src={activeUser.profilePic} 
-                  alt={activeUser.fullName} 
-                  className="w-[64px] h-[64px] rounded-full object-cover mb-3" 
-                />
-              ) : (
-                <div className="w-[64px] h-[64px] rounded-full bg-pink-100/80 dark:bg-pink-900/40 text-pink-500 flex items-center justify-center font-bold text-[22px] mb-3">
-                  {activeUser.fullName.slice(0, 2).toLowerCase()}
-                </div>
-              )}
-              <h3 className="font-bold text-[15px] text-base-content leading-tight mb-1.5">
-                {activeUser.fullName}
-              </h3>
-              {activeUser.phoneNumber && (
-                <p className="text-[11px] font-medium text-base-content/50 flex items-center justify-center gap-1.5 mb-1">
-                  <Phone size={12} /> {activeUser.phoneNumber}
-                </p>
-              )}
-              <p className="text-[11px] font-medium text-base-content/50 flex items-center justify-center gap-1.5">
-                <Users size={12} /> No groups in common
-              </p>
-            </div>
-          )}
-
-          {/* WhatsApp-Style Group Profile Onboarding Card */}
-          {activeGroup && (
-            <div className="flex flex-col items-center justify-center p-6 mb-6 mt-3 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-[24px] max-w-[250px] md:max-w-[285px] mx-auto text-center shadow-sm animate-fade-in">
-              {activeGroup.avatar ? (
-                <img
-                  src={activeGroup.avatar}
-                  alt={activeGroup.name}
-                  className="w-[64px] h-[64px] rounded-full object-cover mb-3"
-                />
-              ) : (
-                <div className="w-[64px] h-[64px] rounded-full bg-blue-100 dark:bg-blue-900/40 text-primary flex items-center justify-center font-bold text-[22px] mb-3">
-                  {activeGroup.name.slice(0, 2).toUpperCase()}
-                </div>
-              )}
-              
-              <h3 className="font-bold text-[15px] text-base-content leading-tight mb-1">
-                {activeGroup.creatorId === authUser?._id ? "You created this group" : `${creatorName} added you`}
-              </h3>
-              
-              <p className="text-[11px] font-medium text-base-content/50 mb-3 px-2 leading-tight">
-                {activeGroup.membersCount} members · Group created by {activeGroup.creatorId === authUser?._id ? "you" : creatorName}
-              </p>
-
-              <button className="text-[12px] font-semibold text-primary hover:underline mb-4">
-                Add description...
-              </button>
-
-              <div className="w-full space-y-2.5 px-1">
-                <button 
-                  onClick={() => {
-                    const drawer = document.getElementById("contact-details-drawer");
-                    if (drawer) drawer.checked = true;
-                  }}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-full border border-base-200 dark:border-base-700 text-[#008069] dark:text-[#00a884] hover:bg-base-200/50 dark:hover:bg-base-800 transition-colors"
-                >
-                  <UserPlus size={16} strokeWidth={2.5} />
-                  <span className="font-bold text-[12px]">Add members</span>
-                </button>
-                <button 
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-full border border-base-200 dark:border-base-700 text-[#008069] dark:text-[#00a884] hover:bg-base-200/50 dark:hover:bg-base-800 transition-colors"
-                >
-                  <PlusCircle size={16} strokeWidth={2.5} />
-                  <span className="font-bold text-[12px]">Add your member tag</span>
-                </button>
+          {/* End-to-end Encryption Banner */}
+          {(activeUser || activeGroup) && (
+            <div className="flex justify-center mb-6 mt-4 animate-fade-in px-2">
+              <div className="bg-[#FFF5C4] dark:bg-[#1C2C34] text-[#54656F] dark:text-[#FFD279] text-[11.5px] font-medium leading-[16px] text-center py-2 px-3.5 rounded-[12px] shadow-sm max-w-[360px]">
+                <Lock size={10} className="inline-block mr-1.5 mb-[2px]" strokeWidth={2.5} />
+                Messages and calls are end-to-end encrypted. Only people in this chat can read, listen to, or share them. <span className="hover:underline cursor-pointer text-[#1e88e5] dark:text-primary">Learn more</span>
               </div>
             </div>
           )}
