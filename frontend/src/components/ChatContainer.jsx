@@ -46,6 +46,7 @@ const getSenderColor = (senderId) => {
 
 const EncryptedImage = ({ message, onClick, className }) => {
   const [imgSrc, setImgSrc] = useState(message.isEncrypted && message.image && message.image.startsWith("http") ? null : message.image);
+  const [decryptionFailed, setDecryptionFailed] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -54,18 +55,33 @@ const EncryptedImage = ({ message, onClick, className }) => {
         if (!message || !message.image) return;
         if (message.isEncrypted && message.image.startsWith("http")) {
           const decrypted = await useChatstore.getState().decryptMediaUrl(message);
-          if (isMounted) setImgSrc(decrypted || message.image);
+          if (isMounted) {
+            if (decrypted && decrypted.startsWith("data:")) {
+              setImgSrc(decrypted);
+            } else {
+              setDecryptionFailed(true);
+            }
+          }
         } else {
           if (isMounted) setImgSrc(message.image);
         }
       } catch (error) {
         console.error("Failed to load image", error);
-        if (isMounted) setImgSrc(message.image);
+        if (isMounted) setDecryptionFailed(true);
       }
     };
     fetchAndDecrypt();
     return () => { isMounted = false; };
   }, [message]);
+
+  if (decryptionFailed) {
+    return (
+      <div className={`${className} bg-base-300 flex flex-col items-center justify-center border border-base-content/10`} style={{ minWidth: "150px", minHeight: "150px" }}>
+        <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
+        <span className="text-xs font-medium text-base-content/70 px-2 text-center">Decryption Failed</span>
+      </div>
+    );
+  }
 
   if (!imgSrc) {
     return (
