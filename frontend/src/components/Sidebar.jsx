@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useChatstore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useCallStore } from "../store/useCallStore";
@@ -682,10 +683,16 @@ const Sidebar = () => {
   );
 
   // Active chats are the users we've exchanged messages with, filtered by search query
-  const chatUsers = users.filter(user => 
-    (user.lastMessage || activeConversations.includes(user._id)) && 
-    user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const chatUsers = users
+    .filter(user => 
+      (user.lastMessage || activeConversations.includes(user._id)) && 
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      const timeA = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : 0;
+      const timeB = b.lastMessage ? new Date(b.lastMessage.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
 
   const handleStoryImageChange = (e) => {
     const file = e.target.files[0];
@@ -913,6 +920,7 @@ const Sidebar = () => {
                   <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Conversations</span>
                   <span className="text-xs text-primary font-medium">({chatUsers.length})</span>
                 </div>
+                <AnimatePresence initial={false}>
                 {[...chatUsers].sort((a, b) => {
                   const aPinned = pinnedChats.includes(a._id);
                   const bPinned = pinnedChats.includes(b._id);
@@ -924,7 +932,12 @@ const Sidebar = () => {
                   const isSelected = selectedUser?._id === user._id;
 
                   return (
-                    <div
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
                       key={user._id}
                       onClick={() => {
                         // Prevent click action from firing if active menu is currently open
@@ -936,7 +949,7 @@ const Sidebar = () => {
                       onTouchEnd={endLongPress}
                       onMouseDown={(e) => startLongPress(e, user._id)}
                       onMouseUp={endLongPress}
-                      className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-all duration-200 select-none active:scale-[0.98] ${
+                      className={`group w-full p-3.5 flex items-center justify-between rounded-2xl cursor-pointer transition-colors duration-200 select-none active:scale-[0.98] ${
                         isSelected 
                           ? "bg-primary/10 border border-primary/20 shadow-sm" 
                           : "hover:bg-base-200 border border-transparent"
@@ -1029,9 +1042,10 @@ const Sidebar = () => {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
+                </AnimatePresence>
               </div>
               </div>
             )}
