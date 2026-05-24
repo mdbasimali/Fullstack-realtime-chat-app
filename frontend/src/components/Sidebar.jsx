@@ -1241,31 +1241,7 @@ const Sidebar = () => {
         {/* ==================== TABS: GROUPS ==================== */}
         {activeTab === "groups" && (
           <div className="space-y-6 animate-fade-in">
-            {/* Header / Actions */}
-            <div className="flex justify-between items-center px-1">
-              <div className="text-left">
-                <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider block">Groups</span>
-                <span className="text-[11px] text-base-content/40 mt-0.5 block">
-                  {groups.length} Joined
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => setShowJoinGroupModal(true)}
-                  className="btn btn-sm btn-ghost border border-base-300/60 hover:bg-base-200 rounded-full px-3 flex items-center gap-1 active:scale-95 transition-transform"
-                >
-                  <UserPlus size={14} className="text-primary" />
-                  <span>Join</span>
-                </button>
-                <button 
-                  onClick={() => setShowCreateGroupModal(true)}
-                  className="btn btn-sm btn-primary rounded-full px-3 flex items-center gap-1 shadow-sm active:scale-95 transition-transform"
-                >
-                  <Plus size={14} />
-                  <span>Create</span>
-                </button>
-              </div>
-            </div>
+
 
             {/* Loading Indicator */}
             {isGroupsLoading ? (
