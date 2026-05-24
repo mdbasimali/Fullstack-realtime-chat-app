@@ -119,9 +119,6 @@ const ChatHeader = () => {
               <span className="truncate">
                 {safeGroup ? safeGroup.name : (getNickname(authUser?._id, safeUser._id) || safeUser.fullName)}
               </span>
-              {!safeGroup && safeUser?.publicKey && (
-                <Lock size={12} className="text-emerald-500 shrink-0" title="End-to-End Encrypted" />
-              )}
             </h3>
             <p className="text-[11px] text-base-content/60 font-semibold mt-0.5 truncate">
               {safeGroup ? (
