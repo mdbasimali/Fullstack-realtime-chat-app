@@ -70,8 +70,8 @@ const base64ToBuffer = (base64) => {
 };
 
 // Encrypt text using derived AES-GCM key
-export const encryptAES = async (text, key) => {
-  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+export const encryptAES = async (text, key, customIv = null) => {
+  const iv = customIv || window.crypto.getRandomValues(new Uint8Array(12));
   const encodedText = new TextEncoder().encode(text);
   
   const ciphertextBuffer = await window.crypto.subtle.encrypt(

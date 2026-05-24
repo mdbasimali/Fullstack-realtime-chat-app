@@ -306,15 +306,18 @@ export const useChatstore = create(
       if (privateKeyJwk && otherUser && otherUser.publicKey) {
         const sharedKey = await deriveSharedKey(privateKeyJwk, otherUser.publicKey);
         if (sharedKey) {
+          // Generate a single shared IV for this message
+          const sharedIv = window.crypto.getRandomValues(new Uint8Array(12));
+          
           if (payload.text) {
-            const encryptedText = await encryptAES(payload.text, sharedKey);
+            const encryptedText = await encryptAES(payload.text, sharedKey, sharedIv);
             payload.text = encryptedText.ciphertextB64;
             iv = encryptedText.ivB64;
             isEncrypted = true;
           }
           if (payload.image) {
-            // Encrypt the entire data URI
-            const encryptedImage = await encryptAES(payload.image, sharedKey);
+            // Encrypt the entire data URI using the SAME IV
+            const encryptedImage = await encryptAES(payload.image, sharedKey, sharedIv);
             // Prefix with generic octet-stream so the backend can accept it as base64
             payload.image = `data:application/octet-stream;base64,${encryptedImage.ciphertextB64}`;
             if (!iv) iv = encryptedImage.ivB64;
