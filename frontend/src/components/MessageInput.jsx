@@ -157,14 +157,16 @@ const MessageInput = () => {
   };
 
   const handleEmojiSelect = (emoji) => {
+    console.log("Emoji selected:", emoji); // Debug log
     const input = textInputRef.current;
-    if (input) {
-      // If the input is not focused, just append to the end
-      if (document.activeElement !== input) {
-        setText((prev) => prev + emoji);
-        return;
-      }
+    
+    // On mobile devices, always just append to the end to ensure it works reliably
+    if (window.innerWidth < 768) {
+      setText((prev) => prev + emoji);
+      return;
+    }
 
+    if (input) {
       const start = input.selectionStart || 0;
       const end = input.selectionEnd || 0;
       const newText = text.substring(0, start) + emoji + text.substring(end);
@@ -173,10 +175,7 @@ const MessageInput = () => {
       // Auto reposition selection cursor
       setTimeout(() => {
         input.selectionStart = input.selectionEnd = start + emoji.length;
-        // Focus only if on desktop to avoid native keyboard popping up
-        if (window.innerWidth >= 768) {
-          input.focus();
-        }
+        input.focus();
       }, 10);
     } else {
       setText((prev) => prev + emoji);
@@ -185,13 +184,14 @@ const MessageInput = () => {
 
   const handleEmojiDelete = () => {
     const input = textInputRef.current;
-    if (input) {
-      // If the input is not focused, just delete the last character
-      if (document.activeElement !== input) {
-        setText((prev) => prev.slice(0, -1));
-        return;
-      }
+    
+    // On mobile devices, always just delete the last character
+    if (window.innerWidth < 768) {
+      setText((prev) => prev.slice(0, -1));
+      return;
+    }
 
+    if (input) {
       const start = input.selectionStart || 0;
       const end = input.selectionEnd || 0;
       
@@ -201,7 +201,7 @@ const MessageInput = () => {
         setText(newText);
         setTimeout(() => {
           input.selectionStart = input.selectionEnd = start - 1;
-          if (window.innerWidth >= 768) input.focus();
+          input.focus();
         }, 10);
       } else if (start !== end) {
         // Delete selection
@@ -209,7 +209,7 @@ const MessageInput = () => {
         setText(newText);
         setTimeout(() => {
           input.selectionStart = input.selectionEnd = start;
-          if (window.innerWidth >= 768) input.focus();
+          input.focus();
         }, 10);
       }
     } else {
