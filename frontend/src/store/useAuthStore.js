@@ -136,13 +136,13 @@ export const useAuthStore = create((set,get) => ({
     }
   },
 
-  initializeE2EE: async (user) => {
+  initializeE2EE: async (user, forceReset = false) => {
     try {
       const { generateECDHKeyPair, getMyPrivateKey, saveMyPrivateKey } = await import("../lib/crypto");
       let privateKeyJwk = await getMyPrivateKey(user._id);
       
-      // If no private key locally, or no public key on server, generate new pair
-      if (!privateKeyJwk || !user.publicKey) {
+      // Only generate new pair if explicitly forcing a reset, or if the server has no public key for this user (first signup)
+      if (forceReset || !user.publicKey) {
         console.log("Generating new E2EE keys...");
         const keys = await generateECDHKeyPair();
         await saveMyPrivateKey(user._id, keys.privateKeyJwk);
@@ -151,10 +151,19 @@ export const useAuthStore = create((set,get) => ({
         await axiosInstance.put("/auth/keys", { publicKey: keys.publicKeyJwk });
         
         set((state) => ({ authUser: { ...state.authUser, publicKey: keys.publicKeyJwk } }));
+      } else if (!privateKeyJwk && user.publicKey) {
+        console.warn("No local private key found, but public key exists on server. Old messages cannot be decrypted until keys are synced or session is reset.");
       }
     } catch (error) {
       console.error("E2EE Initialization failed:", error);
     }
+  },
+
+  resetSecureSession: async () => {
+    const user = get().authUser;
+    if (!user) return;
+    await get().initializeE2EE(user, true);
+    toast.success("Secure session reset successfully.");
   },
 
   updateProfile: async (data) => {
