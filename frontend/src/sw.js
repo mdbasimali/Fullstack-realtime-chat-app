@@ -75,6 +75,8 @@ self.addEventListener('notificationclick', (event) => {
             client = clientList[i];
           }
         }
+        // Navigate to home first so cold-start hook can handle from clean state
+        client.navigate('/');
         return client.focus();
       }
       return clients.openWindow('/');
@@ -82,11 +84,38 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
+// Handle navigation requests: always serve the app shell (index.html)
+// This prevents Chrome from restoring stale deep-route pages on PWA cold start
+registerRoute(
+  ({ request }) => request.mode === 'navigate',
+  new NetworkFirst({
+    cacheName: 'navigation-cache',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 1,
+        maxAgeSeconds: 24 * 60 * 60, // 1 Day
+      }),
+    ],
+  })
+);
+
 // Allow the SW to skip waiting and claim clients immediately
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      // Clean up old runtime caches to prevent stale data after updates
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => name !== 'workbox-precache-v2' && name.startsWith('workbox-'))
+            .map((name) => caches.delete(name))
+        );
+      }),
+    ])
+  );
 });

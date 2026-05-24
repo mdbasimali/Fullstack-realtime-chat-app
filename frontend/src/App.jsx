@@ -11,6 +11,7 @@ import AppLockScreen from "./components/AppLockScreen";
 import { Capacitor } from "@capacitor/core";
 import { App as CapApp } from "@capacitor/app";
 import { AnimatePresence, motion } from "framer-motion";
+import { usePWALifecycle } from "./hooks/usePWALifecycle";
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -66,6 +67,7 @@ const App = () => {
   const { theme, chatColor, chatWallpaper, setChatColor, setChatWallpaper } = useThemeStore();
   const location = useLocation();
   const navigate = useNavigate();
+  usePWALifecycle();
   const { selectedUser, setSelectedUser, subscribeToMessages, unsubscribeFromMessages } = useChatstore();
   const { 
     showGroupCallModal, 
