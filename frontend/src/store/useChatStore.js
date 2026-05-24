@@ -656,13 +656,13 @@ export const useChatstore = create(
       const cipherTextB64 = window.btoa(binary);
 
       const decryptedDataUri = await decryptAES(cipherTextB64, message.iv, sharedKey);
-      if (decryptedDataUri.startsWith("data:")) {
+      if (decryptedDataUri && decryptedDataUri.startsWith("data:")) {
         return decryptedDataUri;
       }
-      return message.image;
+      return null;
     } catch (error) {
       console.error("Failed to decrypt media:", error);
-      return message.image;
+      return null;
     }
   },
 
