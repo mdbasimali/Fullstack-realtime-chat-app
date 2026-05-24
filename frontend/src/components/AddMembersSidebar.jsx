@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { ArrowLeft, Search, AtSign, Hash, Check, Loader2 } from "lucide-react";
 import { useGroupStore } from "../store/useGroupStore";
-import { useChatStore } from "../store/useChatStore";
+import { useChatstore } from "../store/useChatStore";
 import toast from "react-hot-toast";
 
 const AddMembersSidebar = ({ onClose }) => {
   const { activeGroup, selectedGroupDetails, addMemberToGroup } = useGroupStore();
-  const { users } = useChatStore();
+  const { users } = useChatstore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([]);
