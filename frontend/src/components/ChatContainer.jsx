@@ -333,7 +333,7 @@ const ChatContainer = () => {
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 md:pb-28 space-y-1">
           
           {/* Encryption Banner */}
-          <div className="flex flex-col items-center justify-center mb-6 mt-2 animate-fade-in">
+          <div className="flex flex-col items-center justify-center mb-6 mt-2">
             <div className="max-w-[320px] mx-auto px-4 py-2.5 bg-[#fef5c3] dark:bg-[#182229] rounded-[10px] shadow-[0_1px_1.5px_rgba(11,20,26,0.05)] text-center">
               <p className="text-[11.5px] text-[#54656f] dark:text-[#ffd279]/90 leading-[1.35]">
                 <Lock size={10} className="inline-block mr-1 -mt-0.5 fill-current" />
@@ -344,7 +344,7 @@ const ChatContainer = () => {
 
           {/* WhatsApp-Style Group Profile Onboarding Card */}
           {activeGroup && (
-            <div className="flex flex-col items-center justify-center p-6 mb-6 mt-3 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-[24px] max-w-[250px] md:max-w-[285px] mx-auto text-center shadow-sm animate-fade-in">
+            <div className="flex flex-col items-center justify-center p-6 mb-6 mt-3 bg-base-100 dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-[24px] max-w-[250px] md:max-w-[285px] mx-auto text-center shadow-sm">
               {activeGroup.avatar ? (
                 <img
                   src={activeGroup.avatar}
@@ -414,7 +414,7 @@ const ChatContainer = () => {
               <React.Fragment key={message._id}>
                 {/* Dynamic Date Separator */}
                 {!isSameDay && (
-                  <div className="flex items-center justify-center py-4 animate-fade-in w-full">
+                  <div className="flex items-center justify-center py-4 w-full">
                     <span className="px-3 py-1 bg-base-200/60 dark:bg-base-900/60 border border-base-300/40 text-[10px] font-bold text-base-content/60 rounded-full tracking-wide uppercase">
                       {currentDate === new Date().toDateString() 
                         ? "Today" 

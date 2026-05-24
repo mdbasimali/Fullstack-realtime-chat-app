@@ -217,7 +217,7 @@ const DraggableSelfPreview = React.memo(({
     return () => window.removeEventListener("resize", handleResize);
   }, [offset]);
 
-  if (isVideoOff || !localStream) return null;
+  if (isVideoOff || !localStream || isMinimized) return null;
 
   const onStart = (clientX, clientY) => {
     setIsDragging(true);
@@ -344,7 +344,7 @@ const DraggableSelfPreview = React.memo(({
         transition: isDragging ? "none" : "transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
         touchAction: "none"
       }}
-      className={`fixed z-[80] w-[110px] md:w-[140px] aspect-[3/4] rounded-2xl overflow-hidden border-2 shadow-2xl cursor-grab active:cursor-grabbing top-28 right-6 select-none bg-[#1c1f26] pointer-events-auto transition-opacity duration-300 ${
+      className={`fixed z-[80] w-[90px] md:w-[120px] aspect-[3/4] rounded-2xl overflow-hidden border-2 shadow-2xl cursor-grab active:cursor-grabbing bottom-32 right-6 select-none bg-[#1c1f26] pointer-events-auto transition-opacity duration-300 ${
         isDragging 
           ? "border-blue-500 shadow-[0_0_25px_rgba(0, 122, 255,0.6)]" 
           : "border-white/20 hover:border-blue-500/50 shadow-black/80"
