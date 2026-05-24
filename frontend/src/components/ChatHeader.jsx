@@ -74,7 +74,7 @@ const ChatHeader = () => {
   if (!safeUser && !safeGroup) return null;
 
   return (
-    <div className="py-1.5 px-3 safe-p-1.5-top border-b border-base-300 bg-base-100/95 backdrop-blur-md flex items-center justify-between shadow-sm relative z-50">
+    <div className="py-1.5 px-3 safe-p-1.5-top border-b border-base-300 bg-base-100/95 backdrop-blur-md flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
         {/* Back button */}
         <button
