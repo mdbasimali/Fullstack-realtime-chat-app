@@ -328,6 +328,7 @@ const ChatHeader = () => {
                 </li>
                 <li>
                   <button 
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={(e) => {
                       e.preventDefault();
                       dropdownRef.current?.focus();
@@ -348,6 +349,7 @@ const ChatHeader = () => {
               <>
                 <li>
                   <button 
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={(e) => {
                       e.preventDefault();
                       dropdownRef.current?.focus();
