@@ -39,6 +39,7 @@ const ChatHeader = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nicknamesVersion, setNicknamesVersion] = useState(0);
   const [dropdownView, setDropdownView] = useState("main");
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const handleNicknameUpdate = () => setNicknamesVersion(v => v + 1);
@@ -212,7 +213,7 @@ const ChatHeader = () => {
           <label tabIndex={0} onClick={() => setDropdownView("main")} className="btn btn-ghost btn-circle p-0 size-10 hover:bg-base-200 text-base-content/85 cursor-pointer flex items-center justify-center">
             <MoreVertical size={20} />
           </label>
-          <ul tabIndex={0} className="dropdown-content menu p-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-base-100 rounded-xl border border-base-200 w-56 z-50 mt-2 flex flex-col space-y-0.5 text-base-content/90">
+          <ul ref={dropdownRef} tabIndex={0} className="dropdown-content menu p-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-base-100 rounded-xl border border-base-200 w-56 z-50 mt-2 flex flex-col space-y-0.5 text-base-content/90">
             {safeGroup ? (
               <>
                 <li className="sm:hidden">
@@ -330,6 +331,7 @@ const ChatHeader = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       setDropdownView("more");
+                      setTimeout(() => dropdownRef.current?.focus(), 0);
                     }}
                     className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors flex justify-between items-center w-full"
                   >
@@ -349,6 +351,7 @@ const ChatHeader = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       setDropdownView("main");
+                      setTimeout(() => dropdownRef.current?.focus(), 0);
                     }}
                     className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-bold text-[15px] transition-colors flex items-center gap-2 w-full text-base-content/70"
                   >
