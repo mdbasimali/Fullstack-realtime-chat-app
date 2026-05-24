@@ -16,6 +16,13 @@ const messageSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Group"
         },
+        chatId: {
+            type: String,
+        },
+        participantIds: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        }],
         text:{
             type:String,
         },
@@ -46,6 +53,7 @@ const messageSchema = new mongoose.Schema(
 );
 
 messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
+messageSchema.index({ chatId: 1, createdAt: -1 });
 messageSchema.index({ groupId: 1, createdAt: -1 });
 
 const Message = mongoose.model("Message", messageSchema);

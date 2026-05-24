@@ -3,6 +3,7 @@ import { axiosInstance } from "../lib/axios";
 import {io} from "socket.io-client";
 import { App } from "@capacitor/app";
 import toast from "react-hot-toast";
+import { useChatstore } from "./useChatStore";
 
 const getBaseURL = () => {
   if (import.meta.env.MODE !== "development") {
@@ -36,10 +37,12 @@ export const useAuthStore = create((set,get) => ({
         localStorage.setItem("token", res.data.token);
       }
       set({ authUser: res.data });
+      useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       get().setupPushNotifications();
     } catch (error) {
       set({ authUser: null });
+      useChatstore.getState().clearChatStore();
       console.log("Error in checkAuth:", error);
     } finally {
       set({ isCheckingAuth: false });
@@ -52,6 +55,7 @@ export const useAuthStore = create((set,get) => ({
       const res = await axiosInstance.post("/auth/signup", data);
       if (res.data?.token) localStorage.setItem("token", res.data.token);
       set({ authUser: res.data });
+      useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       return { success: true, user: res.data };
     } catch (error) {
@@ -68,6 +72,7 @@ export const useAuthStore = create((set,get) => ({
       const res = await axiosInstance.post("/auth/login", data);
       if (res.data?.token) localStorage.setItem("token", res.data.token);
       set({ authUser: res.data });
+      useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       return { success: true, user: res.data };
     } catch (error) {
@@ -84,6 +89,7 @@ export const useAuthStore = create((set,get) => ({
       const res = await axiosInstance.post("/auth/google", { credential });
       if (res.data?.token) localStorage.setItem("token", res.data.token);
       set({ authUser: res.data });
+      useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       get().setupPushNotifications();
       return { success: true, user: res.data };
@@ -101,6 +107,7 @@ export const useAuthStore = create((set,get) => ({
       const res = await axiosInstance.post("/auth/firebase-login", { idToken });
       if (res.data?.token) localStorage.setItem("token", res.data.token);
       set({ authUser: res.data });
+      useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       get().setupPushNotifications();
       return { success: true, user: res.data };
@@ -117,7 +124,8 @@ export const useAuthStore = create((set,get) => ({
       await axiosInstance.post("/auth/logout");
       localStorage.removeItem("token");
       set({ authUser: null });
-      get().disconnectSocket()
+      get().disconnectSocket();
+      useChatstore.getState().clearChatStore();
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -190,6 +198,7 @@ export const useAuthStore = create((set,get) => ({
       set({ authUser: null, isAppLocked: false });
       localStorage.removeItem("token");
       get().disconnectSocket();
+      useChatstore.getState().clearChatStore();
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete account");

@@ -181,6 +181,17 @@ export const getMessages = async(req,res) =>{
       const { id:userToChatId }=req.params
       const myId=req.user._id;
 
+      // Ensure consistent chatId for queries
+      const myIdStr = myId.toString();
+      const otherIdStr = userToChatId.toString();
+      const chatId = [myIdStr, otherIdStr].sort().join("_");
+
+      // SECURE PARTICIPANT VALIDATION
+      // Verify current authenticated user belongs to that conversation
+      if (!chatId.includes(myIdStr)) {
+          return res.status(403).json([]); // Block unauthorized access instantly
+      }
+
       // Mark all unread incoming messages from this user as read
       await Message.updateMany(
         { senderId: userToChatId, receiverId: myId, isRead: false },
@@ -196,10 +207,12 @@ export const getMessages = async(req,res) =>{
         });
       }
 
+      // Fetch matching the strict participant array or generic sender/receiver
       const messages = await Message.find({
         $or:[
-            {senderId:myId, receiverId:userToChatId},
-            {senderId:userToChatId, receiverId:myId}
+            { chatId },
+            { senderId: myId, receiverId: userToChatId },
+            { senderId: userToChatId, receiverId: myId }
         ]
       })
       .sort({ createdAt: 1 })
@@ -217,6 +230,11 @@ export const sendMessage = async(req,res)=>{
     const {text,image,messageType,storyId}=req.body;
     const {id: receiverId}=req.params;
     const senderId=req.user._id;
+
+    const senderIdStr = senderId.toString();
+    const receiverIdStr = receiverId.toString();
+    const chatId = [senderIdStr, receiverIdStr].sort().join("_");
+    const participantIds = [senderId, receiverId];
 
     let imageUrl;
     if(image){
@@ -242,6 +260,8 @@ export const sendMessage = async(req,res)=>{
     const newMessage=new Message({
         senderId,
         receiverId,
+        chatId,
+        participantIds,
         text,
         image: imageUrl,
         messageType: messageType || (image ? "image" : "text"),

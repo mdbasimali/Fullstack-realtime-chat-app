@@ -102,6 +102,27 @@ export const useChatstore = create(
   selectedUserId: null,
   setSelectedUserId: (id) => set({ selectedUserId: id }),
 
+  currentUserId: null,
+  setCurrentUserId: (id) => {
+    const { currentUserId, clearChatStore } = get();
+    if (currentUserId && currentUserId !== id) {
+      clearChatStore();
+    }
+    set({ currentUserId: id });
+  },
+
+  clearChatStore: () => {
+    set({
+      messages: [],
+      messageCache: {},
+      scrollCache: {},
+      users: [],
+      selectedUser: null,
+      activeConversations: [],
+      selectedUserId: null,
+    });
+  },
+
   globalUsers: [],
   isGlobalSearching: false,
   searchGlobalUsers: async (query) => {
@@ -554,7 +575,8 @@ export const useChatstore = create(
         messageCache: state.messageCache,
         activeConversations: state.activeConversations,
         scrollCache: state.scrollCache,
-        activeTab: state.activeTab
+        activeTab: state.activeTab,
+        currentUserId: state.currentUserId
       }),
     }
   )
