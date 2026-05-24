@@ -5,9 +5,10 @@ import { useChatstore } from "../store/useChatStore";
 import { useCallStore } from "../store/useCallStore";
 import { useGroupStore } from "../store/useGroupStore";
 import { getNickname } from "./ProfileModal";
+import toast from "react-hot-toast";
 
 const ChatHeader = () => {
-  const { selectedUser, setSelectedUser, setShowContactDetailsSidebar } = useChatstore();
+  const { selectedUser, setSelectedUser, setShowContactDetailsSidebar, deleteConversation } = useChatstore();
   const { 
     selectedGroup, 
     setSelectedGroup, 
@@ -36,6 +37,8 @@ const ChatHeader = () => {
 
   const [nicknamesVersion, setNicknamesVersion] = useState(0);
   const [dropdownView, setDropdownView] = useState("main");
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -62,6 +65,7 @@ const ChatHeader = () => {
   if (!safeUser && !safeGroup) return null;
 
   return (
+    <>
     <div className="py-1.5 px-3 safe-p-1.5-top border-b border-base-300 bg-base-100/95 backdrop-blur-md flex items-center justify-between shadow-sm relative z-50">
       <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
         {/* Back button */}
@@ -425,7 +429,11 @@ const ChatHeader = () => {
                     </button>
                   </li>
                   <li>
-                    <button onClick={() => { toast.success("Feature coming soon!"); document.activeElement?.blur(); }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start">
+                    <button onClick={(e) => { 
+                      e.preventDefault();
+                      document.activeElement?.blur(); 
+                      setShowClearModal(true);
+                    }} className="hover:bg-base-200 py-2.5 px-4 rounded-lg font-medium text-[15px] transition-colors justify-start text-error">
                       Clear chat
                     </button>
                   </li>
@@ -451,6 +459,49 @@ const ChatHeader = () => {
         </div>
       </div>
     </div>
+
+    {/* Modern Clear Chat Modal */}
+    {showClearModal && safeUser && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="bg-base-100 w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+          <div className="size-14 rounded-full bg-error/10 flex items-center justify-center text-error mb-4">
+            <Trash2 size={28} />
+          </div>
+          <h3 className="text-xl font-bold mb-2">Clear Chat?</h3>
+          <p className="text-sm text-base-content/70 mb-6 leading-relaxed">
+            This chat will be permanently deleted and cannot be recovered. This includes all messages, media, and attachments for everyone.
+          </p>
+          <div className="flex gap-3 w-full">
+            <button 
+              onClick={() => setShowClearModal(false)}
+              disabled={isClearing}
+              className="flex-1 btn btn-ghost rounded-2xl"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={async () => {
+                setIsClearing(true);
+                try {
+                  await deleteConversation(safeUser._id);
+                  toast.success("Chat permanently deleted");
+                  setShowClearModal(false);
+                } catch (error) {
+                  toast.error("Failed to delete chat");
+                } finally {
+                  setIsClearing(false);
+                }
+              }}
+              disabled={isClearing}
+              className="flex-1 btn btn-error text-white rounded-2xl border-none shadow-lg shadow-error/20"
+            >
+              {isClearing ? <Loader2 className="animate-spin" size={20} /> : "Delete"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

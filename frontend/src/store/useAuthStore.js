@@ -339,6 +339,10 @@ export const useAuthStore = create((set,get) => ({
         }
       }
     });
+
+    socket.on("conversationDeleted", (userId) => {
+      useChatstore.getState().removeConversationFromCache(userId);
+    });
   },
 
 

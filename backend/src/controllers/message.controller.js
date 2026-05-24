@@ -311,13 +311,45 @@ export const deleteConversation = async (req, res) => {
     const myId = req.user._id;
     const otherId = req.params.id;
 
-    // Delete all messages exchanged between these two users
+    // 1. Fetch messages to delete to find attached media
+    const messagesToDelete = await Message.find({
+      $or: [
+        { senderId: myId, receiverId: otherId },
+        { senderId: otherId, receiverId: myId }
+      ]
+    });
+
+    // 2. Permanently delete media from Cloudinary
+    for (const msg of messagesToDelete) {
+      if (msg.image) {
+        try {
+          // Extract public ID from Cloudinary URL
+          const parts = msg.image.split("/");
+          const filename = parts.pop();
+          const publicId = filename.split(".")[0];
+          
+          const resourceType = (msg.messageType === "audio" || msg.messageType === "video") ? "video" : "image";
+          
+          await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+        } catch (err) {
+          console.error("Failed to delete media from Cloudinary:", err);
+        }
+      }
+    }
+
+    // 3. Delete all message documents permanently
     await Message.deleteMany({
       $or: [
         { senderId: myId, receiverId: otherId },
         { senderId: otherId, receiverId: myId }
       ]
     });
+
+    // 4. Emit realtime update to the other participant if online
+    const receiverSocketId = getReceiverSocketId(otherId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("conversationDeleted", myId);
+    }
 
     res.status(200).json({ success: true, message: "Conversation deleted successfully" });
   } catch (error) {

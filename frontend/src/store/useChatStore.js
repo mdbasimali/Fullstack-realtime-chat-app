@@ -469,28 +469,35 @@ export const useChatstore = create(
     }
   },
 
+  removeConversationFromCache: (userId) => {
+    const authUser = useAuthStore.getState().authUser;
+    if (!authUser) return;
+
+    const { selectedUser, activeConversations, messageCache, getUsers } = get();
+    
+    if (selectedUser && selectedUser._id === userId) {
+      set({ selectedUser: null, messages: [] });
+    }
+
+    const updated = activeConversations.filter(id => id !== userId);
+    const activeKey = `active_conversations_${authUser._id}`;
+    localStorage.setItem(activeKey, JSON.stringify(updated));
+
+    const newCache = { ...messageCache };
+    delete newCache[userId];
+
+    set({ 
+      activeConversations: updated,
+      messageCache: newCache 
+    });
+
+    getUsers();
+  },
+
   deleteConversation: async (userId) => {
     try {
-      const authUser = useAuthStore.getState().authUser;
-      if (!authUser) return;
-
-      // Call backend route to delete conversation from database
       await axiosInstance.delete(`/messages/conversation/${userId}`);
-
-      // Clear local state if we are currently looking at this user's chat window
-      const { selectedUser, activeConversations, getUsers } = get();
-      if (selectedUser && selectedUser._id === userId) {
-        set({ selectedUser: null, messages: [] });
-      }
-
-      // Filter out from activeConversations store state and localStorage
-      const updated = activeConversations.filter(id => id !== userId);
-      const activeKey = `active_conversations_${authUser._id}`;
-      localStorage.setItem(activeKey, JSON.stringify(updated));
-      set({ activeConversations: updated });
-
-      // Refresh sidebar list
-      getUsers();
+      get().removeConversationFromCache(userId);
     } catch (error) {
       console.error("Error deleting conversation:", error);
     }
