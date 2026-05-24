@@ -117,7 +117,7 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
       </div>
 
       {/* Emoji Grid */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-2 pt-1">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-16 pt-1">
         {search.trim() && (
           <p className="text-[11px] text-base-content/50 mb-2 font-semibold uppercase tracking-wider pl-1">
             Search Results
@@ -137,11 +137,9 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
         </div>
       </div>
 
-      {/* Bottom Tab Bar (Telegram style) */}
-      <div className="flex items-center justify-between px-3 py-2 bg-transparent">
-        <span className="text-[12px] text-base-content/50 font-medium truncate w-16 invisible sm:visible">Emoji</span>
-        
-        <div className="flex bg-base-200/60 dark:bg-base-800/60 rounded-full p-1 border border-base-300/30">
+      {/* Bottom Tab Bar (Telegram style - Floating) */}
+      <div className="absolute bottom-2 left-0 right-0 px-3 flex items-center justify-center pointer-events-none z-10">
+        <div className="flex bg-base-200/80 dark:bg-base-800/80 backdrop-blur-md rounded-full p-1 shadow-sm border border-base-300/30 pointer-events-auto">
           <button className="px-4 py-1.5 rounded-full bg-base-100 dark:bg-base-700 shadow-sm text-[13px] font-bold text-base-content">Emoji</button>
           <button className="px-4 py-1.5 rounded-full text-base-content/50 hover:text-base-content text-[13px] font-semibold transition-colors">GIFs</button>
           <button className="px-4 py-1.5 rounded-full text-base-content/50 hover:text-base-content text-[13px] font-semibold transition-colors">Stickers</button>
@@ -149,7 +147,7 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
 
         <button 
           onClick={onDelete}
-          className="p-2 text-base-content/50 hover:text-base-content/80 rounded-full hover:bg-base-200 transition-colors cursor-pointer"
+          className="absolute right-4 p-2.5 text-base-content/60 hover:text-base-content bg-base-100/60 dark:bg-base-800/60 hover:bg-base-200/80 backdrop-blur-md rounded-full transition-colors cursor-pointer pointer-events-auto shadow-sm border border-base-300/30"
           title="Backspace"
         >
           <Delete size={22} strokeWidth={1.5} />
