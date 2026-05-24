@@ -45,13 +45,20 @@ const EmojiPicker = ({ onSelect, onClose, onDelete, isMobile }) => {
     const handleClickOutside = (event) => {
       // Ignore clicks on the toggle button
       if (event.target.closest(".emoji-toggle-btn")) return;
+      
+      // If the target is no longer in the document (e.g. removed by a re-render), do nothing.
+      if (!document.contains(event.target)) return;
+
       if (pickerRef.current && !pickerRef.current.contains(event.target)) {
         onClose();
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
+    // On mobile, also listen to touchstart so it fires earlier, preventing issues with synthesized mousedowns
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [onClose]);
 
