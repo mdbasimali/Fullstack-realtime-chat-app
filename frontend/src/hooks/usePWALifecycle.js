@@ -18,29 +18,35 @@ export const usePWALifecycle = () => {
     if (!isSessionActive) {
       sessionStorage.setItem("pwa_session_active", "true");
 
+      // 1. Clear ALL persisted selected user keys from localStorage since authUser isn't loaded yet
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith("selected_user_")) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // 2. Clear modal states from stores
+      useChatstore.getState().setSelectedUser(null);
+      useChatstore.getState().setSelectedUserId(null);
+      useChatstore.getState().setIsContactsModalOpen(false);
+      useChatstore.getState().setIsStoryViewerOpen(false);
+      useChatstore.getState().setIsSubViewOpen(false);
+      useChatstore.getState().setIsProfileModalOpen(false);
+      
+      useGroupStore.getState().setSelectedGroup(null);
+      useGroupStore.getState().setShowGroupCallModal(false);
+
+      useCallStore.getState().setIsMinimized(false);
+
       const currentPath = window.location.pathname;
+      const allowedColdStartRoutes = ["/", "/login", "/signup", "/setup-pin", "/create-pin"];
       
       // If the app is launched into a deep nested route or settings, intercept and reset
-      const allowedColdStartRoutes = ["/", "/login", "/signup", "/setup-pin"];
-      
       if (!allowedColdStartRoutes.includes(currentPath)) {
-        // We're waking up in a weird nested state that Chrome restored
-        // 1. Clear modal states from stores
-        useChatstore.getState().setSelectedUser(null);
-        useChatstore.getState().setIsContactsModalOpen(false);
-        useChatstore.getState().setIsStoryViewerOpen(false);
-        useChatstore.getState().setIsSubViewOpen(false);
-        useChatstore.getState().setIsProfileModalOpen(false);
-        
-        useGroupStore.getState().setSelectedGroup(null);
-        useGroupStore.getState().setShowGroupCallModal(false);
-
-        useCallStore.getState().setIsMinimized(false);
-
-        // 2. Redirect strictly to Home
+        // 3. Redirect strictly to Home
         navigate("/", { replace: true });
         
-        // 3. Purge history cleanly
+        // 4. Purge history cleanly
         if (window.history && window.history.pushState) {
           window.history.pushState({ appState: 'forward' }, '');
         }
