@@ -927,6 +927,7 @@ const ChatContainer = () => {
             </div>
 
           </div>
+          )
         ) : null
       )}
 
