@@ -13,7 +13,10 @@ const BottomNavbar = () => {
     setSelectedUser, 
     users, 
     isContactsModalOpen, 
-    isStoryViewerOpen 
+    isStoryViewerOpen,
+    isSubViewOpen,
+    sidebarSearchQuery,
+    isProfileModalOpen 
   } = useChatstore();
   const { selectedGroup, setSelectedGroup } = useGroupStore();
   const { authUser } = useAuthStore();
@@ -29,7 +32,10 @@ const BottomNavbar = () => {
     !selectedUser && 
     !selectedGroup && 
     !isContactsModalOpen && 
-    !isStoryViewerOpen;
+    !isStoryViewerOpen &&
+    !isSubViewOpen &&
+    sidebarSearchQuery.trim().length === 0 &&
+    !isProfileModalOpen;
 
   return (
     <AnimatePresence>

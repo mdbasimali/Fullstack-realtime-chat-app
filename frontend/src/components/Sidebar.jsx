@@ -69,7 +69,7 @@ const Sidebar = () => {
     addContact, removeContact, blockContact, activeConversations, setActiveConversations, 
     initializeActiveConversations, deleteConversation: deleteStoreConversation, syncContacts, 
     sendMessage, globalUsers, isGlobalSearching, searchGlobalUsers, clearGlobalSearch,
-    setIsContactsModalOpen, setIsStoryViewerOpen
+    setIsContactsModalOpen, setIsStoryViewerOpen, setIsSubViewOpen, setSidebarSearchQuery, setIsProfileModalOpen
   } = useChatstore();
   const { authUser, onlineUsers } = useAuthStore();
   const { initiateCall } = useCallStore();
@@ -97,6 +97,11 @@ const Sidebar = () => {
   const [showCameraModal, setShowCameraModal] = useState(false);
 
   const [profileModalData, setProfileModalData] = useState(null);
+
+  // Sync profile modal state to store for navbar hiding
+  useEffect(() => {
+    setIsProfileModalOpen(!!profileModalData);
+  }, [profileModalData, setIsProfileModalOpen]);
   const [nicknamesVersion, setNicknamesVersion] = useState(0);
   const [matchedContacts, setMatchedContacts] = useState([]);
   const [manualEmails, setManualEmails] = useState("");
@@ -343,6 +348,12 @@ const Sidebar = () => {
 
   // Navigation states
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Sync search query to store for navbar hiding
+  useEffect(() => {
+    setSidebarSearchQuery(searchQuery);
+  }, [searchQuery, setSidebarSearchQuery]);
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
   const [showThreeDotMenu, setShowThreeDotMenu] = useState(false);
@@ -440,6 +451,18 @@ const Sidebar = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [showRecentlyUnfriendedModal, setShowRecentlyUnfriendedModal] = useState(false);
+
+  // Global Sub-view tracker for hiding navbar
+  useEffect(() => {
+    const isAnyModalOpen = 
+      showSyncModal || 
+      showCameraModal || 
+      showCreateGroupModal || 
+      showJoinGroupModal || 
+      showMyUpdatesHistory || 
+      showRecentlyUnfriendedModal;
+    setIsSubViewOpen(isAnyModalOpen);
+  }, [showSyncModal, showCameraModal, showCreateGroupModal, showJoinGroupModal, showMyUpdatesHistory, showRecentlyUnfriendedModal, setIsSubViewOpen]);
 
   // Long press / Context Menu states for Friends Tab
   const [activeMenuFriendId, setActiveMenuFriendId] = useState(null);

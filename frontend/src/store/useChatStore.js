@@ -69,6 +69,15 @@ export const useChatstore = create(
   isStoryViewerOpen: false,
   setIsStoryViewerOpen: (val) => set({ isStoryViewerOpen: val }),
 
+  isSubViewOpen: false,
+  setIsSubViewOpen: (val) => set({ isSubViewOpen: val }),
+
+  sidebarSearchQuery: "",
+  setSidebarSearchQuery: (val) => set({ sidebarSearchQuery: val }),
+
+  isProfileModalOpen: false,
+  setIsProfileModalOpen: (val) => set({ isProfileModalOpen: val }),
+
   activeConversations: [],
   setActiveConversations: (activeConversations) => set({ activeConversations }),
   initializeActiveConversations: (userId) => {
