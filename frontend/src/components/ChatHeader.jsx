@@ -25,8 +25,11 @@ const ChatHeader = () => {
 
   const lastUserRef = useRef(selectedUser);
   const lastGroupRef = useRef(selectedGroup);
-  if (selectedUser) lastUserRef.current = selectedUser;
-  if (selectedGroup) lastGroupRef.current = selectedGroup;
+  
+  if (selectedUser || selectedGroup) {
+    lastUserRef.current = selectedUser;
+    lastGroupRef.current = selectedGroup;
+  }
 
   const safeUser = selectedUser || lastUserRef.current;
   const safeGroup = selectedGroup || lastGroupRef.current;
