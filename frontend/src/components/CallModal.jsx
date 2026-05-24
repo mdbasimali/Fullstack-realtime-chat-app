@@ -586,7 +586,7 @@ const DraggableVideoContainer = React.memo(({
             className={videoClasses}
           />
           {isMinimized && !isVideoOff && (
-            <div className="absolute bottom-2 right-2 w-16 h-20 rounded-lg overflow-hidden border border-white/20 shadow-lg bg-black z-10 pointer-events-none">
+            <div className="absolute bottom-1.5 right-1.5 w-10 h-[54px] rounded-md overflow-hidden border border-white/40 shadow-lg bg-black z-10 pointer-events-none">
               <video
                 ref={(el) => {
                   if (el && localStream && el.srcObject !== localStream) {
