@@ -199,9 +199,9 @@ export const getMessages = async(req,res) =>{
       );
 
       // Notify the other user that their messages have been read
-      const otherUserSocketId = getReceiverSocketId(userToChatId);
-      if (otherUserSocketId) {
-        io.to(otherUserSocketId).emit("messagesRead", {
+      const otherUserSocketIds = getReceiverSocketId(userToChatId);
+      if (otherUserSocketIds && otherUserSocketIds.length > 0) {
+        io.to(otherUserSocketIds).emit("messagesRead", {
           readBy: myId,
           senderId: userToChatId,
         });
@@ -282,9 +282,9 @@ export const sendMessage = async(req,res)=>{
     const populatedMessage = await Message.findById(newMessage._id).populate("storyId");
 
     // socket.io
-    const receiverSocketId =getReceiverSocketId(receiverId);
-    if(receiverSocketId){
-        io.to(receiverSocketId).emit("newMessage",populatedMessage)
+    const receiverSocketIds = getReceiverSocketId(receiverId);
+    if(receiverSocketIds && receiverSocketIds.length > 0){
+        io.to(receiverSocketIds).emit("newMessage",populatedMessage)
     }
     
     // Web Push Notification
@@ -348,9 +348,9 @@ export const deleteConversation = async (req, res) => {
     });
 
     // 4. Emit realtime update to the other participant if online
-    const receiverSocketId = getReceiverSocketId(otherId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("conversationDeleted", myId);
+    const receiverSocketIds = getReceiverSocketId(otherId);
+    if (receiverSocketIds && receiverSocketIds.length > 0) {
+      io.to(receiverSocketIds).emit("conversationDeleted", myId);
     }
 
     res.status(200).json({ success: true, message: "Conversation deleted successfully" });
@@ -394,9 +394,9 @@ export const deleteMessage = async (req, res) => {
       io.to(`group_${message.groupId}`).emit("groupMessageDeleted", { messageId: id, groupId: message.groupId });
     } else {
       const targetUserId = senderIdStr === myId.toString() ? receiverIdStr : senderIdStr;
-      const receiverSocketId = getReceiverSocketId(targetUserId);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("messageDeleted", id);
+      const receiverSocketIds = getReceiverSocketId(targetUserId);
+      if (receiverSocketIds && receiverSocketIds.length > 0) {
+        io.to(receiverSocketIds).emit("messageDeleted", id);
       }
     }
 

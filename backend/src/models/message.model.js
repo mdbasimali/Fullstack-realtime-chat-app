@@ -2,15 +2,27 @@ import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
     {
+        messageId: {
+            type: String, // Unique message identifier for E2EE
+            unique: true,
+            sparse: true,
+            index: true,
+        },
         senderId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,
         },
+        senderDeviceId: {
+            type: String, // For Signal Protocol
+        },
         receiverId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: function () { return !this.groupId; }
+        },
+        receiverDeviceId: {
+            type: String, // For Signal Protocol
         },
         groupId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -26,6 +38,9 @@ const messageSchema = new mongoose.Schema(
         text: {
             type: String,
         },
+        encryptedPayload: {
+            type: String, // Double Ratchet encrypted payload
+        },
         image: {
             type: String,
         },
@@ -33,9 +48,14 @@ const messageSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        deliveryStatus: {
+            type: String,
+            enum: ["sent", "delivered", "read", "failed"],
+            default: "sent",
+        },
         messageType: {
             type: String,
-            enum: ["text", "image", "video", "voice_call", "video_call", "audio", "story_reply"],
+            enum: ["text", "image", "video", "voice_call", "video_call", "audio", "story_reply", "signal_message"],
             default: "text",
         },
         storyId: {

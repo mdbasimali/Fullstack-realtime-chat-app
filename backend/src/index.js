@@ -16,9 +16,11 @@ import storyRoutes from "./routes/story.route.js";
 import groupRoutes from "./routes/group.route.js";
 import settingsRoutes from "./routes/settings.route.js";
 import storySettingsRoutes from "./routes/storySettings.route.js";
+import keysRoutes from "./routes/keys.route.js";
 import { app, server} from "./lib/socket.js";
 import webpush from "web-push";
 import { startMediasoupWorkers } from "./webrtc/mediasoupServer.js";
+import { startRetryWorker } from "./workers/retryWorker.js";
 
 app.set("trust proxy", 1); // Required for secure cookies on Render/Vercel
 
@@ -100,6 +102,7 @@ app.use("/api/push", pushRoutes);
     app.use("/api/groups", groupRoutes);
     app.use("/api/settings", settingsRoutes);
     app.use("/api/story-settings", storySettingsRoutes);
+    app.use("/api/keys", keysRoutes);
 
 if(process.env.NODE_ENV==="production"){
     app.use(express.static(path.join(__dirname, "../frontend/dist")));
@@ -113,6 +116,7 @@ if(process.env.NODE_ENV==="production"){
 server.listen(PORT, async ()=>{
     console.log("server is running on PORT:" + PORT);
     connectDB();
+    startRetryWorker();
     try {
         await startMediasoupWorkers();
     } catch (e) {

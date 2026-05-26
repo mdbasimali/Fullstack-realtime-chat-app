@@ -23,13 +23,18 @@ if (pubClient && subClient) {
   console.log("Socket.IO Redis Adapter configured.");
 }
 
-const userSocketMap = {}; // {userId: socketId}
+export const userSocketMap = {}; // {userId: {deviceId: socketId}}
 export const activeCalls = new Map(); // {userId: {partnerId, type, startTime}}
 const pendingCalls = new Map(); // {userId: {from, offer, type, timestamp}}
 export const qrSessions = new Map(); // { sessionId: { socketId, createdAt } }
 
-export function getReceiverSocketId(userId){
-    return userSocketMap[userId]
+export function getReceiverSocketId(userId) {
+    // Returns array of socket ids for all devices of the user
+    return userSocketMap[userId] ? Object.values(userSocketMap[userId]) : [];
+}
+
+export function getDeviceSocketId(userId, deviceId) {
+    return userSocketMap[userId]?.[deviceId];
 }
 
 export async function sendPushNotification(userId, data) {
@@ -87,8 +92,10 @@ async function saveCallLog(senderId, receiverId, type, status, duration = 0) {
 io.on("connection", (socket) =>{
    console.log("A user connected", socket.id);
    const userId = socket.handshake.query.userId;
+   const deviceId = socket.handshake.query.deviceId || "default";
    if(userId) {
-       userSocketMap[userId]=socket.id;
+       if (!userSocketMap[userId]) userSocketMap[userId] = {};
+       userSocketMap[userId][deviceId] = socket.id;
        
        // Check for pending calls
        if (pendingCalls.has(userId)) {
@@ -133,12 +140,12 @@ io.on("connection", (socket) =>{
       if (senderId && userId) {
         await Message.updateMany(
           { senderId, receiverId: userId, isRead: false },
-          { $set: { isRead: true } }
+          { $set: { isRead: true, deliveryStatus: "read" } }
         );
 
-        const senderSocketId = getReceiverSocketId(senderId);
-        if (senderSocketId) {
-          io.to(senderSocketId).emit("messagesRead", {
+        const senderSocketIds = getReceiverSocketId(senderId);
+        if (senderSocketIds.length > 0) {
+          io.to(senderSocketIds).emit("messagesRead", {
             readBy: userId,
             senderId: senderId,
           });
@@ -146,6 +153,14 @@ io.on("connection", (socket) =>{
       }
     } catch (e) {
       console.error("Error in messageSeen socket handler:", e);
+    }
+  });
+
+  socket.on("message:ack", async ({ messageId, status }) => {
+    try {
+      await Message.findOneAndUpdate({ messageId }, { deliveryStatus: status });
+    } catch (e) {
+      console.error("Error updating message status:", e);
     }
   });
 
@@ -210,7 +225,14 @@ io.on("connection", (socket) =>{
         }
       }
      console.log("A user disconnected", socket.id);
-     delete userSocketMap[userId];
+     
+     if (userId && userSocketMap[userId]) {
+         delete userSocketMap[userId][deviceId];
+         if (Object.keys(userSocketMap[userId]).length === 0) {
+             delete userSocketMap[userId];
+         }
+     }
+     
      io.emit("getOnlineUsers", Object.keys(userSocketMap));
    })
 })
