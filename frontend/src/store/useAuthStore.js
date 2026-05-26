@@ -4,6 +4,17 @@ import {io} from "socket.io-client";
 import { App } from "@capacitor/app";
 import toast from "react-hot-toast";
 import { useChatstore } from "./useChatStore";
+import { signalManager } from "../encryption/signalManager";
+import { retryQueueManager } from "../retry/retryQueue";
+
+const getDeviceId = () => {
+  let deviceId = localStorage.getItem("deviceId");
+  if (!deviceId) {
+    deviceId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem("deviceId", deviceId);
+  }
+  return deviceId;
+};
 
 const getBaseURL = () => {
   if (import.meta.env.MODE !== "development") {
@@ -37,11 +48,14 @@ export const useAuthStore = create((set,get) => ({
       if (res.data?.token) {
         localStorage.setItem("token", res.data.token);
       }
+      
+      // Initialize E2EE BEFORE setting authUser so UI waits
+      await get().initializeE2EE(res.data);
+      
       set({ authUser: res.data });
       useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       get().setupPushNotifications();
-      get().initializeE2EE(res.data);
     } catch (error) {
       set({ authUser: null });
       useChatstore.getState().clearChatStore();
@@ -56,10 +70,13 @@ export const useAuthStore = create((set,get) => ({
     try {
       const res = await axiosInstance.post("/auth/signup", data);
       if (res.data?.token) localStorage.setItem("token", res.data.token);
+      
+      await get().initializeE2EE(res.data);
+      
       set({ authUser: res.data });
       useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
-      get().initializeE2EE(res.data);
+      
       return { success: true, user: res.data };
     } catch (error) {
       console.error("Signup error:", error);
@@ -74,10 +91,13 @@ export const useAuthStore = create((set,get) => ({
     try {
       const res = await axiosInstance.post("/auth/login", data);
       if (res.data?.token) localStorage.setItem("token", res.data.token);
+      
+      await get().initializeE2EE(res.data);
+      
       set({ authUser: res.data });
       useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
-      get().initializeE2EE(res.data);
+      
       return { success: true, user: res.data };
     } catch (error) {
       console.error("Login error:", error);
@@ -92,11 +112,14 @@ export const useAuthStore = create((set,get) => ({
     try {
       const res = await axiosInstance.post("/auth/google", { credential });
       if (res.data?.token) localStorage.setItem("token", res.data.token);
+      
+      await get().initializeE2EE(res.data);
+      
       set({ authUser: res.data });
       useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       get().setupPushNotifications();
-      get().initializeE2EE(res.data);
+      
       return { success: true, user: res.data };
     } catch (error) {
       console.error("Google Auth error:", error);
@@ -111,11 +134,14 @@ export const useAuthStore = create((set,get) => ({
     try {
       const res = await axiosInstance.post("/auth/firebase-login", { idToken });
       if (res.data?.token) localStorage.setItem("token", res.data.token);
+      
+      await get().initializeE2EE(res.data);
+      
       set({ authUser: res.data });
       useChatstore.getState().setCurrentUserId(res.data._id);
       get().connectSocket();
       get().setupPushNotifications();
-      get().initializeE2EE(res.data);
+      
       return { success: true, user: res.data };
     } catch (error) {
       console.error("Firebase Login error:", error);
@@ -132,8 +158,10 @@ export const useAuthStore = create((set,get) => ({
       set({ authUser: null });
       get().disconnectSocket();
       useChatstore.getState().clearChatStore();
-      const { clearInMemoryPrivateKey } = await import("../lib/crypto");
-      clearInMemoryPrivateKey();
+      
+      // DO NOT DELETE IndexedDB sessions or identity keys!
+      // This preserves the WhatsApp-like E2EE architecture.
+      
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -141,30 +169,14 @@ export const useAuthStore = create((set,get) => ({
 
   initializeE2EE: async (user, forceReset = false, newPin = null) => {
     try {
-      const { generateECDHKeyPair, getMyPrivateKey, saveMyPrivateKey, wrapPrivateKey } = await import("../lib/crypto");
-      let privateKeyJwk = await getMyPrivateKey(user._id);
+      // 1. Get or create persistent deviceId
+      const deviceId = getDeviceId();
       
-      // Only generate new pair if explicitly forcing a reset, or if the server has no public key for this user (first signup)
-      if (forceReset || !user.publicKey) {
-        console.log("Generating new E2EE keys...");
-        const keys = await generateECDHKeyPair();
-        
-        if (newPin || user.pin) {
-          // If a PIN is provided or exists, wrap the new key immediately
-          const wrapped = await wrapPrivateKey(keys.privateKeyJwk, newPin || "legacy");
-          await saveMyPrivateKey(user._id, wrapped);
-        } else {
-          // Fallback to legacy
-          await saveMyPrivateKey(user._id, keys.privateKeyJwk);
-        }
-        
-        // Upload public key to server
-        await axiosInstance.put("/auth/keys", { publicKey: keys.publicKeyJwk });
-        
-        set((state) => ({ authUser: { ...state.authUser, publicKey: keys.publicKeyJwk } }));
-      } else if (!privateKeyJwk && user.publicKey) {
-        console.warn("No local private key found, but public key exists on server. Old messages cannot be decrypted until keys are synced or session is reset.");
-      }
+      // 2. Initialize Signal Protocol (Generates/restores identity keys and uploads prekeys)
+      await signalManager.init(user._id, deviceId);
+
+      // Legacy PIN wrapping logic can be migrated or skipped for now
+      // The crucial part is that signalManager handles IndexedDB persistence securely.
     } catch (error) {
       console.error("E2EE Initialization failed:", error);
     }
@@ -406,7 +418,8 @@ export const useAuthStore = create((set,get) => ({
 
     const socket = io(BASE_URL,{
       query:{
-        userId:authUser._id,
+        userId: authUser._id,
+        deviceId: getDeviceId()
       },
       autoConnect: false, // Prevent race condition with React useEffect
     });
@@ -435,6 +448,11 @@ export const useAuthStore = create((set,get) => ({
 
     socket.on("conversationDeleted", (userId) => {
       useChatstore.getState().removeConversationFromCache(userId);
+    });
+
+    socket.on("connect", () => {
+      // Upon socket reconnect, process any failed messages
+      retryQueueManager.processQueue();
     });
   },
 
